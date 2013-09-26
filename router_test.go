@@ -16,10 +16,20 @@ func TestRE(t *testing.T) {
 
 func TestRouter(t *testing.T) {
 	router := NewRouter()
-	r := NewRoute("GET", "/path/12<string:oo>-<int:oo>", "action")
+	r := NewRoute("GET", "/path/12<string:oo>-<int:m>", "action")
+	router.complieRoute(r)
+
+	path := "/path/12-9090-123"
+	params := r.Match(path)
+	t.Logf("%t\n", r.Build(params) == path)
+
+	r = NewRoute("GET", "/path", "action")
 	err := router.complieRoute(r)
 	if err != nil {
 		panic(err)
 	}
-	println(r.PathRE.MatchString("/path/12-9090-123"))
+
+	path = "/path"
+	params = r.Match(path)
+	t.Logf("%t\n", r.Build(params) == path)
 }

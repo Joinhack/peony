@@ -23,11 +23,18 @@ func init() {
 	}, ""))
 }
 
+type trace struct {
+	isRegex  bool
+	variable string
+}
+
 type Route struct {
-	Method []string //e.g. GET, POST
-	Action string   //e.g. Controller.Call
-	Path   string   //e.g. /app /app/<int:name>
-	PathRE *regexp.Regexp
+	Method    []string //e.g. GET, POST
+	Action    string   //e.g. Controller.Call
+	Path      string   //e.g. /app /app/<int:name>
+	traces    []*trace
+	args      map[string]Converter
+	PathRegex *regexp.Regexp
 }
 
 type Converter func(string) string
@@ -45,22 +52,29 @@ type Router struct {
 	convers map[string]Converter
 }
 
+func (r *Route) appendTrace(isRegex bool, variable string) {
+	r.traces = append(r.traces, &trace{isRegex, variable})
+}
+
 func (router *Router) complieRoute(r *Route) error {
 	if r.Path == "" {
 		return errors.New("can't compile, path is nil")
 	}
-	matchs := ruleRE.FindAllStringSubmatch(r.Path, -1)
+	matches := ruleRE.FindAllStringSubmatch(r.Path, -1)
 	reg := []string{}
 	usedNames := NewSet()
-	if matchs == nil {
+	r.args = make(map[string]Converter)
+	if matches == nil {
+		r.appendTrace(false, r.Path)
 		reg = append(reg, r.Path)
 	} else {
-		for _, match := range matchs {
+		for _, match := range matches {
 			static := match[1]
 			converter := match[2]
 			args := match[3]
 			variable := match[4]
 			if static != "" {
+				r.appendTrace(false, static)
 				reg = append(reg, static)
 			}
 			if variable != "" {
@@ -71,24 +85,49 @@ func (router *Router) complieRoute(r *Route) error {
 				if converter == "" {
 					converter = "string"
 				}
+				r.appendTrace(true, variable)
 				conver := router.convers[converter]
 				if conver == nil {
 					return errors.New("can't compile, unknown converter:" + converter)
 				}
+				r.args[variable] = conver
 				reg = append(reg, fmt.Sprintf("(?P<%s>%s)", variable, conver(args)))
 			}
 		}
 	}
 	var err error
-	r.PathRE, err = regexp.Compile(strings.Join(reg, ""))
+	r.PathRegex, err = regexp.Compile(strings.Join(reg, ""))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *Route) match(path string) {
+func (r *Route) Build(params map[string]string) string {
+	rs := make([]string, len(r.traces))
+	for _, trace := range r.traces {
+		if trace.isRegex {
+			rs = append(rs, params[trace.variable])
+		} else {
+			rs = append(rs, trace.variable)
+		}
+	}
+	return strings.Join(rs, "")
+}
 
+func (r *Route) Match(path string) map[string]string {
+	match := r.PathRegex.FindStringSubmatch(path)
+	if match == nil {
+		return nil
+	} else {
+		rs := make(map[string]string, len(r.args))
+		for idx, name := range r.PathRegex.SubexpNames() {
+			if r.args[name] != nil {
+				rs[name] = match[idx]
+			}
+		}
+		return rs
+	}
 }
 
 func NewRoute(method, path, action string) *Route {
