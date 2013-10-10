@@ -3,6 +3,7 @@ package peony
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"sort"
 	"strings"
@@ -104,7 +105,7 @@ func (router *Router) complieRule(r *Rule) error {
 		}
 		//last suffix not mutched add to reg slice and collection to trace
 		if idx := strings.LastIndex(r.Path, lastMatched); idx+len(lastMatched) < len(r.Path) {
-			suffix := r.Path[idx+len(lastMatched) : len(r.Path)]
+			suffix := r.Path[idx+len(lastMatched):]
 			r.appendTrace(false, suffix)
 			reg = append(reg, suffix)
 		}
@@ -239,9 +240,7 @@ func (r *Router) Build(action string, params map[string]string) (error, string) 
 			return nil, rule.Build(params)
 		}
 	}
-
 	return errors.New("can't build by these params"), ""
-
 }
 
 func (r *Router) AddRule(rule *Rule) error {
@@ -255,6 +254,21 @@ func (r *Router) AddRule(rule *Rule) error {
 	}
 	rules = append(rules, rule)
 	r.rulesByAction[rule.Action] = rules
-	r.Update()
 	return nil
+}
+
+func GetRouterFilter(router *Router) Filter {
+	return func(controller *Controller, filter []Filter) {
+		actionName, routerParams := router.Match(controller.req.Request.URL.Path)
+		if actionName == "" {
+			controller.NotFound("Not Found")
+			return
+		}
+		controller.params = &Params{}
+		controller.params.Router = url.Values{}
+		for k, v := range routerParams {
+			controller.params.Router[k] = append(controller.params.Router[k], []string{v}...)
+		}
+		filter[0](controller, filter[1:])
+	}
 }

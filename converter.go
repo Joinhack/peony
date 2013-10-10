@@ -5,19 +5,20 @@ import (
 	"strconv"
 )
 
-type Converter func(string, reflect.Type) reflect.Value
+type Convert func(string, reflect.Type) reflect.Value
 
-type Converters struct {
-	KindConverters map[reflect.Kind]Converter
+type Converter struct {
+	KindConverts map[reflect.Kind]Convert
 }
 
-func StringConverter(v string, typ reflect.Type) reflect.Value {
+func StringConvert(v string, typ reflect.Type) reflect.Value {
 	return reflect.ValueOf(v)
 }
 
-func IntConverter(value string, typ reflect.Type) reflect.Value {
+func IntConvert(value string, typ reflect.Type) reflect.Value {
 	iValue, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
+		WARN.Printf("can't convert \"%s\" to int\n", value)
 		return reflect.Zero(typ)
 	}
 	val := reflect.New(typ)
@@ -25,9 +26,10 @@ func IntConverter(value string, typ reflect.Type) reflect.Value {
 	return val.Elem()
 }
 
-func UintConverter(value string, typ reflect.Type) reflect.Value {
+func UintConvert(value string, typ reflect.Type) reflect.Value {
 	iValue, err := strconv.ParseUint(value, 10, 64)
 	if err != nil {
+		WARN.Printf("can't convert \"%s\" to uint\n", value)
 		return reflect.Zero(typ)
 	}
 	val := reflect.New(typ)
@@ -35,9 +37,10 @@ func UintConverter(value string, typ reflect.Type) reflect.Value {
 	return val.Elem()
 }
 
-func FloatConverter(value string, typ reflect.Type) reflect.Value {
+func FloatConvert(value string, typ reflect.Type) reflect.Value {
 	fValue, err := strconv.ParseFloat(value, 64)
 	if err != nil {
+		WARN.Printf("can't convert \"%s\" to float\n", value)
 		return reflect.Zero(typ)
 	}
 	val := reflect.New(typ)
@@ -45,41 +48,40 @@ func FloatConverter(value string, typ reflect.Type) reflect.Value {
 	return val.Elem()
 }
 
-func NewConverters() *Converters {
-	c := &Converters{KindConverters: map[reflect.Kind]Converter{}}
-	c.KindConverters[reflect.Int] = IntConverter
-	c.KindConverters[reflect.Int8] = IntConverter
-	c.KindConverters[reflect.Int16] = IntConverter
-	c.KindConverters[reflect.Int32] = IntConverter
-	c.KindConverters[reflect.Int64] = IntConverter
+func NewConverter() *Converter {
+	c := &Converter{KindConverts: map[reflect.Kind]Convert{}}
+	c.KindConverts[reflect.Int] = IntConvert
+	c.KindConverts[reflect.Int8] = IntConvert
+	c.KindConverts[reflect.Int16] = IntConvert
+	c.KindConverts[reflect.Int32] = IntConvert
+	c.KindConverts[reflect.Int64] = IntConvert
 
-	c.KindConverters[reflect.Uint] = UintConverter
-	c.KindConverters[reflect.Uint8] = UintConverter
-	c.KindConverters[reflect.Uint16] = UintConverter
-	c.KindConverters[reflect.Uint32] = UintConverter
-	c.KindConverters[reflect.Uint64] = UintConverter
+	c.KindConverts[reflect.Uint] = UintConvert
+	c.KindConverts[reflect.Uint8] = UintConvert
+	c.KindConverts[reflect.Uint16] = UintConvert
+	c.KindConverts[reflect.Uint32] = UintConvert
+	c.KindConverts[reflect.Uint64] = UintConvert
 
-	c.KindConverters[reflect.Float32] = FloatConverter
-	c.KindConverters[reflect.Float64] = FloatConverter
+	c.KindConverts[reflect.Float32] = FloatConvert
+	c.KindConverts[reflect.Float64] = FloatConvert
 
-	c.KindConverters[reflect.String] = StringConverter
+	c.KindConverts[reflect.String] = StringConvert
 
-	c.KindConverters[reflect.Ptr] = func(value string, typ reflect.Type) reflect.Value {
+	c.KindConverts[reflect.Ptr] = func(value string, typ reflect.Type) reflect.Value {
 		return c.Convert(value, typ.Elem()).Addr()
 	}
-
 	return c
 }
 
-func (c *Converters) Convert(value string, typ reflect.Type) reflect.Value {
-	converter := c.KindConverters[typ.Kind()]
+func (c *Converter) Convert(value string, typ reflect.Type) reflect.Value {
+	converter := c.KindConverts[typ.Kind()]
 	if converter != nil {
 		return converter(value, typ)
 	}
 	return reflect.Zero(typ)
 }
 
-func ArgConvert(c *Converters, p *Params, argType *MethodArgType) reflect.Value {
+func ArgConvert(c *Converter, p *Params, argType *MethodArgType) reflect.Value {
 	vals, ok := p.Values[argType.Name]
 	if !ok || len(vals) == 0 {
 		return reflect.Zero(argType.Type)

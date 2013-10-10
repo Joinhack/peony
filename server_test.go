@@ -5,6 +5,6 @@ import (
 )
 
 func TestServer(t *testing.T) {
-	//svr := Server{Addr: "8080"}
-	//svr.Run()
+	svr := NewServer()
+	svr.Run()
 }
