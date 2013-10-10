@@ -2,9 +2,10 @@ package peony
 
 import (
 	"net/http"
+	"net/url"
 )
 
-type Filter func(*Controller, []Filter)
+type Filter func(*Action, []Filter)
 
 type Server struct {
 	Addr       string
@@ -19,7 +20,24 @@ type Request struct {
 
 type Response struct {
 	ContentType string
-	output      http.ResponseWriter
+	Output      http.ResponseWriter
+}
+
+type Params struct {
+	url.Values
+	Route url.Values
+}
+
+func (r *Response) WriteHeader(code int, contentType string) {
+	r.Output.WriteHeader(code)
+	if contentType == "" {
+		contentType = "text/html"
+	}
+	r.Output.Header().Set("Content-Type", contentType)
+}
+
+func (r *Response) SetHeader(key, value string) {
+	r.Output.Header().Set(key, value)
 }
 
 func NewRequest(r *http.Request) *Request {
@@ -27,7 +45,7 @@ func NewRequest(r *http.Request) *Request {
 }
 
 func NewResponse(r http.ResponseWriter) *Response {
-	return &Response{output: r}
+	return &Response{Output: r}
 }
 
 func (server *Server) handler(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +53,7 @@ func (server *Server) handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (server *Server) handlerInner(w http.ResponseWriter, r *http.Request) {
-	c := NewController(NewResponse(w), NewRequest(r))
+	c := NewAction(NewResponse(w), NewRequest(r))
 	server.filters[0](c, server.filters[1:])
 }
 
