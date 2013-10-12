@@ -12,6 +12,7 @@ type Controller struct {
 	method *ActionMethod
 	action string
 	params *Params
+	render Render
 }
 
 func NewController(w *Response, r *Request) *Controller {
@@ -61,7 +62,7 @@ func (a *Controller) NotFound(msg string, args ...interface{}) {
 	if len(args) > 0 {
 		text = fmt.Sprintf(msg, args)
 	}
-	a.resp.Output.Write([]byte(text))
+	a.resp.Write([]byte(text))
 }
 
 func ActionInvoke(converter *Converter, controller *Controller) {
@@ -70,5 +71,27 @@ func ActionInvoke(converter *Converter, controller *Controller) {
 		argValue := ArgConvert(converter, controller.params, arg)
 		methodArgs = append(methodArgs, argValue)
 	}
-	controller.method.value.Call(methodArgs)
+	rsSlice := controller.method.value.Call(methodArgs)
+	if len(rsSlice) > 0 {
+		rs := rsSlice[0]
+		if rs.Type().Kind() == reflect.String {
+			controller.render = &TextRender{Text: rs.String()}
+		} else if rs.Type().Implements(renderType) {
+			controller.render = rs.Interface().(Render)
+		}
+	}
+}
+
+func GetActionFilter(server *Server) Filter {
+	return func(controller *Controller, _ []Filter) {
+		// bind actionMethod to controller
+		controller.method = server.actions.FindAction(controller.action)
+		if controller.method == nil {
+			controller.NotFound("intenal error")
+			ERROR.Println("can't find action method by name:", controller.action)
+			return
+		}
+		ActionInvoke(server.converter, controller)
+		controller.render.Apply(controller.req, controller.resp)
+	}
 }

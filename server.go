@@ -14,16 +14,19 @@ type Server struct {
 	httpServer *http.Server
 	router     *Router
 	filters    []Filter
+	converter  *Converter
+	actions    *ActionMethods
 }
 
 type Request struct {
-	ContentType string
 	*http.Request
+	ContentType string
+	Accept      string
 }
 
 type Response struct {
+	http.ResponseWriter
 	ContentType string
-	Output      http.ResponseWriter
 }
 
 type Params struct {
@@ -40,6 +43,28 @@ func ResolveContentType(req *http.Request) string {
 		return "text/html"
 	}
 	return strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+}
+
+func ResolveAccept(req *http.Request) string {
+	accept := req.Header.Get("accept")
+
+	switch {
+	case accept == "",
+		strings.HasPrefix(accept, "*/*"), // */
+		strings.Contains(accept, "application/xhtml"),
+		strings.Contains(accept, "text/html"):
+		return "html"
+	case strings.Contains(accept, "application/xml"),
+		strings.Contains(accept, "text/xml"):
+		return "xml"
+	case strings.Contains(accept, "text/plain"):
+		return "txt"
+	case strings.Contains(accept, "application/json"),
+		strings.Contains(accept, "text/javascript"):
+		return "json"
+	}
+
+	return "html"
 }
 
 func ParseParems(params *Params, req *Request) {
@@ -94,24 +119,32 @@ func (p *Params) mergeValues() {
 	p.Values = values
 }
 
+func ParamsFilter(c *Controller, filter []Filter) {
+	ParseParems(c.params, c.req)
+	filter[0](c, filter[1:])
+}
+
 func (r *Response) WriteHeader(code int, contentType string) {
-	r.Output.WriteHeader(code)
+	r.ResponseWriter.WriteHeader(code)
 	if contentType == "" {
 		contentType = "text/html"
 	}
-	r.Output.Header().Set("Content-Type", contentType)
+	r.Header().Set("Content-Type", contentType)
 }
 
 func (r *Response) SetHeader(key, value string) {
-	r.Output.Header().Set(key, value)
+	r.Header().Set(key, value)
 }
 
 func NewRequest(r *http.Request) *Request {
-	return &Request{Request: r, ContentType: ResolveContentType(r)}
+	return &Request{Request: r,
+		ContentType: ResolveContentType(r),
+		Accept:      ResolveAccept(r),
+	}
 }
 
 func NewResponse(r http.ResponseWriter) *Response {
-	return &Response{Output: r}
+	return &Response{ResponseWriter: r}
 }
 
 func (server *Server) handler(w http.ResponseWriter, r *http.Request) {
@@ -125,13 +158,23 @@ func (server *Server) handlerInner(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) BindDefaultFilters() {
 	s.filters = []Filter{
+		RecoverFilter,
 		GetRouterFilter(s.router),
+		ParamsFilter,
+		GetActionFilter(s),
 	}
+}
+
+func (s *Server) Mapper(exp string, action interface{}, actionMethod *ActionMethod) {
+	s.router.AddRule(&Rule{Path: exp, Action: actionMethod.Name})
+	s.actions.RegisterAction(action, actionMethod)
 }
 
 func NewServer() *Server {
 	s := &Server{Addr: ":8080"}
 	s.router = NewRouter()
+	s.actions = NewActionMethods()
+	s.converter = NewConverter()
 	s.BindDefaultFilters()
 	return s
 }

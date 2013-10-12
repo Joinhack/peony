@@ -259,11 +259,12 @@ func (r *Router) AddRule(rule *Rule) error {
 
 func GetRouterFilter(router *Router) Filter {
 	return func(controller *Controller, filter []Filter) {
-		actionName, routerParams := router.Match(controller.req.Request.URL.Path)
+		actionName, routerParams := router.Match(controller.req.URL.Path)
 		if actionName == "" {
 			controller.NotFound("Not Found")
 			return
 		}
+		controller.action = actionName
 		controller.params = &Params{}
 		controller.params.Router = url.Values{}
 		for k, v := range routerParams {
