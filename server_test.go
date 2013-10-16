@@ -18,6 +18,7 @@ func text(join string) string {
 }
 
 func TestServer(t *testing.T) {
+
 	svr := NewServer()
 	svr.Mapper("/", Index, &ActionMethod{Name: "xxeem"})
 	svr.Mapper("/2", Index2, &ActionMethod{Name: "xssxeem"})
