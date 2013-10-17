@@ -1,6 +1,7 @@
 package peony
 
 import (
+	"os"
 	"reflect"
 	"testing"
 )
@@ -22,8 +23,5 @@ func TestServer(t *testing.T) {
 	svr.Mapper("/", Index, &ActionMethod{Name: "xxeem"})
 	svr.Mapper("/2", Index2, &ActionMethod{Name: "xssxeem"})
 	svr.Mapper("/<int:join>", text, &ActionMethod{Name: "xxeemw", Args: []*MethodArgType{&MethodArgType{Name: "join", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
-	//svr.Run()
-	tmpl, _ := NewTemplateLoader(".")
-	err := tmpl.load()
-	t.Log(err)
+	svr.Run()
 }
