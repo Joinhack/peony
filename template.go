@@ -10,11 +10,13 @@ import (
 )
 
 var (
-	NotDirError = errors.New("Is not a directory")
+	NotDirError     = errors.New("Is not a directory")
+	NoTemplateFound = errors.New("no template found")
 )
 
 type TemplateLoader struct {
 	template *tmpl.Template //
+	basePath string
 }
 
 func (t *TemplateLoader) skipDir(n string) bool {
@@ -32,36 +34,29 @@ func templateName(path string) string {
 	return path
 }
 
-func NewTemplateLoader() (*TemplateLoader, error) {
-	tl := &TemplateLoader{}
-	return tl, nil
-}
-
-func (t *TemplateLoader) load(base string) error {
+func NewTemplateLoader(base string) (*TemplateLoader, error) {
 	basePath, err := filepath.Abs(base)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var bPathFileInfo os.FileInfo
 	if bPathFileInfo, err = os.Stat(basePath); err != nil {
-		return err
+		return nil, err
 	}
 	if !bPathFileInfo.IsDir() {
-		return NotDirError
+		return nil, NotDirError
 	}
-	if err != nil {
-		return err
-	}
-	if t.template == nil {
-		t.template = tmpl.New("root")
-	}
-	basename := templateName(basePath)
-	template := t.template.Lookup(basename)
-	if template == nil {
-		template = t.template.New(basename)
-	}
+	tl := &TemplateLoader{basePath: basePath}
+	return tl, nil
+}
 
-	err = filepath.Walk(basePath, func(path string, info os.FileInfo, err error) error {
+func (t *TemplateLoader) load() error {
+	basename := templateName(t.basePath)
+	if t.template == nil {
+		t.template = tmpl.New(basename)
+	}
+	template := t.template
+	err := filepath.Walk(t.basePath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -80,7 +75,7 @@ func (t *TemplateLoader) load(base string) error {
 		if err != nil {
 			return err
 		}
-		tmplName := templateName(path[len(basePath)+1:])
+		tmplName := templateName(path[len(t.basePath)+1:])
 		_, err = template.New(tmplName).Parse(string(data))
 		if err != nil {
 			return err
@@ -93,8 +88,11 @@ func (t *TemplateLoader) load(base string) error {
 	return nil
 }
 
-func (t *TemplateLoader) Lookup(base string) *tmpl.Template {
-	basePath, _ := filepath.Abs(base)
-	template := t.template.Lookup(templateName(basePath))
-	return template
+func (t *TemplateLoader) Lookup(path string) (*tmpl.Template, error) {
+	template := t.template.Lookup(templateName(path))
+	var err = NoTemplateFound
+	if template != nil {
+		err = nil
+	}
+	return template, err
 }

@@ -1,21 +1,28 @@
 package peony
 
 import (
+	"errors"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
+)
+
+var (
+	NotAction = errors.New("action should be a func")
 )
 
 type Filter func(*Controller, []Filter)
 
 type Server struct {
-	Addr       string
-	httpServer *http.Server
-	router     *Router
-	filters    []Filter
-	converter  *Converter
-	actions    *ActionMethods
+	Addr           string
+	httpServer     *http.Server
+	router         *Router
+	filters        []Filter
+	converter      *Converter
+	actions        *ActionMethods
+	templateLoader *TemplateLoader
 }
 
 type Request struct {
@@ -125,11 +132,11 @@ func ParamsFilter(c *Controller, filter []Filter) {
 }
 
 func (r *Response) WriteHeader(code int, contentType string) {
-	r.ResponseWriter.WriteHeader(code)
 	if contentType == "" {
 		contentType = "text/html"
 	}
 	r.Header().Set("Content-Type", contentType)
+	r.ResponseWriter.WriteHeader(code)
 }
 
 func (r *Response) SetHeader(key, value string) {
@@ -152,7 +159,10 @@ func (server *Server) handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (server *Server) handlerInner(w http.ResponseWriter, r *http.Request) {
-	c := NewController(NewResponse(w), NewRequest(r))
+	c := &Controller{resp: NewResponse(w),
+		req:            NewRequest(r),
+		templateLoader: server.templateLoader,
+	}
 	server.filters[0](c, server.filters[1:])
 }
 
@@ -165,9 +175,14 @@ func (s *Server) BindDefaultFilters() {
 	}
 }
 
-func (s *Server) Mapper(exp string, action interface{}, actionMethod *ActionMethod) {
+func (s *Server) Mapper(exp string, action interface{}, actionMethod *ActionMethod) error {
+	actionType := reflect.TypeOf(action)
+	if actionType.Kind() != reflect.Func {
+		return NotAction
+	}
 	s.router.AddRule(&Rule{Path: exp, Action: actionMethod.Name})
 	s.actions.RegisterAction(action, actionMethod)
+	return nil
 }
 
 func NewServer() *Server {

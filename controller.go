@@ -7,17 +7,13 @@ import (
 )
 
 type Controller struct {
-	resp   *Response
-	req    *Request
-	method *ActionMethod
-	action string
-	params *Params
-	render Render
-}
-
-func NewController(w *Response, r *Request) *Controller {
-	c := &Controller{resp: w, req: r}
-	return c
+	resp           *Response
+	req            *Request
+	method         *ActionMethod
+	action         string
+	params         *Params
+	render         Render
+	templateLoader *TemplateLoader
 }
 
 type ActionMethod struct {
@@ -92,6 +88,6 @@ func GetActionFilter(server *Server) Filter {
 			return
 		}
 		ActionInvoke(server.converter, controller)
-		controller.render.Apply(controller.req, controller.resp)
+		controller.render.Apply(controller)
 	}
 }
