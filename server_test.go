@@ -9,15 +9,16 @@ func Index() string {
 	return "hi"
 }
 
-func Index2() Render {
+func Json() Render {
 	return NewJsonRender("hi")
 }
 
-type m struct {
+func Template() Render {
+	return NewTemplateRender(nil)
 }
 
-func (_ *m) Index3() Render {
-	return NewTemplateRender(nil)
+func Xml() Render {
+	return NewXmlRender("hi")
 }
 
 func text(join string) string {
@@ -32,10 +33,10 @@ func TestServer(t *testing.T) {
 		panic(err)
 	}
 	svr.templateLoader = loader
-	k := &m{}
 	svr.Mapper("/", Index, &ActionMethod{Name: "xxeem"})
-	svr.Mapper("/2", Index2, &ActionMethod{Name: "xssxeem"})
-	svr.Mapper("/3", k.Index3, &ActionMethod{Name: "recover.go"})
+	svr.Mapper("/json", Json, &ActionMethod{Name: "xssxeem"})
+	svr.Mapper("/template", Template, &ActionMethod{Name: "recover.go"})
+	svr.Mapper("/xml", Xml, &ActionMethod{Name: "xml"})
 	svr.Mapper("/<int:join>", text, &ActionMethod{Name: "xxeemw", Args: []*MethodArgType{&MethodArgType{Name: "join", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
 	svr.Run()
 }

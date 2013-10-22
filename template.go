@@ -20,11 +20,11 @@ type TemplateLoader struct {
 }
 
 func (t *TemplateLoader) skipDir(n string) bool {
-	return n[0] == '.'
+	return strings.HasPrefix(n, ".")
 }
 
 func (t *TemplateLoader) skipFile(n string) bool {
-	return n[0] == '.'
+	return strings.HasPrefix(n, ".")
 }
 
 func templateName(path string) string {

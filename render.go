@@ -2,6 +2,7 @@ package peony
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"net/http"
 	"reflect"
 )
@@ -25,6 +26,11 @@ type TextRender struct {
 type JsonRender struct {
 	Render
 	Json interface{}
+}
+
+type XmlRender struct {
+	Render
+	Xml interface{}
 }
 
 type TemplateRender struct {
@@ -56,6 +62,17 @@ func (j *JsonRender) Apply(c *Controller) {
 	resp.Write(rs)
 }
 
+func (r *XmlRender) Apply(c *Controller) {
+	resp := c.resp
+	bs, err := xml.Marshal(r.Xml)
+	if err != nil {
+		(&ErrorRender{Error: err}).Apply(c)
+		return
+	}
+	resp.WriteHeader(http.StatusOK, "application/xml")
+	resp.Write(bs)
+}
+
 func (r *TextRender) Apply(c *Controller) {
 	resp := c.resp
 	contentType := r.ContentType
@@ -64,18 +81,6 @@ func (r *TextRender) Apply(c *Controller) {
 	}
 	resp.WriteHeader(http.StatusOK, r.ContentType)
 	resp.Write([]byte(r.Text))
-}
-
-func NewJsonRender(json interface{}) Render {
-	return &JsonRender{Json: json}
-}
-
-func NewTemplateRender(param interface{}, names ...string) Render {
-	name := ""
-	if len(names) > 0 {
-		name = names[0]
-	}
-	return &TemplateRender{RenderParam: param, TemplateName: name}
 }
 
 func (t *TemplateRender) Apply(c *Controller) {
@@ -98,4 +103,21 @@ func (t *TemplateRender) Apply(c *Controller) {
 		//TODO parse error
 		resp.Write([]byte(err.Error()))
 	}
+}
+
+func NewJsonRender(json interface{}) Render {
+	return &JsonRender{Json: json}
+}
+
+func NewXmlRender(xml interface{}) Render {
+	return &XmlRender{Xml: xml}
+}
+
+//renderParam for is the parameter for template execute. templateName is for point the template.
+func NewTemplateRender(renderParam interface{}, templateName ...string) Render {
+	name := ""
+	if len(templateName) > 0 {
+		name = templateName[0]
+	}
+	return &TemplateRender{RenderParam: renderParam, TemplateName: name}
 }
