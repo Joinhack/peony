@@ -14,8 +14,6 @@ func TestRE(t *testing.T) {
 	t.Logf("%q\n", arg)
 }
 
-a
-
 func TestRule(t *testing.T) {
 	router := NewRouter()
 	r := &Rule{Path: "/path/12<string:oo>-<int:m>"}

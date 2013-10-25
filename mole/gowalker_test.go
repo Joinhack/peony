@@ -5,6 +5,8 @@ import (
 )
 
 func TestProcessSources(t *testing.T) {
-	ProcessSources([]string{".."})
-
+	_, err := ProcessSources([]string{"../demos/login"})
+	if err != nil {
+		t.Log("error:", err)
+	}
 }
