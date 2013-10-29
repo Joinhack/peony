@@ -1,7 +1,6 @@
 package mole
 
 import (
-	"fmt"
 	"github.com/joinhack/peony"
 	"go/ast"
 	"go/build"
@@ -15,22 +14,24 @@ import (
 )
 
 type SourceInfo struct {
-	Pkgs []PkgInfo
+	Pkgs []*PkgInfo
 }
 
 type PkgInfo struct {
 	Name       string
 	ImportPath string
+	Actions    ActionInfo
 }
 
 type ActionInfo struct {
-	RecvMethods map[string][]*MethodSpec
-	Methods     []*MethodSpec
+	Methods []*MethodExpr
 }
 
-type MethodSpec struct {
-	Name string
-	Args []*MethodArg
+type MethodExpr struct {
+	Name       string
+	ImportPath string
+	ActionName string
+	Args       []*MethodArg
 }
 
 type MethodArg struct {
@@ -138,56 +139,55 @@ func processImports(imports map[string]string, importSpecs []*ast.ImportSpec) {
 	}
 }
 
-func processAction(actionInfo *ActionInfo, imports map[string]string, funcDecl *ast.FuncDecl) {
+func processAction(actionInfo *ActionInfo, initImportPath, pkgName string, imports map[string]string, funcDecl *ast.FuncDecl) {
+
 	if !funcDecl.Name.IsExported() {
 		return
 	}
-	methodSpec := &MethodSpec{Name: funcDecl.Name.Name}
+	importPath := initImportPath
+	MethodExpr := &MethodExpr{Name: funcDecl.Name.Name, ImportPath: initImportPath}
+	MethodExpr.ImportPath = importPath
 	n := len(funcDecl.Type.Params.List)
 	if n > 0 {
-		methodSpec.Args = make([]*MethodArg, 0, n)
+		MethodExpr.Args = make([]*MethodArg, 0, n)
 	}
 	for _, param := range funcDecl.Type.Params.List {
-		//TODO package name
-		typeExpr := NewTypeExpr("", param.Type)
+		typeExpr := NewTypeExpr(pkgName, param.Type)
 		//ignore this action
 		if !typeExpr.Valid {
 			return
 		}
-		importPath := ""
 		if typeExpr.PkgName != "" {
 			var ok bool
 			importPath, ok = imports[typeExpr.PkgName]
-			if !ok {
+			if !ok && typeExpr.PkgName != pkgName {
 				log.Println("unknown package path:", typeExpr.PkgName)
+			}
+			// if importPath is not exits, I guess it's should be default importPath
+			if importPath == "" {
+				importPath = initImportPath
 			}
 		}
 		for _, name := range param.Names {
-			methodSpec.Args = append(methodSpec.Args, &MethodArg{
+			MethodExpr.Args = append(MethodExpr.Args, &MethodArg{
 				name.Name,
 				importPath,
 				typeExpr,
 			})
 		}
 	}
-	if funcDecl.Recv != nil {
-		name := actionName(funcDecl)
-		fmt.Println(name)
-		actionInfo.RecvMethods[name] = append(actionInfo.RecvMethods[name], methodSpec)
-	} else {
-		actionInfo.Methods = append(actionInfo.Methods, methodSpec)
-	}
+	MethodExpr.ActionName = actionName(funcDecl)
+	actionInfo.Methods = append(actionInfo.Methods, MethodExpr)
 }
 
-func processFile(file *ast.File) {
-	actions := &ActionInfo{}
-	actions.RecvMethods = map[string][]*MethodSpec{}
+func processFile(file *ast.File, pkgInfo *PkgInfo) {
+	actions := ActionInfo{}
 	imports := map[string]string{}
 	processImports(imports, file.Imports)
 	for _, decl := range file.Decls {
 		switch decl.(type) {
 		case *ast.FuncDecl:
-			processAction(actions, imports, decl.(*ast.FuncDecl))
+			processAction(&actions, pkgInfo.ImportPath, pkgInfo.Name, imports, decl.(*ast.FuncDecl))
 		case *ast.GenDecl:
 			genDecl := decl.(*ast.GenDecl)
 			if genDecl.Tok != token.TYPE || len(genDecl.Specs) != 1 {
@@ -199,15 +199,17 @@ func processFile(file *ast.File) {
 		}
 
 	}
-	fmt.Println(actions.RecvMethods, actions.Methods[0])
+	pkgInfo.Actions = actions
 }
 
-func processPakcgae(sInfo *SourceInfo, pkg *ast.Package) {
-	if pkg.Name == "controller" {
+func processPackage(si *SourceInfo, importPath string, pkg *ast.Package) {
+	pkgInfo := &PkgInfo{ImportPath: importPath, Name: pkg.Name}
+	if pkg.Name == "controllers" {
 		for _, file := range pkg.Files {
-			processFile(file)
+			processFile(file, pkgInfo)
 		}
 	}
+	si.Pkgs = append(si.Pkgs, pkgInfo)
 }
 
 func NewSourceInfo() *SourceInfo {
@@ -215,7 +217,25 @@ func NewSourceInfo() *SourceInfo {
 	return s
 }
 
+//analzy the inmport path
+func importPathFromPath(src string) string {
+	for _, path := range filepath.SplitList(build.Default.GOPATH) {
+		path = filepath.Join(path, "src")
+		if strings.HasPrefix(src, path) {
+			return filepath.ToSlash(src[len(path)+1:])
+		}
+	}
+	goroot := filepath.Join(build.Default.GOROOT, "src", "pkg")
+	if strings.HasPrefix(src, goroot) {
+		peony.WARN.Println("Source should in GOPATH, but found it in GOROOT")
+		return filepath.ToSlash(src[len(goroot)+1:])
+	}
+	peony.ERROR.Println("Unexpected! Code path is not in GOPATH:", src)
+	return ""
+}
+
 func ProcessSources(roots []string) (*SourceInfo, error) {
+	si := NewSourceInfo()
 	for _, root := range roots {
 		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -261,6 +281,12 @@ func ProcessSources(roots []string) (*SourceInfo, error) {
 				}
 			}
 
+			//parse the importPath
+			importPath := importPathFromPath(root)
+			if path != root {
+				importPath = importPathFromPath(path)
+			}
+
 			//ignore the main package
 			delete(astPkgs, "main")
 			//ignore the empty package
@@ -268,10 +294,8 @@ func ProcessSources(roots []string) (*SourceInfo, error) {
 				return nil
 			}
 
-			sourceInfo := NewSourceInfo()
-
 			for _, pkg := range astPkgs {
-				processPakcgae(sourceInfo, pkg)
+				processPackage(si, importPath, pkg)
 			}
 			return nil
 		})
@@ -280,5 +304,5 @@ func ProcessSources(roots []string) (*SourceInfo, error) {
 		}
 
 	}
-	return nil, nil
+	return si, nil
 }

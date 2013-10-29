@@ -6,6 +6,7 @@ import (
 )
 
 type App struct {
+	Sources []string
 }
 
 var (

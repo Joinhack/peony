@@ -1,6 +1,8 @@
 package peony
 
 import (
+	"bytes"
+	"io"
 	"io/ioutil"
 	"strings"
 )
@@ -39,4 +41,14 @@ func ReadLines(filename string) ([]string, error) {
 		return nil, err
 	}
 	return strings.Split(string(bytes), "\n"), nil
+}
+
+type Template interface {
+	Execute(io.Writer, interface{}) error
+}
+
+func ExecuteTemplate(t Template, args interface{}) string {
+	b := bytes.Buffer{}
+	t.Execute(&b, args)
+	return b.String()
 }
