@@ -193,33 +193,34 @@ func (s *Server) mapper(tuple *UrlActionPair) error {
 	return nil
 }
 
-func (s *Server) MethodMapper(expr string, action interface{}, methodAction *MethodAction) error {
-	actionType := reflect.TypeOf(action)
+func (s *Server) MethodMapper(expr string, method interface{}, action *MethodAction) error {
+	actionType := reflect.TypeOf(method)
 	if actionType.Kind() != reflect.Func {
+		ERROR.Println("Mapper error:", NotAction)
 		return NotAction
 	}
-	methodAction.value = reflect.ValueOf(action)
-	if err := s.mapper(&UrlActionPair{expr, methodAction}); err != nil {
-		return err
-	}
-	return nil
+	action.value = reflect.ValueOf(method)
+	return s.mapper(&UrlActionPair{expr, action})
 }
 
-func (s *Server) TypeMapper(typ interface{}, params []*UrlActionPair) error {
-	typType := reflect.TypeOf(typ)
-	for _, tuple := range params {
-		var ok bool
-		var typeAction *TypeAction
-		if typeAction, ok = tuple.Action.(*TypeAction); !ok {
-			return ShouldTypeAction
-		}
-		if _, ok = typType.MethodByName(typeAction.MethodName); !ok {
-			return NoSuchMethod
-		}
-		typeAction.RecvType = typType.Elem()
-		if err := s.mapper(tuple); err != nil {
-			return err
-		}
+func (s *Server) TypeMapper(expr string, recv interface{}, action *TypeAction) error {
+	//every time I get typeof recv, because they are the same, so don't worry.
+	recvType := reflect.TypeOf(recv)
+	var ok bool
+	if _, ok = recvType.MethodByName(action.MethodName); !ok {
+		ERROR.Println("Mapper error:", NoSuchMethod)
+		return NoSuchMethod
+	}
+	action.RecvType = recvType.Elem()
+	return s.mapper(&UrlActionPair{expr, action})
+}
+
+func (s *Server) Mapper(expr string, i interface{}, a Action) error {
+	switch action := a.(type) {
+	case *MethodAction:
+		return s.MethodMapper(expr, i, action)
+	case *TypeAction:
+		return s.TypeMapper(expr, i, action)
 	}
 	return nil
 }

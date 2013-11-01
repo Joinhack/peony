@@ -125,7 +125,12 @@ func main() {
 	app.BindAddr = *bindAddr
 	svr := app.NewServer()
 	{{range $idx, $action := $.actions }}
-	svr.Mapper("/", {{index $.importPaths .ImportPath}}{{if .RecvName}}.{{.RecvName}}{{end}}.{{.Name}})
+	{{if .RecvName}}
+	svr.Mapper("/", (*{{index $.importPaths .ImportPath}}.{{.RecvName}})(nil), &peony.TypeAction{Name:"{{.RecvName}}.{{.Name}}"})
+	{{else}}
+	svr.Mapper("/", {{index $.importPaths .ImportPath}}.{{.Name}}, &peony.MethodAction{Name:"{{.Name}}"})
+	{{end}}
+	
 	{{end}}
 	svr.Run()
 }
