@@ -264,7 +264,7 @@ func GetRouterFilter(router *Router) Filter {
 			controller.NotFound("Not Found")
 			return
 		}
-		controller.action = actionName
+		controller.actionName = actionName
 		controller.params = &Params{}
 		controller.params.Router = url.Values{}
 		for k, v := range routerParams {

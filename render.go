@@ -90,7 +90,7 @@ func (t *TemplateRender) Apply(c *Controller) {
 	tmplName := t.TemplateName
 	//if user choose a template, use the choosed, esle use the default rule for find tempate
 	if tmplName == "" {
-		tmplName = c.action
+		tmplName = c.actionName
 	}
 	template, err := templateLoader.Lookup(tmplName)
 	if err != nil {
@@ -111,6 +111,10 @@ func NewJsonRender(json interface{}) Render {
 
 func NewXmlRender(xml interface{}) Render {
 	return &XmlRender{Xml: xml}
+}
+
+func NewTextRender(s string) Render {
+	return &TextRender{Text: s}
 }
 
 //renderParam for is the parameter for template execute. templateName is for point the template.

@@ -3,8 +3,10 @@ package mole
 import (
 	"fmt"
 	"github.com/joinhack/peony"
+	"go/format"
 	"log"
 	"os"
+	"path"
 	"text/template"
 )
 
@@ -25,8 +27,8 @@ func getAlais(si *SourceInfo) map[string]string {
 		if !contains(alias[pkg.Name], pkg.ImportPath) {
 			alias[pkg.Name] = append(alias[pkg.Name], pkg.ImportPath)
 		}
-		for _, method := range pkg.Actions.Methods {
-			for _, arg := range method.Args {
+		for _, action := range pkg.Actions {
+			for _, arg := range action.Args {
 				if !contains(alias[arg.Expr.PkgName], arg.ImportPath) {
 					alias[arg.Expr.PkgName] = append(alias[arg.Expr.PkgName], arg.ImportPath)
 				}
@@ -36,10 +38,7 @@ func getAlais(si *SourceInfo) map[string]string {
 
 	for aliasName, importPaths := range alias {
 		for idx, importPath := range importPaths {
-			name := aliasName
-			if idx > 0 {
-				name = fmt.Sprintf("%s%d", aliasName, idx)
-			}
+			name := fmt.Sprintf("%s%d", aliasName, idx)
 			rs[importPath] = name
 		}
 	}
@@ -48,12 +47,21 @@ func getAlais(si *SourceInfo) map[string]string {
 }
 
 func Build(app *peony.App) error {
-	// si, err := ProcessSources(app.Sources)
-	// if err != nil {
-	// 	return err
-	// }
-	// //alias := getAlais(si)
+	si, err := ProcessSources(app.CodePaths)
+	if err != nil {
+		return err
+	}
+	actions := []*ActionInfo{}
 
+	for _, pkg := range si.Pkgs {
+		actions = append(actions, pkg.Actions...)
+	}
+
+	args := map[string]interface{}{
+		"importPaths": getAlais(si),
+		"actions":     actions,
+	}
+	genSource(path.Join(app.AppPath, "tmp"), "main.go", MAIN, args)
 	return nil
 }
 
@@ -71,17 +79,26 @@ func genSource(dir, filename, tpl string, args map[string]interface{}) {
 		log.Fatalln("Not dir, shoul be a dir.")
 		return
 	}
-
+	filepath := path.Join(dir, filename)
+	os.Remove(filepath)
 	var file *os.File
-	file, err = os.Open(dir + string(os.PathSeparator) + filename)
+	file, err = os.Create(filepath)
+
 	if err != nil {
 		log.Fatalln("Open file error:", err)
 		return
 	}
 	defer file.Close()
+	var codeBytes []byte
+	codeBytes, err = format.Source([]byte(code))
+	if err != nil {
+		log.Fatalln("Source format eror:", err, code)
+		return
+	}
+	code = string(codeBytes)
 	_, err = file.WriteString(code)
 	if err != nil {
-		log.Fatalln("write source eror:", err)
+		log.Fatalln("Write source eror:", err)
 		return
 	}
 
@@ -91,9 +108,25 @@ var MAIN = `
 package main
 import (
 	"github.com/joinhack/peony"
+	"flag"{{range $path, $alias := $.importPaths }}
+	{{$alias}} "{{$path}}"{{end}}
+)
 
+var (
+	runMode    *string = flag.String("runMode", "", "Run mode.")
+	bindAddr   *string = flag.String("port", ":8080", "By default, read from app.conf")
+	importPath *string = flag.String("importPath", "", "Go Import Path for the app.")
+	srcPath    *string = flag.String("srcPath", "", "Path to the source root.")
 )
 
 func main() {
+	flag.Parse()
+	app := peony.NewApp(*srcPath, *importPath)
+	app.BindAddr = *bindAddr
+	svr := app.NewServer()
+	{{range $idx, $action := $.actions }}
+	svr.Mapper("/", {{index $.importPaths .ImportPath}}{{if .RecvName}}.{{.RecvName}}{{end}}.{{.Name}})
+	{{end}}
+	svr.Run()
 }
 `

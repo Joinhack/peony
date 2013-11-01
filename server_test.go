@@ -25,18 +25,25 @@ func text(join string) string {
 	return join
 }
 
+type AS struct {
+}
+
+func (a *AS) T() Render {
+	return NewTextRender("s")
+}
+
 func TestServer(t *testing.T) {
-	svr := NewServer()
+	svr := NewServer(":8080")
 	loader, err := NewTemplateLoader(".")
 	err = loader.load()
 	if err != nil {
 		panic(err)
 	}
 	svr.templateLoader = loader
-	svr.Mapper("/", Index, &ActionMethod{Name: "xxeem"})
-	svr.Mapper("/json", Json, &ActionMethod{Name: "xssxeem"})
-	svr.Mapper("/template", Template, &ActionMethod{Name: "recover.go"})
-	svr.Mapper("/xml", Xml, &ActionMethod{Name: "xml"})
-	svr.Mapper("/<int:join>", text, &ActionMethod{Name: "xxeemw", Args: []*MethodArgType{&MethodArgType{Name: "join", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
+	svr.MethodMapper("/", (*AS).T, &MethodAction{Name: "AS.T"})
+	svr.MethodMapper("/json", Json, &MethodAction{Name: "xssxeem"})
+	svr.MethodMapper("/template", Template, &MethodAction{Name: "recover.go"})
+	svr.MethodMapper("/xml", Xml, &MethodAction{Name: "xml"})
+	svr.MethodMapper("/<int:join>", text, &MethodAction{Name: "xxeemw", methodArgs: []*MethodArgType{&MethodArgType{Name: "join", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
 	svr.Run()
 }

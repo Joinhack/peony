@@ -3,10 +3,16 @@ package peony
 import (
 	"log"
 	"os"
+	"path"
 )
 
 type App struct {
-	Sources []string
+	SourcePath string
+	ImportPath string
+	CodePaths  []string
+	ViewPath   string
+	AppPath    string
+	BindAddr   string
 }
 
 var (
@@ -25,11 +31,15 @@ func init() {
 	ERROR = log.New(os.Stderr, "ERROR ", log.Ldate|log.Ltime)
 }
 
-func NewApp() *App {
-	app := &App{}
+func NewApp(sourcePath, importPath string) *App {
+	app := &App{SourcePath: sourcePath, ImportPath: importPath}
+	app.AppPath = path.Join(sourcePath, importPath, "app")
+	app.CodePaths = []string{app.AppPath}
+	app.ViewPath = path.Join(app.AppPath, "view")
 	return app
 }
 
-func (app *App) Bind(url string) {
-
+func (a *App) NewServer() *Server {
+	svr := NewServer(a.BindAddr)
+	return svr
 }

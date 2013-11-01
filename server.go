@@ -2,6 +2,7 @@ package peony
 
 import (
 	"errors"
+	//"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -21,7 +22,7 @@ type Server struct {
 	router         *Router
 	filters        []Filter
 	converter      *Converter
-	actions        *ActionMethods
+	actions        *ActionContainer
 	templateLoader *TemplateLoader
 }
 
@@ -175,20 +176,24 @@ func (s *Server) BindDefaultFilters() {
 	}
 }
 
-func (s *Server) Mapper(exp string, action interface{}, actionMethod *ActionMethod) error {
+func (s *Server) MethodMapper(exp string, action interface{}, methodAction *MethodAction) error {
 	actionType := reflect.TypeOf(action)
 	if actionType.Kind() != reflect.Func {
 		return NotAction
 	}
-	s.router.AddRule(&Rule{Path: exp, Action: actionMethod.Name})
-	s.actions.RegisterAction(action, actionMethod)
+	s.router.AddRule(&Rule{Path: exp, Action: methodAction.Name})
+	s.actions.RegisterMethodAction(action, methodAction)
 	return nil
 }
 
-func NewServer() *Server {
-	s := &Server{Addr: ":8080"}
+func ControllerMapper(exp string, controller interface{}, methodAction []*MethodAction) {
+
+}
+
+func NewServer(addr string) *Server {
+	s := &Server{Addr: addr}
 	s.router = NewRouter()
-	s.actions = NewActionMethods()
+	s.actions = NewActionContainer()
 	s.converter = NewConverter()
 	s.BindDefaultFilters()
 	return s

@@ -9,17 +9,31 @@ import (
 type Controller struct {
 	resp           *Response
 	req            *Request
-	method         *ActionMethod
-	action         string
+	actionName     string
+	action         Action
 	params         *Params
 	render         Render
 	templateLoader *TemplateLoader
 }
 
-type ActionMethod struct {
-	Name  string        //action name
-	value reflect.Value //method
-	Args  []*MethodArgType
+type Action interface {
+	Args() []*MethodArgType
+	Call([]reflect.Value) []reflect.Value
+}
+
+type MethodAction struct {
+	Name       string
+	MethodName string
+	value      reflect.Value
+	methodArgs []*MethodArgType
+}
+
+func (m *MethodAction) Args() []*MethodArgType {
+	return m.methodArgs
+}
+
+func (m *MethodAction) Call(in []reflect.Value) []reflect.Value {
+	return m.value.Call(in)
 }
 
 type MethodArgType struct {
@@ -27,28 +41,28 @@ type MethodArgType struct {
 	Type reflect.Type
 }
 
-type ActionMethods struct {
-	actions map[string]*ActionMethod
+type ActionContainer struct {
+	methodActions map[string]Action
 }
 
-func NewActionMethods() *ActionMethods {
-	actions := &ActionMethods{actions: make(map[string]*ActionMethod, 0)}
+func NewActionContainer() *ActionContainer {
+	actions := &ActionContainer{methodActions: make(map[string]Action, 0)}
 	return actions
 }
 
-func (a *ActionMethods) FindAction(name string) *ActionMethod {
-	return a.actions[name]
+func (a *ActionContainer) FindAction(name string) Action {
+	return a.methodActions[name]
 }
 
-func (a *ActionMethods) RegisterAction(action interface{}, method *ActionMethod) error {
+func (a *ActionContainer) RegisterMethodAction(action interface{}, method *MethodAction) error {
 	if reflect.TypeOf(action).Kind() != reflect.Func {
 		return errors.New("action should be method")
 	}
-	if a.actions[method.Name] != nil {
+	if a.methodActions[method.Name] != nil {
 		return errors.New("Action already exist")
 	}
 	method.value = reflect.ValueOf(action)
-	a.actions[method.Name] = method
+	a.methodActions[method.Name] = method
 	return nil
 }
 
@@ -62,12 +76,13 @@ func (a *Controller) NotFound(msg string, args ...interface{}) {
 }
 
 func ActionInvoke(converter *Converter, controller *Controller) {
-	methodArgs := make([]reflect.Value, 0, len(controller.method.Args))
-	for _, arg := range controller.method.Args {
+	args := controller.action.Args()
+	methodArgs := make([]reflect.Value, 0, len(args))
+	for _, arg := range args {
 		argValue := ArgConvert(converter, controller.params, arg)
 		methodArgs = append(methodArgs, argValue)
 	}
-	rsSlice := controller.method.value.Call(methodArgs)
+	rsSlice := controller.action.Call(methodArgs)
 	if len(rsSlice) > 0 {
 		rs := rsSlice[0]
 		if rs.Type().Kind() == reflect.String {
@@ -81,10 +96,10 @@ func ActionInvoke(converter *Converter, controller *Controller) {
 func GetActionFilter(server *Server) Filter {
 	return func(controller *Controller, _ []Filter) {
 		// bind actionMethod to controller
-		controller.method = server.actions.FindAction(controller.action)
-		if controller.method == nil {
+		controller.action = server.actions.FindAction(controller.actionName)
+		if controller.action == nil {
 			controller.NotFound("intenal error")
-			ERROR.Println("can't find action method by name:", controller.action)
+			ERROR.Println("can't find action method by name:", controller.actionName)
 			return
 		}
 		ActionInvoke(server.converter, controller)

@@ -17,12 +17,12 @@ func (s *S) A() string {
 }
 
 func TestRegister(t *testing.T) {
-	actions := NewActionMethods()
-	actions.RegisterAction(A, &ActionMethod{Name: "xxee"})
-	actions.RegisterAction((&S{}).A, &ActionMethod{Name: "xxeem"})
+	actions := NewActionContainer()
+	actions.RegisterMethodAction(A, &MethodAction{Name: "xxee"})
+	actions.RegisterMethodAction((&S{}).A, &MethodAction{Name: "xxeem"})
 	var methodArgs []reflect.Value
 	action := actions.FindAction("xxee")
-	t.Log(action.value.Call(methodArgs))
+	t.Log(action.Call(methodArgs))
 	action = actions.FindAction("xxeem")
-	t.Log(action.value.Call(methodArgs))
+	t.Log(action.Call(methodArgs))
 }

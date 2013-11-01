@@ -43,11 +43,11 @@ func ReadLines(filename string) ([]string, error) {
 	return strings.Split(string(bytes), "\n"), nil
 }
 
-type Template interface {
+type template interface {
 	Execute(io.Writer, interface{}) error
 }
 
-func ExecuteTemplate(t Template, args interface{}) string {
+func ExecuteTemplate(t template, args interface{}) string {
 	b := bytes.Buffer{}
 	t.Execute(&b, args)
 	return b.String()

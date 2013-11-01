@@ -20,18 +20,19 @@ type SourceInfo struct {
 type PkgInfo struct {
 	Name       string
 	ImportPath string
-	Actions    ActionInfo
+	Actions    []*ActionInfo
 }
 
 type ActionInfo struct {
-	Methods []*MethodExpr
-}
-
-type MethodExpr struct {
-	Name       string
+	MethodSpec
 	ImportPath string
 	ActionName string
-	Args       []*MethodArg
+}
+
+type MethodSpec struct {
+	Name     string
+	RecvName string
+	Args     []*MethodArg
 }
 
 type MethodArg struct {
@@ -46,8 +47,10 @@ type TypeExpr struct {
 	Valid   bool
 }
 
-func actionName(funcDecl *ast.FuncDecl) string {
-	prefix := ""
+//return recv name and action name
+func actionName(funcDecl *ast.FuncDecl) (string, string) {
+	var recvName string
+	var prefix string
 	methodName := funcDecl.Name.Name
 	if funcDecl.Recv != nil {
 		typ := funcDecl.Recv.List[0].Type
@@ -57,9 +60,10 @@ func actionName(funcDecl *ast.FuncDecl) string {
 		} else {
 			prefix = typ.(*ast.Ident).Name
 		}
+		recvName = prefix
 		prefix += "."
 	}
-	return prefix + methodName
+	return recvName, prefix + methodName
 }
 
 var _BUILTIN_TYPES = map[string]struct{}{
@@ -139,20 +143,20 @@ func processImports(imports map[string]string, importSpecs []*ast.ImportSpec) {
 	}
 }
 
-func processAction(actionInfo *ActionInfo, initImportPath, pkgName string, imports map[string]string, funcDecl *ast.FuncDecl) {
+func processAction(pkgInfo *PkgInfo, imports map[string]string, funcDecl *ast.FuncDecl) {
 
 	if !funcDecl.Name.IsExported() {
 		return
 	}
-	importPath := initImportPath
-	MethodExpr := &MethodExpr{Name: funcDecl.Name.Name, ImportPath: initImportPath}
-	MethodExpr.ImportPath = importPath
+	importPath := pkgInfo.ImportPath
+	actionInfo := &ActionInfo{ImportPath: importPath}
+	actionInfo.Name = funcDecl.Name.Name
 	n := len(funcDecl.Type.Params.List)
 	if n > 0 {
-		MethodExpr.Args = make([]*MethodArg, 0, n)
+		actionInfo.Args = make([]*MethodArg, 0, n)
 	}
 	for _, param := range funcDecl.Type.Params.List {
-		typeExpr := NewTypeExpr(pkgName, param.Type)
+		typeExpr := NewTypeExpr(pkgInfo.Name, param.Type)
 		//ignore this action
 		if !typeExpr.Valid {
 			return
@@ -160,34 +164,34 @@ func processAction(actionInfo *ActionInfo, initImportPath, pkgName string, impor
 		if typeExpr.PkgName != "" {
 			var ok bool
 			importPath, ok = imports[typeExpr.PkgName]
-			if !ok && typeExpr.PkgName != pkgName {
+			if !ok && typeExpr.PkgName != pkgInfo.Name {
 				log.Println("unknown package path:", typeExpr.PkgName)
 			}
 			// if importPath is not exits, I guess it's should be default importPath
 			if importPath == "" {
-				importPath = initImportPath
+				importPath = pkgInfo.ImportPath
 			}
 		}
 		for _, name := range param.Names {
-			MethodExpr.Args = append(MethodExpr.Args, &MethodArg{
+			actionInfo.Args = append(actionInfo.Args, &MethodArg{
 				name.Name,
 				importPath,
 				typeExpr,
 			})
 		}
 	}
-	MethodExpr.ActionName = actionName(funcDecl)
-	actionInfo.Methods = append(actionInfo.Methods, MethodExpr)
+	actionInfo.RecvName, actionInfo.ActionName = actionName(funcDecl)
+	pkgInfo.Actions = append(pkgInfo.Actions, actionInfo)
+	//actionInfo.Methods = append(actionInfo.Methods, methodSpec)
 }
 
 func processFile(file *ast.File, pkgInfo *PkgInfo) {
-	actions := ActionInfo{}
 	imports := map[string]string{}
 	processImports(imports, file.Imports)
 	for _, decl := range file.Decls {
 		switch decl.(type) {
 		case *ast.FuncDecl:
-			processAction(&actions, pkgInfo.ImportPath, pkgInfo.Name, imports, decl.(*ast.FuncDecl))
+			processAction(pkgInfo, imports, decl.(*ast.FuncDecl))
 		case *ast.GenDecl:
 			genDecl := decl.(*ast.GenDecl)
 			if genDecl.Tok != token.TYPE || len(genDecl.Specs) != 1 {
@@ -199,7 +203,6 @@ func processFile(file *ast.File, pkgInfo *PkgInfo) {
 		}
 
 	}
-	pkgInfo.Actions = actions
 }
 
 func processPackage(si *SourceInfo, importPath string, pkg *ast.Package) {
@@ -279,6 +282,7 @@ func ProcessSources(roots []string) (*SourceInfo, error) {
 					}
 					return rerrList
 				}
+				ast.Print(nil, err)
 			}
 
 			//parse the importPath
