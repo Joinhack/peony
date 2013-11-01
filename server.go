@@ -11,7 +11,10 @@ import (
 )
 
 var (
-	NotAction = errors.New("action should be a func")
+	NotAction        = errors.New("action should be a func")
+	ActionExist      = errors.New("Action already exist")
+	NoSuchMethod     = errors.New("No Such method")
+	ShouldTypeAction = errors.New("Action should be TypeAction")
 )
 
 type Filter func(*Controller, []Filter)
@@ -176,18 +179,49 @@ func (s *Server) BindDefaultFilters() {
 	}
 }
 
-func (s *Server) MethodMapper(exp string, action interface{}, methodAction *MethodAction) error {
+type UrlActionPair struct {
+	Expr   string
+	Action Action
+}
+
+func (s *Server) mapper(tuple *UrlActionPair) error {
+	if s.actions.FindAction(tuple.Action.GetName()) != nil {
+		return ActionExist
+	}
+	s.router.AddRule(&Rule{Path: tuple.Expr, Action: tuple.Action.GetName()})
+	s.actions.RegisterAction(tuple.Action)
+	return nil
+}
+
+func (s *Server) MethodMapper(expr string, action interface{}, methodAction *MethodAction) error {
 	actionType := reflect.TypeOf(action)
 	if actionType.Kind() != reflect.Func {
 		return NotAction
 	}
-	s.router.AddRule(&Rule{Path: exp, Action: methodAction.Name})
-	s.actions.RegisterMethodAction(action, methodAction)
+	methodAction.value = reflect.ValueOf(action)
+	if err := s.mapper(&UrlActionPair{expr, methodAction}); err != nil {
+		return err
+	}
 	return nil
 }
 
-func ControllerMapper(exp string, controller interface{}, methodAction []*MethodAction) {
-
+func (s *Server) TypeMapper(typ interface{}, params []*UrlActionPair) error {
+	typType := reflect.TypeOf(typ)
+	for _, tuple := range params {
+		var ok bool
+		var typeAction *TypeAction
+		if typeAction, ok = tuple.Action.(*TypeAction); !ok {
+			return ShouldTypeAction
+		}
+		if _, ok = typType.MethodByName(typeAction.MethodName); !ok {
+			return NoSuchMethod
+		}
+		typeAction.RecvType = typType.Elem()
+		if err := s.mapper(tuple); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func NewServer(addr string) *Server {

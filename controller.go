@@ -1,7 +1,6 @@
 package peony
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 )
@@ -17,15 +16,40 @@ type Controller struct {
 }
 
 type Action interface {
+	GetName() string
 	Args() []*MethodArgType
 	Call([]reflect.Value) []reflect.Value
 }
 
 type MethodAction struct {
 	Name       string
-	MethodName string
 	value      reflect.Value
 	methodArgs []*MethodArgType
+}
+
+type TypeAction struct {
+	Name       string
+	RecvType   reflect.Type
+	MethodName string
+	methodArgs []*MethodArgType
+}
+
+func (t *TypeAction) GetName() string {
+	return t.Name
+}
+
+func (t *TypeAction) Args() []*MethodArgType {
+	return t.methodArgs
+}
+
+func (t *TypeAction) Call(in []reflect.Value) []reflect.Value {
+	value := reflect.New(t.RecvType)
+	method := value.MethodByName(t.MethodName)
+	return method.Call(in)
+}
+
+func (m *MethodAction) GetName() string {
+	return m.Name
 }
 
 func (m *MethodAction) Args() []*MethodArgType {
@@ -54,25 +78,17 @@ func (a *ActionContainer) FindAction(name string) Action {
 	return a.methodActions[name]
 }
 
-func (a *ActionContainer) RegisterMethodAction(action interface{}, method *MethodAction) error {
-	if reflect.TypeOf(action).Kind() != reflect.Func {
-		return errors.New("action should be method")
-	}
-	if a.methodActions[method.Name] != nil {
-		return errors.New("Action already exist")
-	}
-	method.value = reflect.ValueOf(action)
-	a.methodActions[method.Name] = method
-	return nil
+func (a *ActionContainer) RegisterAction(action Action) {
+	a.methodActions[action.GetName()] = action
 }
 
-func (a *Controller) NotFound(msg string, args ...interface{}) {
-	a.resp.WriteHeader(404, "text/html")
+func (c *Controller) NotFound(msg string, args ...interface{}) {
+	c.resp.WriteHeader(404, "text/html")
 	text := msg
 	if len(args) > 0 {
 		text = fmt.Sprintf(msg, args)
 	}
-	a.resp.Write([]byte(text))
+	c.resp.Write([]byte(text))
 }
 
 func ActionInvoke(converter *Converter, controller *Controller) {
