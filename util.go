@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"log"
 	"strings"
 )
 
@@ -49,6 +50,9 @@ type template interface {
 
 func ExecuteTemplate(t template, args interface{}) string {
 	b := bytes.Buffer{}
-	t.Execute(&b, args)
+	err := t.Execute(&b, args)
+	if err != nil {
+		log.Println(err)
+	}
 	return b.String()
 }

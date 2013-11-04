@@ -1,6 +1,7 @@
 package mole
 
 import (
+	"fmt"
 	"github.com/joinhack/peony"
 	"go/ast"
 	"go/build"
@@ -10,8 +11,66 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
+
+type CodeGen interface {
+	Generate(appName, serverName string, alias map[string]string) string
+	BuildAlias(alias map[string][]string)
+}
+
+type CodeGenCreater func(comment string, spec CodeGenSpec) (bool, CodeGen)
+
+type MapperCommentCodeGen struct {
+	UrlExpr    string
+	ActionInfo *ActionInfo
+}
+
+func (m *MapperCommentCodeGen) Generate(appName, serverName string, alias map[string]string) string {
+	pkgName := alias[m.ActionInfo.ImportPath]
+	var code string
+	info := m.ActionInfo
+	argsList := []string{}
+	for _, arg := range m.ActionInfo.Args {
+		argsList = append(argsList, fmt.Sprintf("&peony.MethodArgType{Name:%s, Type:reflect.Typeof(%s)}", arg.Name, arg.Expr))
+		println(fmt.Sprintf("&peony.MethodArgType{Name:%s, Type:%s}", arg.Name, arg.TypeExpr(alias)))
+	}
+	if info.RecvName == "" {
+		code = fmt.Sprintf("\t%s.Mapper(\"%s\", %s.%s, &peony.MethodAction{Name:\"%s\"})\n", serverName, m.UrlExpr, pkgName, info.MethodSpec.Name, info.ActionName)
+	} else {
+		code = fmt.Sprintf("\t%s.Mapper(\"%s\", (*%s.%s)(nil), &peony.TypeAction{Name: \"%s\", MethodName: \"%s\"})\n", serverName, m.UrlExpr, pkgName, m.ActionInfo.RecvName, info.ActionName, info.Name)
+	}
+	return code
+}
+
+func (m *MapperCommentCodeGen) BuildAlias(alias map[string][]string) {
+	m.ActionInfo.BuildAlias(alias)
+}
+
+var (
+	CodeGenCreaters = []CodeGenCreater{}
+	MapperRegexp    = regexp.MustCompile("@Mapper\\(\"(?P<UrlExpr>.*)\"\\)")
+)
+
+func RegisterCodeGenCreater(builder CodeGenCreater) {
+	CodeGenCreaters = append(CodeGenCreaters, builder)
+}
+
+func init() {
+	RegisterCodeGenCreater(MapperCommentCodeGenCreater)
+}
+
+func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (bool, CodeGen) {
+	if actionInfo, ok := spec.(*ActionInfo); ok {
+		expr := MapperRegexp.FindStringSubmatch(comment)
+		if expr == nil {
+			return false, nil
+		}
+		return true, &MapperCommentCodeGen{expr[1], actionInfo}
+	}
+	return false, nil
+}
 
 type SourceInfo struct {
 	Pkgs []*PkgInfo
@@ -20,13 +79,27 @@ type SourceInfo struct {
 type PkgInfo struct {
 	Name       string
 	ImportPath string
-	Actions    []*ActionInfo
+	CodeGens   []CodeGen
+}
+
+type CodeGenSpec interface {
+	BuildAlias(map[string][]string)
 }
 
 type ActionInfo struct {
+	CodeGenSpec
 	MethodSpec
 	ImportPath string
 	ActionName string
+}
+
+func (a *ActionInfo) BuildAlias(alias map[string][]string) {
+	for _, arg := range a.Args {
+		fmt.Println(arg.Expr.PkgName, arg.ImportPath)
+		if !contains(alias[arg.Expr.PkgName], arg.ImportPath) {
+			alias[arg.Expr.PkgName] = append(alias[arg.Expr.PkgName], arg.ImportPath)
+		}
+	}
 }
 
 type MethodSpec struct {
@@ -44,7 +117,25 @@ type MethodArg struct {
 type TypeExpr struct {
 	Expr    string
 	PkgName string
+	PkgIdx  int
 	Valid   bool
+}
+
+func (m *MethodArg) TypeExpr(alias map[string]string) string {
+	isPtr := strings.HasPrefix(m.Expr.Expr, "*")
+	if pkgName, ok := alias[m.ImportPath]; ok {
+		if isPtr {
+			return fmt.Sprintf("reflect.Typeof((%s%s.%s)(nil))", m.Expr.Expr[:m.Expr.PkgIdx], pkgName, m.Expr.Expr[m.Expr.PkgIdx:])
+		} else {
+			return fmt.Sprintf("reflect.Typeof((*%s%s.%s)(nil)).Elem()", m.Expr.Expr[:m.Expr.PkgIdx], pkgName, m.Expr.Expr[m.Expr.PkgIdx:])
+		}
+	} else {
+		if isPtr {
+			return fmt.Sprintf("reflect.Typeof((%s)(nil))", m.Expr.Expr)
+		} else {
+			return fmt.Sprintf("reflect.Typeof((*%s)(nil).Elem())", m.Expr.Expr)
+		}
+	}
 }
 
 //return recv name and action name
@@ -100,19 +191,19 @@ func NewTypeExpr(pkgName string, expr ast.Expr) TypeExpr {
 		if IsBultinType(t.Name) {
 			pkgName = ""
 		}
-		return TypeExpr{t.Name, pkgName, true}
+		return TypeExpr{t.Name, pkgName, 0, true}
 	case *ast.SelectorExpr:
 		e := NewTypeExpr(pkgName, t.X)
-		return TypeExpr{t.Sel.Name, e.Expr, e.Valid}
+		return TypeExpr{t.Sel.Name, e.Expr, e.PkgIdx, e.Valid}
 	case *ast.StarExpr:
 		e := NewTypeExpr(pkgName, t.X)
-		return TypeExpr{"*" + e.Expr, e.PkgName, e.Valid}
+		return TypeExpr{"*" + e.Expr, e.PkgName, e.PkgIdx + 1, e.Valid}
 	case *ast.ArrayType:
 		e := NewTypeExpr(pkgName, t.Elt)
-		return TypeExpr{"[]" + e.Expr, e.PkgName, e.Valid}
+		return TypeExpr{"[]" + e.Expr, e.PkgName, e.PkgIdx + 2, e.Valid}
 	case *ast.Ellipsis:
 		e := NewTypeExpr(pkgName, t.Elt)
-		return TypeExpr{"[]" + e.Expr, e.PkgName, e.Valid}
+		return TypeExpr{"[]" + e.Expr, e.PkgName, e.PkgIdx + 3, e.Valid}
 	default:
 		log.Println("Failed to generate name for field.")
 		ast.Print(nil, expr)
@@ -172,6 +263,18 @@ func processAction(pkgInfo *PkgInfo, imports map[string]string, funcDecl *ast.Fu
 				importPath = pkgInfo.ImportPath
 			}
 		}
+		if funcDecl.Doc != nil && len(funcDecl.Doc.List) > 0 {
+			for _, comment := range funcDecl.Doc.List {
+				if comment.Text[:2] == "//" {
+					content := strings.TrimSpace(comment.Text[2:])
+					for _, codeGenCreater := range CodeGenCreaters {
+						if ok, codeGen := codeGenCreater(content, actionInfo); ok {
+							pkgInfo.CodeGens = append(pkgInfo.CodeGens, codeGen)
+						}
+					}
+				}
+			}
+		}
 		for _, name := range param.Names {
 			actionInfo.Args = append(actionInfo.Args, &MethodArg{
 				name.Name,
@@ -181,7 +284,7 @@ func processAction(pkgInfo *PkgInfo, imports map[string]string, funcDecl *ast.Fu
 		}
 	}
 	actionInfo.RecvName, actionInfo.ActionName = actionName(funcDecl)
-	pkgInfo.Actions = append(pkgInfo.Actions, actionInfo)
+
 	//actionInfo.Methods = append(actionInfo.Methods, methodSpec)
 }
 
@@ -201,7 +304,6 @@ func processFile(file *ast.File, pkgInfo *PkgInfo) {
 			//var typeSpec *ast.TypeSpec
 			//typeSpec = spec.(*ast.TypeSpec)
 		}
-
 	}
 }
 
@@ -255,7 +357,7 @@ func ProcessSources(roots []string) (*SourceInfo, error) {
 			astPkgs, err := parser.ParseDir(fileSet, path, func(info os.FileInfo) bool {
 				name := info.Name()
 				return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
-			}, 0)
+			}, parser.ParseComments)
 
 			if err != nil {
 				//err is ErrorList

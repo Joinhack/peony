@@ -3,7 +3,6 @@ package mole
 import (
 	"fmt"
 	"github.com/joinhack/peony"
-	"go/format"
 	"log"
 	"os"
 	"path"
@@ -27,12 +26,8 @@ func getAlais(si *SourceInfo) map[string]string {
 		if !contains(alias[pkg.Name], pkg.ImportPath) {
 			alias[pkg.Name] = append(alias[pkg.Name], pkg.ImportPath)
 		}
-		for _, action := range pkg.Actions {
-			for _, arg := range action.Args {
-				if !contains(alias[arg.Expr.PkgName], arg.ImportPath) {
-					alias[arg.Expr.PkgName] = append(alias[arg.Expr.PkgName], arg.ImportPath)
-				}
-			}
+		for _, codeGen := range pkg.CodeGens {
+			codeGen.BuildAlias(alias)
 		}
 	}
 
@@ -51,15 +46,15 @@ func Build(app *peony.App) error {
 	if err != nil {
 		return err
 	}
-	actions := []*ActionInfo{}
+	codeGens := []CodeGen{}
 
 	for _, pkg := range si.Pkgs {
-		actions = append(actions, pkg.Actions...)
+		codeGens = append(codeGens, pkg.CodeGens...)
 	}
 
 	args := map[string]interface{}{
 		"importPaths": getAlais(si),
-		"actions":     actions,
+		"codeGens":    codeGens,
 	}
 	genSource(path.Join(app.AppPath, "tmp"), "main.go", MAIN, args)
 	return nil
@@ -89,13 +84,6 @@ func genSource(dir, filename, tpl string, args map[string]interface{}) {
 		return
 	}
 	defer file.Close()
-	var codeBytes []byte
-	codeBytes, err = format.Source([]byte(code))
-	if err != nil {
-		log.Fatalln("Source format eror:", err, code)
-		return
-	}
-	code = string(codeBytes)
 	_, err = file.WriteString(code)
 	if err != nil {
 		log.Fatalln("Write source eror:", err)
@@ -124,14 +112,9 @@ func main() {
 	app := peony.NewApp(*srcPath, *importPath)
 	app.BindAddr = *bindAddr
 	svr := app.NewServer()
-	{{range $idx, $action := $.actions }}
-	{{if .RecvName}}
-	svr.Mapper("/", (*{{index $.importPaths .ImportPath}}.{{.RecvName}})(nil), &peony.TypeAction{Name:"{{.RecvName}}.{{.Name}}"})
-	{{else}}
-	svr.Mapper("/", {{index $.importPaths .ImportPath}}.{{.Name}}, &peony.MethodAction{Name:"{{.Name}}"})
-	{{end}}
-	
-	{{end}}
+
+{{range $idx, $codeGen := $.codeGens }}{{$codeGen.Generate "app" "svr" $.importPaths}}{{end}}
+
 	svr.Run()
 }
 `
