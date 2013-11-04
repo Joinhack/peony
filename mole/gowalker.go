@@ -255,24 +255,24 @@ func processAction(pkgInfo *PkgInfo, imports map[string]string, funcDecl *ast.Fu
 		if !typeExpr.Valid {
 			return
 		}
-		if funcDecl.Doc != nil && len(funcDecl.Doc.List) > 0 {
-			for _, comment := range funcDecl.Doc.List {
-				if comment.Text[:2] == "//" {
-					content := strings.TrimSpace(comment.Text[2:])
-					for _, codeGenCreater := range CodeGenCreaters {
-						if ok, codeGen := codeGenCreater(content, actionInfo); ok {
-							pkgInfo.CodeGens = append(pkgInfo.CodeGens, codeGen)
-						}
-					}
-				}
-			}
-		}
 		for _, name := range param.Names {
 			actionInfo.Args = append(actionInfo.Args, &MethodArg{
 				name.Name,
 				importPath,
 				typeExpr,
 			})
+		}
+	}
+	if funcDecl.Doc != nil && len(funcDecl.Doc.List) > 0 {
+		for _, comment := range funcDecl.Doc.List {
+			if comment.Text[:2] == "//" {
+				content := strings.TrimSpace(comment.Text[2:])
+				for _, codeGenCreater := range CodeGenCreaters {
+					if ok, codeGen := codeGenCreater(content, actionInfo); ok {
+						pkgInfo.CodeGens = append(pkgInfo.CodeGens, codeGen)
+					}
+				}
+			}
 		}
 	}
 	actionInfo.RecvName, actionInfo.ActionName = actionName(funcDecl)
