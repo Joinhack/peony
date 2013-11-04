@@ -24,14 +24,14 @@ type Action interface {
 type MethodAction struct {
 	Name       string
 	value      reflect.Value
-	methodArgs []*MethodArgType
+	MethodArgs []*MethodArgType
 }
 
 type TypeAction struct {
 	Name       string
 	RecvType   reflect.Type
 	MethodName string
-	methodArgs []*MethodArgType
+	MethodArgs []*MethodArgType
 }
 
 func (t *TypeAction) GetName() string {
@@ -39,7 +39,7 @@ func (t *TypeAction) GetName() string {
 }
 
 func (t *TypeAction) Args() []*MethodArgType {
-	return t.methodArgs
+	return t.MethodArgs
 }
 
 func (t *TypeAction) Call(in []reflect.Value) []reflect.Value {
@@ -53,7 +53,7 @@ func (m *MethodAction) GetName() string {
 }
 
 func (m *MethodAction) Args() []*MethodArgType {
-	return m.methodArgs
+	return m.MethodArgs
 }
 
 func (m *MethodAction) Call(in []reflect.Value) []reflect.Value {

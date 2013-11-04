@@ -33,13 +33,16 @@ func (m *MapperCommentCodeGen) Generate(appName, serverName string, alias map[st
 	info := m.ActionInfo
 	argsList := []string{}
 	for _, arg := range m.ActionInfo.Args {
-		argsList = append(argsList, fmt.Sprintf("&peony.MethodArgType{Name:%s, Type:reflect.Typeof(%s)}", arg.Name, arg.Expr))
-		println(fmt.Sprintf("&peony.MethodArgType{Name:%s, Type:%s}", arg.Name, arg.TypeExpr(alias)))
+		argsList = append(argsList, fmt.Sprintf("&peony.MethodArgType{Name:\"%s\", Type:%s}", arg.Name, arg.TypeExpr(alias)))
+	}
+	var argCode string
+	if len(argsList) > 0 {
+		argCode = fmt.Sprintf("MethodArgs:[]*peony.MethodArgType{%s}", strings.Join(argsList, ",\n\t\t"))
 	}
 	if info.RecvName == "" {
-		code = fmt.Sprintf("\t%s.Mapper(\"%s\", %s.%s, &peony.MethodAction{Name:\"%s\"})\n", serverName, m.UrlExpr, pkgName, info.MethodSpec.Name, info.ActionName)
+		code = fmt.Sprintf("\t%s.Mapper(\"%s\", %s.%s, &peony.MethodAction{Name:\"%s\", %s})\n", serverName, m.UrlExpr, pkgName, info.MethodSpec.Name, info.ActionName, argCode)
 	} else {
-		code = fmt.Sprintf("\t%s.Mapper(\"%s\", (*%s.%s)(nil), &peony.TypeAction{Name: \"%s\", MethodName: \"%s\"})\n", serverName, m.UrlExpr, pkgName, m.ActionInfo.RecvName, info.ActionName, info.Name)
+		code = fmt.Sprintf("\t%s.Mapper(\"%s\", (*%s.%s)(nil), &peony.TypeAction{Name: \"%s\", MethodName: \"%s\", %s})\n", serverName, m.UrlExpr, pkgName, m.ActionInfo.RecvName, info.ActionName, info.Name, argCode)
 	}
 	return code
 }
@@ -95,7 +98,6 @@ type ActionInfo struct {
 
 func (a *ActionInfo) BuildAlias(alias map[string][]string) {
 	for _, arg := range a.Args {
-		fmt.Println(arg.Expr.PkgName, arg.ImportPath)
 		if !contains(alias[arg.Expr.PkgName], arg.ImportPath) {
 			alias[arg.Expr.PkgName] = append(alias[arg.Expr.PkgName], arg.ImportPath)
 		}
@@ -125,15 +127,15 @@ func (m *MethodArg) TypeExpr(alias map[string]string) string {
 	isPtr := strings.HasPrefix(m.Expr.Expr, "*")
 	if pkgName, ok := alias[m.ImportPath]; ok {
 		if isPtr {
-			return fmt.Sprintf("reflect.Typeof((%s%s.%s)(nil))", m.Expr.Expr[:m.Expr.PkgIdx], pkgName, m.Expr.Expr[m.Expr.PkgIdx:])
+			return fmt.Sprintf("reflect.TypeOf((%s%s.%s)(nil))", m.Expr.Expr[:m.Expr.PkgIdx], pkgName, m.Expr.Expr[m.Expr.PkgIdx:])
 		} else {
-			return fmt.Sprintf("reflect.Typeof((*%s%s.%s)(nil)).Elem()", m.Expr.Expr[:m.Expr.PkgIdx], pkgName, m.Expr.Expr[m.Expr.PkgIdx:])
+			return fmt.Sprintf("reflect.TypeOf((*%s%s.%s)(nil)).Elem()", m.Expr.Expr[:m.Expr.PkgIdx], pkgName, m.Expr.Expr[m.Expr.PkgIdx:])
 		}
 	} else {
 		if isPtr {
-			return fmt.Sprintf("reflect.Typeof((%s)(nil))", m.Expr.Expr)
+			return fmt.Sprintf("reflect.TypeOf((%s)(nil))", m.Expr.Expr)
 		} else {
-			return fmt.Sprintf("reflect.Typeof((*%s)(nil).Elem())", m.Expr.Expr)
+			return fmt.Sprintf("reflect.TypeOf((*%s)(nil).Elem())", m.Expr.Expr)
 		}
 	}
 }
@@ -185,30 +187,31 @@ func IsBultinType(name string) bool {
 	return ok
 }
 
-func NewTypeExpr(pkgName string, expr ast.Expr) TypeExpr {
+func NewTypeExpr(pkgName, importPath string, imports map[string]string, expr ast.Expr) (string, TypeExpr) {
 	switch t := expr.(type) {
 	case *ast.Ident:
 		if IsBultinType(t.Name) {
 			pkgName = ""
+			importPath = ""
 		}
-		return TypeExpr{t.Name, pkgName, 0, true}
+		return importPath, TypeExpr{t.Name, pkgName, 0, true}
 	case *ast.SelectorExpr:
-		e := NewTypeExpr(pkgName, t.X)
-		return TypeExpr{t.Sel.Name, e.Expr, e.PkgIdx, e.Valid}
+		_, e := NewTypeExpr(pkgName, importPath, imports, t.X)
+		return imports[e.Expr], TypeExpr{t.Sel.Name, e.Expr, e.PkgIdx, e.Valid}
 	case *ast.StarExpr:
-		e := NewTypeExpr(pkgName, t.X)
-		return TypeExpr{"*" + e.Expr, e.PkgName, e.PkgIdx + 1, e.Valid}
+		i, e := NewTypeExpr(pkgName, importPath, imports, t.X)
+		return i, TypeExpr{"*" + e.Expr, e.PkgName, e.PkgIdx + 1, e.Valid}
 	case *ast.ArrayType:
-		e := NewTypeExpr(pkgName, t.Elt)
-		return TypeExpr{"[]" + e.Expr, e.PkgName, e.PkgIdx + 2, e.Valid}
+		i, e := NewTypeExpr(pkgName, importPath, imports, t.Elt)
+		return i, TypeExpr{"[]" + e.Expr, e.PkgName, e.PkgIdx + 2, e.Valid}
 	case *ast.Ellipsis:
-		e := NewTypeExpr(pkgName, t.Elt)
-		return TypeExpr{"[]" + e.Expr, e.PkgName, e.PkgIdx + 3, e.Valid}
+		i, e := NewTypeExpr(pkgName, importPath, imports, t.Elt)
+		return i, TypeExpr{"[]" + e.Expr, e.PkgName, e.PkgIdx + 3, e.Valid}
 	default:
 		log.Println("Failed to generate name for field.")
 		ast.Print(nil, expr)
 	}
-	return TypeExpr{Valid: false}
+	return "", TypeExpr{Valid: false}
 }
 
 func processImports(imports map[string]string, importSpecs []*ast.ImportSpec) {
@@ -247,21 +250,10 @@ func processAction(pkgInfo *PkgInfo, imports map[string]string, funcDecl *ast.Fu
 		actionInfo.Args = make([]*MethodArg, 0, n)
 	}
 	for _, param := range funcDecl.Type.Params.List {
-		typeExpr := NewTypeExpr(pkgInfo.Name, param.Type)
+		importPath, typeExpr := NewTypeExpr(pkgInfo.Name, pkgInfo.ImportPath, imports, param.Type)
 		//ignore this action
 		if !typeExpr.Valid {
 			return
-		}
-		if typeExpr.PkgName != "" {
-			var ok bool
-			importPath, ok = imports[typeExpr.PkgName]
-			if !ok && typeExpr.PkgName != pkgInfo.Name {
-				log.Println("unknown package path:", typeExpr.PkgName)
-			}
-			// if importPath is not exits, I guess it's should be default importPath
-			if importPath == "" {
-				importPath = pkgInfo.ImportPath
-			}
 		}
 		if funcDecl.Doc != nil && len(funcDecl.Doc.List) > 0 {
 			for _, comment := range funcDecl.Doc.List {

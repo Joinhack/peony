@@ -96,6 +96,7 @@ var MAIN = `
 package main
 import (
 	"github.com/joinhack/peony"
+	"reflect"
 	"flag"{{range $path, $alias := $.importPaths }}
 	{{$alias}} "{{$path}}"{{end}}
 )
