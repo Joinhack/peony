@@ -12,11 +12,16 @@ func TestProcessSources(t *testing.T) {
 	si, err := ProcessSources([]string{path})
 	if err != nil {
 		t.Log("error:", err)
+		return
 	}
 	t.Log(getAlais(si))
 }
 
 func TestBuild(t *testing.T) {
 	app := peony.NewApp(filepath.Join(build.Default.GOPATH, "src"), "github.com/joinhack/peony/demos/login")
-	Build(app)
+	err := Build(app)
+	if err != nil {
+		merr := err.(peony.ErrorList)[0]
+		t.Log(merr.SouceLines[merr.Line-1])
+	}
 }

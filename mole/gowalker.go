@@ -98,7 +98,7 @@ type ActionInfo struct {
 
 func (a *ActionInfo) BuildAlias(alias map[string][]string) {
 	for _, arg := range a.Args {
-		if !contains(alias[arg.Expr.PkgName], arg.ImportPath) {
+		if arg.ImportPath != "" && !contains(alias[arg.Expr.PkgName], arg.ImportPath) {
 			alias[arg.Expr.PkgName] = append(alias[arg.Expr.PkgName], arg.ImportPath)
 		}
 	}
@@ -132,10 +132,11 @@ func (m *MethodArg) TypeExpr(alias map[string]string) string {
 			return fmt.Sprintf("reflect.TypeOf((*%s%s.%s)(nil)).Elem()", m.Expr.Expr[:m.Expr.PkgIdx], pkgName, m.Expr.Expr[m.Expr.PkgIdx:])
 		}
 	} else {
+		//this is for builtin types
 		if isPtr {
 			return fmt.Sprintf("reflect.TypeOf((%s)(nil))", m.Expr.Expr)
 		} else {
-			return fmt.Sprintf("reflect.TypeOf((*%s)(nil).Elem())", m.Expr.Expr)
+			return fmt.Sprintf("reflect.TypeOf((*%s)(nil)).Elem()", m.Expr.Expr)
 		}
 	}
 }

@@ -97,13 +97,14 @@ package main
 import (
 	"github.com/joinhack/peony"
 	"reflect"
+	"time"
 	"flag"{{range $path, $alias := $.importPaths }}
 	{{$alias}} "{{$path}}"{{end}}
 )
 
 var (
 	runMode    *string = flag.String("runMode", "", "Run mode.")
-	bindAddr   *string = flag.String("port", ":8080", "By default, read from app.conf")
+	bindAddr   *string = flag.String("bindAddr", ":8080", "By default, read from app.conf")
 	importPath *string = flag.String("importPath", "", "Go Import Path for the app.")
 	srcPath    *string = flag.String("srcPath", "", "Path to the source root.")
 )
@@ -116,6 +117,12 @@ func main() {
 
 {{range $idx, $codeGen := $.codeGens }}{{$codeGen.Generate "app" "svr" $.importPaths}}{{end}}
 
-	svr.Run()
+	go func(){
+		time.Sleep(1*time.Second)
+		peony.INFO.Println("Server is running, bind at", app.BindAddr)
+	}()
+	if err := svr.Run(); err != nil {
+		panic(err)
+	}
 }
 `
