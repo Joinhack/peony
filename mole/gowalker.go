@@ -15,6 +15,8 @@ import (
 	"strings"
 )
 
+//Generate the source code
+//All code generator should start with "@"
 type CodeGen interface {
 	Generate(appName, serverName string, alias map[string]string) string
 	BuildAlias(alias map[string][]string)
@@ -268,6 +270,9 @@ func processAction(pkgInfo *PkgInfo, imports map[string]string, funcDecl *ast.Fu
 		for _, comment := range funcDecl.Doc.List {
 			if comment.Text[:2] == "//" {
 				content := strings.TrimSpace(comment.Text[2:])
+				if len(content) == 0 || content[0] != '@' {
+					continue
+				}
 				for _, codeGenCreater := range CodeGenCreaters {
 					if ok, codeGen := codeGenCreater(content, actionInfo); ok {
 						pkgInfo.CodeGens = append(pkgInfo.CodeGens, codeGen)
