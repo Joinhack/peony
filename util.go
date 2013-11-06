@@ -8,14 +8,14 @@ import (
 	"strings"
 )
 
-type Set map[interface{}]bool
+type Set map[interface{}]interface{}
 
 func (s *Set) Add(a interface{}) {
-	(*s)[a] = true
+	(*s)[a] = nil
 }
 
 func (s *Set) Has(a interface{}) bool {
-	if (*s)[a] == true {
+	if _, ok := (*s)[a]; ok == true {
 		return true
 	} else {
 		return false

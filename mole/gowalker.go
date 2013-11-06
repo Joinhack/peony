@@ -53,7 +53,7 @@ func (m *MapperCommentCodeGen) BuildAlias(alias map[string][]string) {
 
 var (
 	CodeGenCreaters = []CodeGenCreater{}
-	MapperRegexp    = regexp.MustCompile("@Mapper\\(\"(?P<UrlExpr>.*)\"\\)")
+	MapperRegexp    = regexp.MustCompile("@Mapper\\(\"(.*)\"\\)")
 )
 
 func RegisterCodeGenCreater(builder CodeGenCreater) {

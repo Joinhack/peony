@@ -21,7 +21,7 @@ func TestBuild(t *testing.T) {
 	app := peony.NewApp(filepath.Join(build.Default.GOPATH, "src"), "github.com/joinhack/peony/demos/login")
 	err := Build(app)
 	if err != nil {
-		merr := err.(peony.ErrorList)[0]
-		t.Log(merr.SouceLines[merr.Line-1])
+		t.Log(err)
+		return
 	}
 }

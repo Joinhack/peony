@@ -3,9 +3,14 @@ package mole
 import (
 	"fmt"
 	"github.com/joinhack/peony"
+	"go/build"
 	"log"
 	"os"
+	"os/exec"
 	"path"
+	"path/filepath"
+	"regexp"
+	"strconv"
 	"text/template"
 )
 
@@ -41,13 +46,67 @@ func getAlais(si *SourceInfo) map[string]string {
 	return rs
 }
 
+//find go execute file path
+func findGO() (p string, err error) {
+	var fstat os.FileInfo
+	p = path.Join(build.Default.GOROOT, "bin", "go")
+	fstat, err = os.Stat(p)
+	if err != nil {
+		return
+	}
+	if m := fstat.Mode(); !fstat.IsDir() && m&0x0111 != 0 {
+		return
+	}
+	p, err = exec.LookPath("go")
+	return
+}
+
+var ERRORRegexp = regexp.MustCompile(`(?m)^([^:#]+):(\d+):(\d+)?:? (.*)$`)
+
+func newBuildError(out string) error {
+	matchs := ERRORRegexp.FindAllStringSubmatch(out, -1)
+	if matchs == nil {
+		return &peony.Error{
+			Title:       "Complie error",
+			Description: string(out),
+		}
+	}
+	fileSources := map[string][]string{}
+	errorList := peony.ErrorList{}
+	fmt.Println(matchs)
+	for _, match := range matchs {
+
+		file, _ := filepath.Abs(match[1])
+		line, _ := strconv.Atoi(match[2])
+		column := 0
+		if match[3] != "" {
+			column, _ = strconv.Atoi(match[3])
+		}
+		desc := match[4]
+		var source []string
+		var hasSource = false
+		if source, hasSource = fileSources[file]; !hasSource {
+			source = peony.MustReadLines(file)
+			fileSources[file] = source
+		}
+		errorList = append(errorList, &peony.Error{
+			Title:       "Complie error",
+			FileName:    file,
+			Path:        file,
+			Line:        line,
+			Column:      column,
+			Description: desc,
+		})
+	}
+	return errorList
+}
+
 func Build(app *peony.App) error {
 	si, err := ProcessSources(app.CodePaths)
 	if err != nil {
 		return err
 	}
 	codeGens := []CodeGen{}
-
 	for _, pkg := range si.Pkgs {
 		codeGens = append(codeGens, pkg.CodeGens...)
 	}
@@ -57,6 +116,15 @@ func Build(app *peony.App) error {
 		"codeGens":    codeGens,
 	}
 	genSource(path.Join(app.AppPath, "tmp"), "main.go", MAIN, args)
+	var gopath string
+	if gopath, err = findGO(); err != nil {
+		return err
+	}
+	cmd := exec.Command(gopath, "build", "-o", "temp", path.Join(app.ImportPath, "app", "tmp"))
+	if output, err := cmd.CombinedOutput(); err != nil {
+		peony.ERROR.Println(string(output))
+		return newBuildError(string(output))
+	}
 	return nil
 }
 

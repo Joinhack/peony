@@ -48,5 +48,5 @@ func TestServer(t *testing.T) {
 	svr.Mapper("/template", Template, &MethodAction{Name: "recover.go"})
 	svr.Mapper("/xml", Xml, &MethodAction{Name: "xml"})
 	svr.Mapper("/<int:join>", text, &MethodAction{Name: "xxeemw", MethodArgs: []*MethodArgType{&MethodArgType{Name: "join", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
-	//svr.Run()
+	svr.Run()
 }
