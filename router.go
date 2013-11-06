@@ -15,12 +15,12 @@ var (
 
 func init() {
 	ruleRE = regexp.MustCompile(strings.Join([]string{
-		`(?P<static>[^<]*)`, //static pattern
+		`([^<]*)`, //static pattern
 		`<(?:`,
-		`(?P<parser>[a-zA-Z_][a-zA-Z0-9_]*)`, //parser
-		`(?:\((?P<args>.*)\))?\:`,            //parser args
+		`([a-zA-Z_][a-zA-Z0-9_]*)`, //parser
+		`(?:\((.*)\))?\:`,          //parser args
 		`)?`,
-		"(?P<variable>[a-zA-Z_][a-zA-Z0-9_]*)", //paramName
+		"([a-zA-Z_][a-zA-Z0-9_]*)", //paramName
 		`>`,
 	}, ""))
 }
