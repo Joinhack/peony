@@ -24,4 +24,6 @@ func TestBuild(t *testing.T) {
 		t.Log(err)
 		return
 	}
+	ag, _ := NewAgent(app, ":9090")
+	ag.Run(":8080")
 }

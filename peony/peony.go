@@ -2,13 +2,20 @@ package main
 
 import (
 	"flag"
+	"os"
 )
 
+var usage = `peony apppath`
+
 var (
-	app *string = flag.String("app", "", "the path of app")
+	apppath *string = flag.String("apppath", "", "the path of app")
 )
 
 func main() {
 	flag.Parse()
+	if *apppath == "" {
+		println(usgae)
+		os.exit(1)
+	}
 
 }
