@@ -20,8 +20,11 @@ func (a *Agent) Path() string {
 	return a.app.AppPath
 }
 
-func (a *Agent) Apply() {
-	println(111)
+func (a *Agent) Refresh() error {
+	if err := Build(a.app); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *Agent) IgnoreDir(info os.FileInfo) bool {

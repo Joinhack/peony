@@ -8,7 +8,7 @@ import (
 )
 
 type Observer interface {
-	Apply()
+	Refresh() error
 	Path() string
 }
 
@@ -94,7 +94,9 @@ func (n *Notifier) Notify() error {
 		default:
 			continue
 		}
-		obswatcher.observer.Apply()
+		if err := obswatcher.observer.Refresh(); err != nil {
+			return nil
+		}
 	}
 	return nil
 }
