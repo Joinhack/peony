@@ -4,6 +4,7 @@ import (
 	"github.com/joinhack/peony"
 	"reflect"
 	"time"
+	"fmt"
 	"flag"
 	controllers0 "github.com/joinhack/peony/demos/login/app/controllers"
 	controllers1 "github.com/joinhack/peony/demos/login/app/controllers/controllers"
@@ -31,7 +32,7 @@ func main() {
 
 	go func(){
 		time.Sleep(1*time.Second)
-		peony.INFO.Println("Server is running, bind at", app.BindAddr)
+		fmt.Println("Server is running, bind at", app.BindAddr)
 	}()
 	if err := svr.Run(); err != nil {
 		panic(err)

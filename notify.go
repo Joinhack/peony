@@ -5,10 +5,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 type Observer interface {
 	Refresh() error
+	ForceRefresh() bool
 	Path() string
 }
 
@@ -26,11 +28,13 @@ type observerWatcher struct {
 
 type Notifier struct {
 	watchers []*observerWatcher
+	mutex    *sync.Mutex
 }
 
 func NewNotifier() *Notifier {
 	n := &Notifier{}
 	n.watchers = []*observerWatcher{}
+	n.mutex = &sync.Mutex{}
 	return n
 }
 
@@ -78,7 +82,16 @@ func (n *Notifier) Watch(o Observer) {
 }
 
 func (n *Notifier) Notify() error {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
 	for _, obswatcher := range n.watchers {
+		if obswatcher.observer.ForceRefresh() {
+			if err := obswatcher.observer.Refresh(); err != nil {
+				return err
+			} else {
+				return nil
+			}
+		}
 		select {
 		case evt := <-obswatcher.watcher.Event:
 			//ignore file name start with "." like ".xxx"
@@ -95,7 +108,7 @@ func (n *Notifier) Notify() error {
 			continue
 		}
 		if err := obswatcher.observer.Refresh(); err != nil {
-			return nil
+			return err
 		}
 	}
 	return nil

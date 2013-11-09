@@ -10,21 +10,21 @@ import (
 )
 
 type AppCmd struct {
+	*exec.Cmd
 	BinPath string
 	Addr    string
-	cmd     *exec.Cmd
 }
 
 func NewAppCmd(app *peony.App, binPath, addr string) *AppCmd {
 	appCmd := &AppCmd{BinPath: binPath, Addr: addr}
-	appCmd.cmd = exec.Command(appCmd.BinPath, "--bindAddr="+addr,
+	appCmd.Cmd = exec.Command(appCmd.BinPath, "--bindAddr="+addr,
 		"--importPath="+app.ImportPath,
 		"--srcPath="+app.SourcePath)
 	return appCmd
 }
 
 func (a *AppCmd) Run() error {
-	return a.cmd.Run()
+	return a.Cmd.Run()
 }
 
 type cmdOutput struct {
@@ -36,7 +36,6 @@ func (c *cmdOutput) Write(b []byte) (int, error) {
 	if c.started != nil {
 		if strings.Contains(string(b), "Server is running") {
 			c.started <- true
-			c.started = nil
 		}
 	}
 	return c.Write(b)
@@ -48,36 +47,36 @@ var (
 )
 
 func (a *AppCmd) Start() error {
-	output := &cmdOutput{a.cmd.Stdout, make(chan bool, 1)}
-	a.cmd.Stdout = output
-	if err := a.cmd.Start(); err != nil {
+	output := &cmdOutput{a.Stdout, make(chan bool, 1)}
+	a.Stdout = output
+	if err := a.Cmd.Start(); err != nil {
 		return err
 	}
+	wChan := a.waitChan()
 	select {
-	case <-a.wait():
+	case <-wChan:
 		return AppDied
+	case <-time.After(5 * time.Second):
+		peony.ERROR.Println("start app timeout")
+		a.Kill()
+		return TimeOut
 	case <-output.started:
 		return nil
-	case <-time.After(30 * time.Second):
-		a.Kill()
-		peony.ERROR.Println("start app timeout")
-		return TimeOut
 	}
 }
 
-func (a *AppCmd) wait() <-chan bool {
+func (a *AppCmd) waitChan() <-chan bool {
 	ch := make(chan bool, 1)
 	go func() {
-		a.cmd.Wait()
+		a.Wait()
 		ch <- true
 	}()
 	return ch
 }
 
 func (a *AppCmd) Kill() {
-	cmd := a.cmd
-	if cmd != nil && (cmd.ProcessState == nil || !cmd.ProcessState.Exited()) {
-		if err := cmd.Process.Kill(); err != nil {
+	if a.Cmd != nil && (a.ProcessState != nil && a.ProcessState.Exited()) {
+		if err := a.Process.Kill(); err != nil {
 			peony.ERROR.Println("kill app error:", err)
 		}
 	}

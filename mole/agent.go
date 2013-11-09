@@ -10,21 +10,29 @@ import (
 )
 
 type Agent struct {
-	app      *peony.App
-	AppAddr  string
-	notifier *peony.Notifier
-	proxy    *httputil.ReverseProxy
+	app          *peony.App
+	appCmd       *AppCmd
+	AppAddr      string
+	notifier     *peony.Notifier
+	forceRefresh bool
+	proxy        *httputil.ReverseProxy
 }
 
 func (a *Agent) Path() string {
 	return a.app.AppPath
 }
 
+func (a *Agent) ForceRefresh() bool {
+	return a.forceRefresh
+}
+
 func (a *Agent) Refresh() error {
+	a.forceRefresh = false
+	a.appCmd.Kill()
 	if err := Build(a.app); err != nil {
 		return err
 	}
-	return nil
+	return a.appCmd.Start()
 }
 
 func (a *Agent) IgnoreDir(info os.FileInfo) bool {
@@ -48,6 +56,13 @@ func NewAgent(app *peony.App, appAddr string) (agent *Agent, err error) {
 	targetSvrUrl := &url.URL{Scheme: "http", Host: appAddr}
 	agent.proxy = httputil.NewSingleHostReverseProxy(targetSvrUrl)
 	agent.notifier = peony.NewNotifier()
+	agent.forceRefresh = true
+	var binPath string
+	binPath, err = GetBinPath(app)
+	if err != nil {
+		return
+	}
+	agent.appCmd = NewAppCmd(app, binPath, appAddr)
 	agent.notifier.Watch(agent)
 	return
 }
