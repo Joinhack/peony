@@ -23,10 +23,6 @@ func NewAppCmd(app *peony.App, binPath, addr string) *AppCmd {
 	return appCmd
 }
 
-func (a *AppCmd) Run() error {
-	return a.Cmd.Run()
-}
-
 type cmdOutput struct {
 	io.Writer
 	started chan bool
@@ -34,7 +30,7 @@ type cmdOutput struct {
 
 func (c *cmdOutput) Write(b []byte) (int, error) {
 	if c.started != nil {
-		if strings.Contains(string(b), "Server is running") {
+		if strings.Contains(string(b), "Server is running, listening on") {
 			c.started <- true
 		}
 	}
@@ -52,11 +48,10 @@ func (a *AppCmd) Start() error {
 	if err := a.Cmd.Start(); err != nil {
 		return err
 	}
-	wChan := a.waitChan()
 	select {
-	case <-wChan:
+	case <-a.waitChan():
 		return AppDied
-	case <-time.After(5 * time.Second):
+	case <-time.After(30 * time.Second):
 		peony.ERROR.Println("start app timeout")
 		a.Kill()
 		return TimeOut
@@ -68,14 +63,16 @@ func (a *AppCmd) Start() error {
 func (a *AppCmd) waitChan() <-chan bool {
 	ch := make(chan bool, 1)
 	go func() {
-		a.Wait()
+		if err := a.Wait(); err != nil {
+			peony.ERROR.Println("wait error:", err)
+		}
 		ch <- true
 	}()
 	return ch
 }
 
 func (a *AppCmd) Kill() {
-	if a.Cmd != nil && (a.ProcessState != nil && a.ProcessState.Exited()) {
+	if a.Cmd != nil && a.Process != nil && (a.ProcessState == nil || !a.ProcessState.Exited()) {
 		if err := a.Process.Kill(); err != nil {
 			peony.ERROR.Println("kill app error:", err)
 		}

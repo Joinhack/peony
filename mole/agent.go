@@ -6,12 +6,14 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"os/signal"
 	"strings"
 )
 
 type Agent struct {
 	app          *peony.App
 	appCmd       *AppCmd
+	appBinPath   string
 	AppAddr      string
 	notifier     *peony.Notifier
 	forceRefresh bool
@@ -28,7 +30,10 @@ func (a *Agent) ForceRefresh() bool {
 
 func (a *Agent) Refresh() error {
 	a.forceRefresh = false
-	a.appCmd.Kill()
+	if a.appCmd != nil {
+		a.appCmd.Kill()
+	}
+	a.appCmd = NewAppCmd(a.app, a.appBinPath, a.AppAddr)
 	if err := Build(a.app); err != nil {
 		return err
 	}
@@ -37,15 +42,15 @@ func (a *Agent) Refresh() error {
 
 func (a *Agent) IgnoreDir(info os.FileInfo) bool {
 	switch info.Name() {
-	case "tmp", "view":
+	case "tmp", "views":
 		return true
 	default:
 		return false
 	}
 }
 
-func (a *Agent) IgnoreFile(info os.FileInfo) bool {
-	if strings.HasSuffix(info.Name(), ".go") {
+func (a *Agent) IgnoreFile(f string) bool {
+	if strings.HasSuffix(f, ".go") {
 		return false
 	}
 	return true
@@ -62,7 +67,8 @@ func NewAgent(app *peony.App, appAddr string) (agent *Agent, err error) {
 	if err != nil {
 		return
 	}
-	agent.appCmd = NewAppCmd(app, binPath, appAddr)
+	agent.AppAddr = appAddr
+	agent.appBinPath = binPath
 	agent.notifier.Watch(agent)
 	return
 }
@@ -81,5 +87,13 @@ func (a *Agent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Agent) Run(addr string) {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Kill)
+	go func() {
+		<-sigChan
+		if a.appCmd != nil {
+			a.appCmd.Kill()
+		}
+	}()
 	http.ListenAndServe(addr, a)
 }
