@@ -11,13 +11,14 @@ import (
 )
 
 type Agent struct {
-	app          *peony.App
-	appCmd       *AppCmd
-	appBinPath   string
-	AppAddr      string
-	notifier     *peony.Notifier
-	forceRefresh bool
-	proxy        *httputil.ReverseProxy
+	app            *peony.App
+	appCmd         *AppCmd
+	appBinPath     string
+	AppAddr        string
+	templateLoader *peony.TemplateLoader
+	notifier       *peony.Notifier
+	forceRefresh   bool
+	proxy          *httputil.ReverseProxy
 }
 
 func (a *Agent) Path() string {

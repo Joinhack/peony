@@ -28,6 +28,7 @@ type cmdOutput struct {
 	started chan bool
 }
 
+//intercept the stdout.
 func (c *cmdOutput) Write(b []byte) (int, error) {
 	if c.started != nil {
 		if strings.Contains(string(b), "Server is running, listening on") {
@@ -60,6 +61,7 @@ func (a *AppCmd) Start() error {
 	}
 }
 
+//wait for program exit.
 func (a *AppCmd) waitChan() <-chan bool {
 	ch := make(chan bool, 1)
 	go func() {
