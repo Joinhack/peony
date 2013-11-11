@@ -34,6 +34,7 @@ func (c *cmdOutput) Write(b []byte) (int, error) {
 	if c.started != nil {
 		if strings.Contains(string(b), "Server is running, listening on") {
 			c.started <- true
+			c.started = nil
 		}
 	}
 	return c.Writer.Write(b)
@@ -58,8 +59,6 @@ func (a *AppCmd) Start() error {
 		a.Kill()
 		return TimeOut
 	case <-output.started:
-		close(output.started)
-		output.started = nil
 		return nil
 	}
 }
