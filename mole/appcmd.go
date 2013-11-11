@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/joinhack/peony"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -35,7 +36,7 @@ func (c *cmdOutput) Write(b []byte) (int, error) {
 			c.started <- true
 		}
 	}
-	return c.Write(b)
+	return c.Writer.Write(b)
 }
 
 var (
@@ -44,7 +45,7 @@ var (
 )
 
 func (a *AppCmd) Start() error {
-	output := &cmdOutput{a.Stdout, make(chan bool, 1)}
+	output := &cmdOutput{os.Stdout, make(chan bool, 1)}
 	a.Stdout = output
 	if err := a.Cmd.Start(); err != nil {
 		return err
@@ -57,6 +58,8 @@ func (a *AppCmd) Start() error {
 		a.Kill()
 		return TimeOut
 	case <-output.started:
+		close(output.started)
+		output.started = nil
 		return nil
 	}
 }
