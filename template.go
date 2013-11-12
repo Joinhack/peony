@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -15,8 +17,43 @@ var (
 )
 
 type TemplateLoader struct {
-	template *tmpl.Template //
-	basePath string
+	template     *tmpl.Template //
+	basePath     string
+	compileError error
+	forceNotify  bool //force notify when the first time
+}
+
+func (t *TemplateLoader) IgnoreDir(file os.FileInfo) bool {
+	if strings.HasPrefix(file.Name(), ".") {
+		return true
+	}
+	return false
+}
+
+//when the suffix is .html notify the change
+func (t *TemplateLoader) IgnoreFile(file string) bool {
+	if !strings.HasSuffix(filepath.Base(file), ".go") {
+		return true
+	}
+	return false
+}
+
+func (t *TemplateLoader) Refresh() error {
+	t.template = nil
+	t.compileError = nil
+	return t.load()
+}
+
+func (t *TemplateLoader) ForceRefresh() bool {
+	if t.forceNotify {
+		t.forceNotify = false
+		return true
+	}
+	return t.forceNotify
+}
+
+func (t *TemplateLoader) Path() string {
+	return t.basePath
 }
 
 func (t *TemplateLoader) skipDir(n string) bool {
@@ -34,20 +71,9 @@ func templateName(path string) string {
 	return path
 }
 
-func NewTemplateLoader(base string) (*TemplateLoader, error) {
-	basePath, err := filepath.Abs(base)
-	if err != nil {
-		return nil, err
-	}
-	var bPathFileInfo os.FileInfo
-	if bPathFileInfo, err = os.Stat(basePath); err != nil {
-		return nil, err
-	}
-	if !bPathFileInfo.IsDir() {
-		return nil, NotDirError
-	}
-	tl := &TemplateLoader{basePath: basePath}
-	return tl, nil
+func NewTemplateLoader(base string) *TemplateLoader {
+	tl := &TemplateLoader{basePath: base, forceNotify: true}
+	return tl
 }
 
 func (t *TemplateLoader) load() error {
@@ -66,7 +92,6 @@ func (t *TemplateLoader) load() error {
 			}
 			return nil
 		}
-
 		if t.skipFile(info.Name()) {
 			return nil
 		}
@@ -78,7 +103,16 @@ func (t *TemplateLoader) load() error {
 		tmplName := templateName(path[len(t.basePath)+1:])
 		_, err = template.New(tmplName).Parse(string(data))
 		if err != nil {
-			return err
+			complieError := &Error{
+				SouceLines: strings.Split(string(data), "\n"),
+				Title:      "Template compile error",
+				FileName:   tmplName,
+				Path:       path,
+			}
+			complieError.Line, complieError.Description = parseComplieError(err.Error())
+			t.compileError = complieError
+			ERROR.Println(err)
+			return t.compileError
 		}
 		return nil
 	})
@@ -88,7 +122,26 @@ func (t *TemplateLoader) load() error {
 	return nil
 }
 
+var ErrorRE = regexp.MustCompile(`:(\d+):`)
+
+//parse the template compile error
+func parseComplieError(errstr string) (line int, desc string) {
+	loc := ErrorRE.FindStringIndex(errstr)
+	desc = errstr
+	if loc != nil {
+		var err error
+		line, err = strconv.Atoi(errstr[loc[0]+1 : loc[1]-1])
+		if err == nil {
+			desc = errstr[loc[1]:]
+		}
+	}
+	return
+}
+
 func (t *TemplateLoader) Lookup(path string) (*tmpl.Template, error) {
+	if t.compileError != nil {
+		return nil, t.compileError
+	}
 	template := t.template.Lookup(templateName(path))
 	var err = NoTemplateFound
 	if template != nil {

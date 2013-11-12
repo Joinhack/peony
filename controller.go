@@ -13,6 +13,7 @@ type Controller struct {
 	params         *Params
 	render         Render
 	templateLoader *TemplateLoader
+	notifier       *Notifier
 }
 
 type Action interface {

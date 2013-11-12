@@ -113,3 +113,11 @@ func (n *Notifier) Notify() error {
 	}
 	return nil
 }
+
+func NotifyFilter(c *Controller, filter []Filter) {
+	if err := c.notifier.Notify(); err != nil {
+		NewErrorRender(err).Apply(c)
+		return
+	}
+	filter[0](c, filter[1:])
+}

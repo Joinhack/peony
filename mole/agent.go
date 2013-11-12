@@ -71,6 +71,8 @@ func NewAgent(app *peony.App, appAddr string) (agent *Agent, err error) {
 	agent.AppAddr = appAddr
 	agent.appBinPath = binPath
 	agent.notifier.Watch(agent)
+	//watch template
+	agent.notifier.Watch(agent.templateLoader)
 	return
 }
 

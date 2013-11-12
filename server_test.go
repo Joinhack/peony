@@ -1,6 +1,7 @@
 package peony
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -33,13 +34,11 @@ func (a *AS) T() Render {
 }
 
 func TestServer(t *testing.T) {
-	svr := NewServer(":8080")
-	loader, err := NewTemplateLoader(".")
-	err = loader.load()
-	if err != nil {
-		panic(err)
-	}
-	svr.templateLoader = loader
+	var err error
+	app := NewApp(".", ".")
+	app.ViewPath, err = filepath.Abs(".")
+	app.BindAddr = ":8080"
+	svr := app.NewServer()
 	err = svr.Mapper("/", (*AS)(nil), &TypeAction{Name: "AS.T", MethodName: "T"})
 	if err != nil {
 		panic(err)

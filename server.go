@@ -26,6 +26,7 @@ type Server struct {
 	filters        []Filter
 	converter      *Converter
 	actions        *ActionContainer
+	notifiter      *Notifier
 	templateLoader *TemplateLoader
 }
 
@@ -166,6 +167,7 @@ func (server *Server) handlerInner(w http.ResponseWriter, r *http.Request) {
 	c := &Controller{resp: NewResponse(w),
 		req:            NewRequest(r),
 		templateLoader: server.templateLoader,
+		notifier:       server.notifiter,
 	}
 	server.filters[0](c, server.filters[1:])
 }
@@ -173,6 +175,7 @@ func (server *Server) handlerInner(w http.ResponseWriter, r *http.Request) {
 func (s *Server) BindDefaultFilters() {
 	s.filters = []Filter{
 		RecoverFilter,
+		NotifyFilter,
 		GetRouterFilter(s.router),
 		ParamsFilter,
 		GetActionFilter(s),
@@ -225,12 +228,15 @@ func (s *Server) Mapper(expr string, i interface{}, a Action) error {
 	return nil
 }
 
-func NewServer(addr string) *Server {
-	s := &Server{Addr: addr}
+func NewServer(app *App) *Server {
+	s := &Server{Addr: app.BindAddr}
 	s.router = NewRouter()
 	s.actions = NewActionContainer()
 	s.converter = NewConverter()
+	s.templateLoader = NewTemplateLoader(app.ViewPath)
+	s.notifiter = NewNotifier()
 	s.BindDefaultFilters()
+	s.notifiter.Watch(s.templateLoader)
 	return s
 }
 

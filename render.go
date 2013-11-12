@@ -44,6 +44,11 @@ type ErrorRender struct {
 	Error error
 }
 
+func NewErrorRender(err error) Render {
+	return &ErrorRender{Error: err}
+
+}
+
 func (r *ErrorRender) Apply(c *Controller) {
 	resp := c.resp
 	req := c.req
