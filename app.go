@@ -1,10 +1,13 @@
 package peony
 
 import (
+	"go/build"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 )
+
+var PEONYPATH string
 
 type App struct {
 	SourcePath string
@@ -12,8 +15,17 @@ type App struct {
 	CodePaths  []string
 	ViewPath   string
 	AppPath    string
+	BasePath   string
 	DevMode    bool
 	BindAddr   string
+}
+
+func absImportPath(imp string) string {
+	pkg, err := build.Import(imp, "", build.FindOnly)
+	if err != nil {
+		ERROR.Fatalln("get  abslute import path  error:", err)
+	}
+	return filepath.Join(pkg.SrcRoot, filepath.FromSlash(imp))
 }
 
 var (
@@ -30,13 +42,15 @@ func init() {
 	WARN = log.New(os.Stdout, "WARN ", log.Ldate|log.Ltime)
 	INFO = log.New(os.Stdout, "INFO ", log.Ldate|log.Ltime)
 	ERROR = log.New(os.Stderr, "ERROR ", log.Ldate|log.Ltime)
+	PEONYPATH = absImportPath("github.com/joinhack/peony")
 }
 
 func NewApp(sourcePath, importPath string) *App {
 	app := &App{SourcePath: sourcePath, ImportPath: importPath}
-	app.AppPath = path.Join(sourcePath, importPath, "app")
+	app.BasePath = filepath.Join(sourcePath, importPath)
+	app.AppPath = filepath.Join(app.BasePath, "app")
 	app.CodePaths = []string{app.AppPath}
-	app.ViewPath = path.Join(app.AppPath, "views")
+	app.ViewPath = filepath.Join(app.AppPath, "views")
 	return app
 }
 

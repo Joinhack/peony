@@ -46,14 +46,34 @@ type ErrorRender struct {
 
 func NewErrorRender(err error) Render {
 	return &ErrorRender{Error: err}
-
 }
 
 func (r *ErrorRender) Apply(c *Controller) {
 	resp := c.resp
 	req := c.req
-	resp.WriteHeader(http.StatusInternalServerError, "text/"+req.Accept)
-	resp.Write([]byte(r.Error.Error()))
+	tplName := "errors/500.html"
+	tpl, err := c.templateLoader.Lookup(tplName)
+	if err != nil {
+		resp.WriteHeader(http.StatusInternalServerError, "text/"+req.Accept)
+		ERROR.Printf("look template(%s) error: %s", tplName, err)
+		resp.Write([]byte(r.Error.Error()))
+		return
+	}
+	resp.WriteHeader(http.StatusInternalServerError, "text/html")
+	var errorlist ErrorList
+	switch r.Error.(type) {
+	case ErrorList:
+		errorlist = r.Error.(ErrorList)
+	case *Error:
+		err := r.Error.(*Error)
+		errorlist = ErrorList{err}
+	default:
+		errorlist = ErrorList{&Error{
+			Title:       "error",
+			Description: r.Error.Error(),
+		}}
+	}
+	tpl.Execute(c.resp, errorlist)
 }
 
 func (j *JsonRender) Apply(c *Controller) {
@@ -99,7 +119,7 @@ func (t *TemplateRender) Apply(c *Controller) {
 	}
 	template, err := templateLoader.Lookup(tmplName)
 	if err != nil {
-		//TODO parse error
+		ERROR.Printf("lookup template(%s) error:%s", tmplName, err)
 		resp.Write([]byte(err.Error()))
 		return
 	}

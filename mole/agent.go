@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path"
 	"strings"
 )
 
@@ -21,8 +22,8 @@ type Agent struct {
 	proxy          *httputil.ReverseProxy
 }
 
-func (a *Agent) Path() string {
-	return a.app.AppPath
+func (a *Agent) Path() []string {
+	return []string{a.app.AppPath}
 }
 
 func (a *Agent) ForceRefresh() bool {
@@ -30,7 +31,6 @@ func (a *Agent) ForceRefresh() bool {
 }
 
 func (a *Agent) Refresh() error {
-	a.forceRefresh = false
 	if a.appCmd != nil {
 		a.appCmd.Kill()
 	}
@@ -38,7 +38,11 @@ func (a *Agent) Refresh() error {
 	if err := Build(a.app); err != nil {
 		return err
 	}
-	return a.appCmd.Start()
+	err := a.appCmd.Start()
+	if err == nil {
+		a.forceRefresh = false
+	}
+	return err
 }
 
 func (a *Agent) IgnoreDir(info os.FileInfo) bool {
@@ -51,7 +55,7 @@ func (a *Agent) IgnoreDir(info os.FileInfo) bool {
 }
 
 func (a *Agent) IgnoreFile(f string) bool {
-	if strings.HasSuffix(f, ".go") {
+	if strings.HasSuffix(f, ".html") {
 		return false
 	}
 	return true
@@ -70,20 +74,25 @@ func NewAgent(app *peony.App, appAddr string) (agent *Agent, err error) {
 	}
 	agent.AppAddr = appAddr
 	agent.appBinPath = binPath
-	agent.notifier.Watch(agent)
-	//watch template
+	//watch template. template should first watched by notifier
+	agent.templateLoader = peony.NewTemplateLoader([]string{
+		path.Join(path.Join(peony.PEONYPATH, "views")),
+	})
 	agent.notifier.Watch(agent.templateLoader)
+
+	agent.notifier.Watch(agent)
 	return
 }
 
-func processError(err error, w http.ResponseWriter) {
-	w.Write([]byte(err.Error()))
+func (a *Agent) processError(err error, w http.ResponseWriter, r *http.Request) {
+	c := peony.NewController(w, r, a.templateLoader)
+	peony.NewErrorRender(err).Apply(c)
 }
 
 func (a *Agent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := a.notifier.Notify()
 	if err != nil {
-		processError(err, w)
+		a.processError(err, w, r)
 		return
 	}
 	a.proxy.ServeHTTP(w, r)

@@ -11,7 +11,7 @@ import (
 type Observer interface {
 	Refresh() error
 	ForceRefresh() bool
-	Path() string
+	Path() []string
 }
 
 type IgnoreObserver interface {
@@ -50,35 +50,43 @@ func (n *Notifier) contain(abspath string) bool {
 func (n *Notifier) Watch(o Observer) {
 	var err error
 	var abspath string
-	abspath, err = filepath.Abs(o.Path())
-	if err != nil {
-		ERROR.Println("create watcher error:", err)
-		return
-	}
-	if n.contain(abspath) {
-		return
-	}
-	var watcher *fsnotify.Watcher
-	watcher, err = fsnotify.NewWatcher()
-	obsWatcher := &observerWatcher{o, watcher, abspath}
-	n.watchers = append(n.watchers, obsWatcher)
+	for _, basePath := range o.Path() {
+		abspath, err = filepath.Abs(basePath)
+		if err != nil {
+			ERROR.Println("create watcher error:", err)
+			continue
+		}
+		if n.contain(abspath) {
+			continue
+		}
+		var watcher *fsnotify.Watcher
+		watcher, err = fsnotify.NewWatcher()
+		obsWatcher := &observerWatcher{o, watcher, abspath}
+		n.watchers = append(n.watchers, obsWatcher)
 
-	var ignoreObserver IgnoreObserver = nil
-	var isIgnoreObserver bool
-	ignoreObserver, isIgnoreObserver = o.(IgnoreObserver)
-	watcher.Watch(abspath)
-	filepath.Walk(abspath, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			return nil
-		}
-		if isIgnoreObserver {
-			if info.IsDir() && ignoreObserver.IgnoreDir(info) {
-				return filepath.SkipDir
+		var ignoreObserver IgnoreObserver = nil
+		var isIgnoreObserver bool
+		ignoreObserver, isIgnoreObserver = o.(IgnoreObserver)
+		watcher.Watch(abspath)
+		err = filepath.Walk(abspath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
 			}
+			if !info.IsDir() {
+				return nil
+			}
+			if isIgnoreObserver {
+				if info.IsDir() && ignoreObserver.IgnoreDir(info) {
+					return filepath.SkipDir
+				}
+			}
+			watcher.Watch(path)
+			return nil
+		})
+		if err != nil {
+			ERROR.Println("watch error:", err)
 		}
-		watcher.Watch(path)
-		return nil
-	})
+	}
 }
 
 func (n *Notifier) Notify() error {
@@ -88,9 +96,8 @@ func (n *Notifier) Notify() error {
 		if obswatcher.observer.ForceRefresh() {
 			if err := obswatcher.observer.Refresh(); err != nil {
 				return err
-			} else {
-				return nil
 			}
+			continue
 		}
 		select {
 		case evt := <-obswatcher.watcher.Event:
@@ -114,10 +121,12 @@ func (n *Notifier) Notify() error {
 	return nil
 }
 
-func NotifyFilter(c *Controller, filter []Filter) {
-	if err := c.notifier.Notify(); err != nil {
-		NewErrorRender(err).Apply(c)
-		return
+func GetNotifyFilter(notifier *Notifier) Filter {
+	return func(c *Controller, filter []Filter) {
+		if err := notifier.Notify(); err != nil {
+			NewErrorRender(err).Apply(c)
+			return
+		}
+		filter[0](c, filter[1:])
 	}
-	filter[0](c, filter[1:])
 }

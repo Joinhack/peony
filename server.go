@@ -163,19 +163,19 @@ func (server *Server) handler(w http.ResponseWriter, r *http.Request) {
 	server.handlerInner(w, r)
 }
 
+func NewController(w http.ResponseWriter, r *http.Request, tl *TemplateLoader) *Controller {
+	return &Controller{resp: NewResponse(w), req: NewRequest(r), templateLoader: tl}
+}
+
 func (server *Server) handlerInner(w http.ResponseWriter, r *http.Request) {
-	c := &Controller{resp: NewResponse(w),
-		req:            NewRequest(r),
-		templateLoader: server.templateLoader,
-		notifier:       server.notifiter,
-	}
+	c := NewController(w, r, server.templateLoader)
 	server.filters[0](c, server.filters[1:])
 }
 
 func (s *Server) BindDefaultFilters() {
 	s.filters = []Filter{
 		RecoverFilter,
-		NotifyFilter,
+		GetNotifyFilter(s.notifiter),
 		GetRouterFilter(s.router),
 		ParamsFilter,
 		GetActionFilter(s),
@@ -233,7 +233,7 @@ func NewServer(app *App) *Server {
 	s.router = NewRouter()
 	s.actions = NewActionContainer()
 	s.converter = NewConverter()
-	s.templateLoader = NewTemplateLoader(app.ViewPath)
+	s.templateLoader = NewTemplateLoader([]string{app.ViewPath})
 	s.notifiter = NewNotifier()
 	s.BindDefaultFilters()
 	s.notifiter.Watch(s.templateLoader)

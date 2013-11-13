@@ -377,7 +377,7 @@ func ProcessSources(roots []string) (*SourceInfo, error) {
 							Description: err.Msg,
 							Line:        err.Pos.Line,
 							Column:      err.Pos.Column,
-							SouceLines:  source,
+							SourceLines: source,
 						})
 					}
 					return rerrList
