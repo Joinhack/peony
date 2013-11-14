@@ -17,10 +17,9 @@ var (
 )
 
 type TemplateLoader struct {
-	template     *tmpl.Template //
-	basePath     []string
-	compileError error
-	forceNotify  bool //force notify when the first time
+	template    *tmpl.Template //
+	basePath    []string
+	forceNotify bool //force notify when the first time
 }
 
 func (t *TemplateLoader) IgnoreDir(file os.FileInfo) bool {
@@ -32,7 +31,7 @@ func (t *TemplateLoader) IgnoreDir(file os.FileInfo) bool {
 
 //when the suffix is .html notify the change
 func (t *TemplateLoader) IgnoreFile(file string) bool {
-	if !strings.HasSuffix(filepath.Base(file), ".go") {
+	if !strings.HasSuffix(filepath.Base(file), ".html") {
 		return true
 	}
 	return false
@@ -40,15 +39,10 @@ func (t *TemplateLoader) IgnoreFile(file string) bool {
 
 func (t *TemplateLoader) Refresh() error {
 	t.template = nil
-	t.compileError = nil
 	return t.load()
 }
 
 func (t *TemplateLoader) ForceRefresh() bool {
-	if t.forceNotify {
-		t.forceNotify = false
-		return true
-	}
 	return t.forceNotify
 }
 
@@ -74,6 +68,7 @@ func NewTemplateLoader(base []string) *TemplateLoader {
 }
 
 func (t *TemplateLoader) load() error {
+
 	for _, base := range t.basePath {
 		if t.template == nil {
 			t.template = tmpl.New("basename")
@@ -109,16 +104,20 @@ func (t *TemplateLoader) load() error {
 					Path:        path,
 				}
 				complieError.Line, complieError.Description = parseComplieError(err.Error())
-				t.compileError = complieError
-				ERROR.Println(err)
-				return t.compileError
+				return complieError
 			}
 			return nil
 		})
 		if err != nil {
+			if os.IsNotExist(err) {
+				WARN.Println("template path is not exist:", base)
+				continue
+			}
 			return err
 		}
+
 	}
+	t.forceNotify = false
 	return nil
 }
 
@@ -138,14 +137,10 @@ func parseComplieError(errstr string) (line int, desc string) {
 	return
 }
 
-func (t *TemplateLoader) Lookup(path string) (*tmpl.Template, error) {
-	if t.compileError != nil {
-		return nil, t.compileError
+func (t *TemplateLoader) Lookup(path string) *tmpl.Template {
+	if t.template == nil {
+		return nil
 	}
 	template := t.template.Lookup(templateName(path))
-	var err = NoTemplateFound
-	if template != nil {
-		err = nil
-	}
-	return template, err
+	return template
 }

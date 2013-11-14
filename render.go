@@ -52,11 +52,11 @@ func (r *ErrorRender) Apply(c *Controller) {
 	resp := c.resp
 	req := c.req
 	tplName := "errors/500.html"
-	tpl, err := c.templateLoader.Lookup(tplName)
-	if err != nil {
+	tpl := c.templateLoader.Lookup(tplName)
+	if tpl == nil {
 		resp.WriteHeader(http.StatusInternalServerError, "text/"+req.Accept)
-		ERROR.Printf("look template(%s) error: %s", tplName, err)
 		resp.Write([]byte(r.Error.Error()))
+		WARN.Println("can't find template", tplName)
 		return
 	}
 	resp.WriteHeader(http.StatusInternalServerError, "text/html")
@@ -117,13 +117,13 @@ func (t *TemplateRender) Apply(c *Controller) {
 	if tmplName == "" {
 		tmplName = c.actionName
 	}
-	template, err := templateLoader.Lookup(tmplName)
-	if err != nil {
-		ERROR.Printf("lookup template(%s) error:%s", tmplName, err)
-		resp.Write([]byte(err.Error()))
+	template := templateLoader.Lookup(tmplName)
+	if template == nil {
+		ERROR.Println("can't find template", tmplName)
+		resp.Write([]byte("can't find template " + tmplName))
 		return
 	}
-	err = template.Execute(resp, t.RenderParam)
+	err := template.Execute(resp, t.RenderParam)
 	if err != nil {
 		//TODO parse error
 		resp.Write([]byte(err.Error()))

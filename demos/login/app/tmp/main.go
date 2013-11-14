@@ -24,7 +24,7 @@ func main() {
 	app.BindAddr = *bindAddr
 	svr := app.NewServer()
 
-	svr.Mapper("/index", (*controllers0.Login)(nil), &peony.TypeAction{Name: "Login.Index", MethodName: "Index", MethodArgs:[]*peony.MethodArgType{&peony.MethodArgType{Name:"user", Type:reflect.TypeOf((*[]*controllers0.Mail)(nil)).Elem()},
+	svr.Mapper("/", (*controllers0.Login)(nil), &peony.TypeAction{Name: "Login.Index", MethodName: "Index", MethodArgs:[]*peony.MethodArgType{&peony.MethodArgType{Name:"user", Type:reflect.TypeOf((*[]*controllers0.Mail)(nil)).Elem()},
 		&peony.MethodArgType{Name:"m", Type:reflect.TypeOf((*models0.User)(nil))}}})
 	svr.Mapper("/test", controllers0.Index, &peony.MethodAction{Name:"Index", MethodArgs:[]*peony.MethodArgType{&peony.MethodArgType{Name:"s", Type:reflect.TypeOf((*controllers1.S)(nil))},
 		&peony.MethodArgType{Name:"ss", Type:reflect.TypeOf((*string)(nil)).Elem()}}})

@@ -27,8 +27,9 @@ type observerWatcher struct {
 }
 
 type Notifier struct {
-	watchers []*observerWatcher
-	mutex    *sync.Mutex
+	watchers  []*observerWatcher
+	lastError Error
+	mutex     *sync.Mutex
 }
 
 func NewNotifier() *Notifier {

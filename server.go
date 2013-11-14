@@ -2,10 +2,10 @@ package peony
 
 import (
 	"errors"
-	//"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"path"
 	"reflect"
 	"strings"
 )
@@ -233,7 +233,8 @@ func NewServer(app *App) *Server {
 	s.router = NewRouter()
 	s.actions = NewActionContainer()
 	s.converter = NewConverter()
-	s.templateLoader = NewTemplateLoader([]string{app.ViewPath})
+	//the default views is priority, used for render error, follower template loader error.
+	s.templateLoader = NewTemplateLoader([]string{path.Join(PEONYPATH, "views"), app.ViewPath})
 	s.notifiter = NewNotifier()
 	s.BindDefaultFilters()
 	s.notifiter.Watch(s.templateLoader)

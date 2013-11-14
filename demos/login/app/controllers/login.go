@@ -12,10 +12,9 @@ type Login struct {
 type Mail struct {
 }
 
-// @Mapper("/index")
+// @Mapper("/")
 func (l *Login) Index(user []*Mail, m *model.User) app.Render {
-	panic(11)
-	return app.NewTextRender("")
+	return app.NewTemplateRender(nil, "Index.html")
 }
 
 // @Mapper("/test")

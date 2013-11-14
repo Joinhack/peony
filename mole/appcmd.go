@@ -48,6 +48,7 @@ var (
 func (a *AppCmd) Start() error {
 	output := &cmdOutput{os.Stdout, make(chan bool, 1)}
 	a.Stdout = output
+	a.Stderr = os.Stderr
 	if err := a.Cmd.Start(); err != nil {
 		return err
 	}
