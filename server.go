@@ -196,6 +196,7 @@ func (s *Server) mapper(tuple *UrlActionPair) error {
 	return nil
 }
 
+//mapper the func, e.g. func Index() ...
 func (s *Server) MethodMapper(expr string, method interface{}, action *MethodAction) error {
 	actionType := reflect.TypeOf(method)
 	if actionType.Kind() != reflect.Func {
@@ -206,6 +207,7 @@ func (s *Server) MethodMapper(expr string, method interface{}, action *MethodAct
 	return s.mapper(&UrlActionPair{expr, action})
 }
 
+//mapper the func with recv, e.g. func (c *C) Index() ...
 func (s *Server) TypeMapper(expr string, recv interface{}, action *TypeAction) error {
 	//every time I get typeof recv, because they are the same, so don't worry.
 	recvType := reflect.TypeOf(recv)

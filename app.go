@@ -20,12 +20,12 @@ type App struct {
 	BindAddr   string
 }
 
-func absImportPath(imp string) string {
+func SearchSrcRoot(imp string) string {
 	pkg, err := build.Import(imp, "", build.FindOnly)
 	if err != nil {
 		ERROR.Fatalln("get  abslute import path  error:", err)
 	}
-	return filepath.Join(pkg.SrcRoot, filepath.FromSlash(imp))
+	return pkg.SrcRoot
 }
 
 var (
@@ -42,7 +42,8 @@ func init() {
 	WARN = log.New(os.Stdout, "WARN ", log.Ldate|log.Ltime)
 	INFO = log.New(os.Stdout, "INFO ", log.Ldate|log.Ltime)
 	ERROR = log.New(os.Stderr, "ERROR ", log.Ldate|log.Ltime)
-	PEONYPATH = absImportPath("github.com/joinhack/peony")
+	importPath := "github.com/joinhack/peony"
+	PEONYPATH = filepath.Join(SearchSrcRoot(importPath), importPath)
 }
 
 func NewApp(sourcePath, importPath string) *App {
