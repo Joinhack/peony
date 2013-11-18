@@ -14,6 +14,7 @@ type Mail struct {
 
 // @Mapper("/")
 func (l *Login) Index(user []*Mail, m *model.User) app.Render {
+	panic("asdasd")
 	return app.NewTemplateRender(nil, "Index.html")
 }
 

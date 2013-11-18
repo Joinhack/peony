@@ -28,6 +28,7 @@ type Server struct {
 	actions        *ActionContainer
 	notifiter      *Notifier
 	templateLoader *TemplateLoader
+	app            *App
 }
 
 type Request struct {
@@ -169,6 +170,7 @@ func NewController(w http.ResponseWriter, r *http.Request, tl *TemplateLoader) *
 
 func (server *Server) handlerInner(w http.ResponseWriter, r *http.Request) {
 	c := NewController(w, r, server.templateLoader)
+	c.app = server.app
 	server.filters[0](c, server.filters[1:])
 }
 
@@ -240,6 +242,7 @@ func NewServer(app *App) *Server {
 	s.notifiter = NewNotifier()
 	s.BindDefaultFilters()
 	s.notifiter.Watch(s.templateLoader)
+	s.app = app
 	return s
 }
 

@@ -13,6 +13,7 @@ type Controller struct {
 	params         *Params
 	render         Render
 	templateLoader *TemplateLoader
+	app            *App
 }
 
 type Action interface {

@@ -30,7 +30,7 @@ func NewSet() Set {
 func MustReadLines(filename string) []string {
 	r, err := ReadLines(filename)
 	if err != nil {
-		panic(err)
+		panic("read file error:" + filename)
 	}
 	return r
 }
