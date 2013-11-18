@@ -99,6 +99,8 @@ func newBuildError(out string) error {
 			Column:      column,
 			Description: desc,
 		})
+		//just get the first error
+		break
 	}
 	return errorList
 }

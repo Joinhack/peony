@@ -92,6 +92,10 @@ func (c *Controller) NotFound(msg string, args ...interface{}) {
 	c.resp.Write([]byte(text))
 }
 
+func (c *Controller) DevMode() bool {
+	return c.app.DevMode
+}
+
 func ActionInvoke(converter *Converter, controller *Controller) {
 	args := controller.action.Args()
 	methodArgs := make([]reflect.Value, 0, len(args))
