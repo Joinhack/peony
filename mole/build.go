@@ -73,7 +73,6 @@ func newBuildError(out string) error {
 	}
 	fileSources := map[string][]string{}
 	errorList := peony.ErrorList{}
-	fmt.Println(matchs)
 	for _, match := range matchs {
 
 		filep, _ := filepath.Abs(match[1])
@@ -95,6 +94,7 @@ func newBuildError(out string) error {
 			Title:       "Complie error",
 			FileName:    filename,
 			Path:        filep,
+			SourceLines: source,
 			Line:        line,
 			Column:      column,
 			Description: desc,
