@@ -42,7 +42,6 @@ func main() {
 	}
 	args := flag.Args()
 	if len(args) < 1 {
-
 		usage(1)
 	}
 	if command, ok := Commands[args[0]]; ok {

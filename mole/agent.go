@@ -125,5 +125,8 @@ func (a *Agent) Run(addr string) {
 		time.Sleep(1 * time.Second)
 		peony.INFO.Println("peony is listening on", addr)
 	}()
-	http.ListenAndServe(addr, a)
+	err := http.ListenAndServe(addr, a)
+	if err != nil {
+		peony.ERROR.Fatalln(err.Error())
+	}
 }
