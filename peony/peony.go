@@ -6,13 +6,16 @@ import (
 	"text/template"
 )
 
-var tmpl = `Example Usage:
-peony run [ImportPath]
-peony build [ImportPath]
+var tmpl = `Usage: peony command [arguments]
+The commands are:
+{{range .}}
+	{{.Desc }}
+{{end}}
 `
 
 type Command struct {
 	Execute func([]string)
+	Desc    string
 	Name    string
 }
 
@@ -28,7 +31,7 @@ func init() {
 
 func usage(c int) {
 	var tpl = template.Must(template.New("").Parse(tmpl))
-	tpl.Execute(os.Stderr, nil)
+	tpl.Execute(os.Stderr, Commands)
 	os.Exit(c)
 }
 
