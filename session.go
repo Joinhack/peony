@@ -11,27 +11,31 @@ type Session struct {
 	id        string
 }
 
+//Set attribute
 func (s *Session) Set(key string, value interface{}) {
 	s.attribute[key] = value
 }
 
+//Get attribute
 func (s *Session) Get(key string) (val interface{}, ok bool) {
 	val, ok = s.attribute[key]
 	return
 }
 
+//Get session id
 func (s *Session) Id() string {
 	return s.id
 }
 
+//Set session id
 func (s *Session) SetId(id string) {
 	s.id = id
 }
 
 type SessionManager interface {
 	GenerateId() string
-	Save(c *Controller, s *Session)
-	Get(c *Controller) *Session
+	Store(c *Controller, s *Session) //save session
+	Get(c *Controller) *Session      //get session
 }
 
 type CookieSessionManager struct {
@@ -70,15 +74,15 @@ func (cm *CookieSessionManager) Get(c *Controller) *Session {
 //default sessionManager use the cookie session manager
 func init() {
 	OnServerInit(func(s *Server) {
-		s.SetSessionManager(&CookieSessionManager{})
+		s.SessionManager = &CookieSessionManager{}
 	})
 }
 
-func GetSessionFilter(sm SessionManager) Filter {
+func GetSessionFilter(s *Server) Filter {
 	return func(c *Controller, filter []Filter) {
-		session := sm.Get(c)
+		session := s.SessionManager.Get(c)
 		c.Session = session
 		filter[0](c, filter[1:])
-		sm.Save(c, session)
+		s.SessionManager.Store(c, session)
 	}
 }

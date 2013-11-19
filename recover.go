@@ -13,7 +13,7 @@ func RecoverFilter(c *Controller, filter []Filter) {
 	defer func() {
 		if err := recover(); err != nil {
 			stack := debug.Stack()
-			e := NewErrorFromPanic(c.app, string(stack))
+			e := NewErrorFromPanic(c.Server.App, string(stack))
 			if e != nil {
 				description := "unknown error"
 				if err != nil {

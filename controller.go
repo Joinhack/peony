@@ -14,7 +14,7 @@ type Controller struct {
 	render         Render
 	templateLoader *TemplateLoader
 	Session        *Session
-	app            *App
+	Server         *Server
 }
 
 type Action interface {
@@ -91,10 +91,6 @@ func (c *Controller) NotFound(msg string, args ...interface{}) {
 		text = fmt.Sprintf(msg, args)
 	}
 	c.Resp.Write([]byte(text))
-}
-
-func (c *Controller) DevMode() bool {
-	return c.app.DevMode
 }
 
 func ActionInvoke(converter *Converter, controller *Controller) {
