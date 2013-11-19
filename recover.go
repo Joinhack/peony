@@ -22,7 +22,7 @@ func RecoverFilter(c *Controller, filter []Filter) {
 				e.Description = description
 				NewErrorRender(e).Apply(c)
 			} else {
-				c.resp.Write(stack)
+				c.Resp.Write(stack)
 			}
 		}
 	}()

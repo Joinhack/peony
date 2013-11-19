@@ -49,17 +49,17 @@ func NewErrorRender(err error) Render {
 }
 
 func (r *ErrorRender) Apply(c *Controller) {
-	resp := c.resp
-	req := c.req
+	resp := c.Resp
+	req := c.Req
 	tplName := "errors/500.html"
 	tpl := c.templateLoader.Lookup(tplName)
 	if tpl == nil {
-		resp.WriteHeader(http.StatusInternalServerError, "text/"+req.Accept)
+		resp.WriteContentTypeCode(http.StatusInternalServerError, "text/"+req.Accept)
 		resp.Write([]byte(r.Error.Error()))
 		WARN.Println("can't find template", tplName)
 		return
 	}
-	resp.WriteHeader(http.StatusInternalServerError, "text/html")
+	resp.WriteContentTypeCode(http.StatusInternalServerError, "text/html")
 	var errorlist ErrorList
 	switch r.Error.(type) {
 	case ErrorList:
@@ -73,45 +73,45 @@ func (r *ErrorRender) Apply(c *Controller) {
 			Description: r.Error.Error(),
 		}}
 	}
-	tpl.Execute(c.resp, errorlist)
+	tpl.Execute(c.Resp, errorlist)
 }
 
 func (j *JsonRender) Apply(c *Controller) {
-	resp := c.resp
+	resp := c.Resp
 	rs, err := json.Marshal(j.Json)
 	if err != nil {
 		(&ErrorRender{Error: err}).Apply(c)
 		return
 	}
-	resp.WriteHeader(http.StatusOK, "application/json")
+	resp.WriteContentTypeCode(http.StatusOK, "application/json")
 	resp.Write(rs)
 }
 
 func (r *XmlRender) Apply(c *Controller) {
-	resp := c.resp
+	resp := c.Resp
 	bs, err := xml.Marshal(r.Xml)
 	if err != nil {
 		(&ErrorRender{Error: err}).Apply(c)
 		return
 	}
-	resp.WriteHeader(http.StatusOK, "application/xml")
+	resp.WriteContentTypeCode(http.StatusOK, "application/xml")
 	resp.Write(bs)
 }
 
 func (r *TextRender) Apply(c *Controller) {
-	resp := c.resp
+	resp := c.Resp
 	contentType := r.ContentType
 	if contentType == "" {
 		contentType = "text/pain"
 	}
-	resp.WriteHeader(http.StatusOK, r.ContentType)
+	resp.WriteContentTypeCode(http.StatusOK, r.ContentType)
 	resp.Write([]byte(r.Text))
 }
 
 func (t *TemplateRender) Apply(c *Controller) {
-	resp := c.resp
+	resp := c.Resp
 	templateLoader := c.templateLoader
-	resp.WriteHeader(http.StatusOK, "text/html")
+	resp.WriteContentTypeCode(http.StatusOK, "text/html")
 	tmplName := t.TemplateName
 	//if user choose a template, use the choosed, esle use the default rule for find tempate
 	if tmplName == "" {

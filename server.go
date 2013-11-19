@@ -29,6 +29,7 @@ type Server struct {
 	notifiter      *Notifier
 	templateLoader *TemplateLoader
 	app            *App
+	sessionManager SessionManager
 }
 
 type Request struct {
@@ -133,11 +134,11 @@ func (p *Params) mergeValues() {
 }
 
 func ParamsFilter(c *Controller, filter []Filter) {
-	ParseParems(c.params, c.req)
+	ParseParems(c.params, c.Req)
 	filter[0](c, filter[1:])
 }
 
-func (r *Response) WriteHeader(code int, contentType string) {
+func (r *Response) WriteContentTypeCode(code int, contentType string) {
 	if contentType == "" {
 		contentType = "text/html"
 	}
@@ -165,13 +166,16 @@ func (server *Server) handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func NewController(w http.ResponseWriter, r *http.Request, tl *TemplateLoader) *Controller {
-	return &Controller{resp: NewResponse(w), req: NewRequest(r), templateLoader: tl}
+	return &Controller{Resp: NewResponse(w), Req: NewRequest(r), templateLoader: tl}
 }
 
 func (server *Server) handlerInner(w http.ResponseWriter, r *http.Request) {
 	c := NewController(w, r, server.templateLoader)
 	c.app = server.app
 	server.filters[0](c, server.filters[1:])
+	if c.render != nil {
+		c.render.Apply(c)
+	}
 }
 
 func (s *Server) BindDefaultFilters() {
@@ -179,6 +183,7 @@ func (s *Server) BindDefaultFilters() {
 		RecoverFilter,
 		GetNotifyFilter(s.notifiter),
 		GetRouterFilter(s.router),
+		GetSessionFilter(s.sessionManager),
 		ParamsFilter,
 		GetActionFilter(s),
 	}
@@ -234,16 +239,33 @@ func (s *Server) Mapper(expr string, i interface{}, a Action) error {
 
 func NewServer(app *App) *Server {
 	s := &Server{Addr: app.BindAddr}
+	s.app = app
+	return s
+}
+
+var serverInitHooks = []func(*Server){}
+
+func OnServerInit(f func(*Server)) {
+	serverInitHooks = append(serverInitHooks, f)
+}
+
+func (s *Server) Init() {
 	s.router = NewRouter()
 	s.actions = NewActionContainer()
 	s.converter = NewConverter()
 	//the default views is priority, used for render error, follower template loader error.
-	s.templateLoader = NewTemplateLoader([]string{path.Join(PEONYPATH, "views"), app.ViewPath})
+	s.templateLoader = NewTemplateLoader([]string{path.Join(PEONYPATH, "views"), s.app.ViewPath})
 	s.notifiter = NewNotifier()
-	s.BindDefaultFilters()
 	s.notifiter.Watch(s.templateLoader)
-	s.app = app
-	return s
+
+	for _, f := range serverInitHooks {
+		f(s)
+	}
+	s.BindDefaultFilters()
+}
+
+func (s *Server) SetSessionManager(manager SessionManager) {
+	s.sessionManager = manager
 }
 
 func (server *Server) Run() error {

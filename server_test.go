@@ -39,6 +39,7 @@ func TestServer(t *testing.T) {
 	app.ViewPath, err = filepath.Abs(".")
 	app.BindAddr = ":8080"
 	svr := app.NewServer()
+	svr.Init()
 	err = svr.Mapper("/", (*AS)(nil), &TypeAction{Name: "AS.T", MethodName: "T"})
 	if err != nil {
 		panic(err)

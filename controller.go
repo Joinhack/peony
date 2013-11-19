@@ -6,13 +6,14 @@ import (
 )
 
 type Controller struct {
-	resp           *Response
-	req            *Request
+	Resp           *Response
+	Req            *Request
 	actionName     string
 	action         Action
 	params         *Params
 	render         Render
 	templateLoader *TemplateLoader
+	Session        *Session
 	app            *App
 }
 
@@ -84,12 +85,12 @@ func (a *ActionContainer) RegisterAction(action Action) {
 }
 
 func (c *Controller) NotFound(msg string, args ...interface{}) {
-	c.resp.WriteHeader(404, "text/html")
+	c.Resp.WriteContentTypeCode(404, "text/html")
 	text := msg
 	if len(args) > 0 {
 		text = fmt.Sprintf(msg, args)
 	}
-	c.resp.Write([]byte(text))
+	c.Resp.Write([]byte(text))
 }
 
 func (c *Controller) DevMode() bool {
@@ -124,6 +125,5 @@ func GetActionFilter(server *Server) Filter {
 			return
 		}
 		ActionInvoke(server.converter, controller)
-		controller.render.Apply(controller)
 	}
 }

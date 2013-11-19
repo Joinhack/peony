@@ -208,7 +208,7 @@ func main() {
 	app := peony.NewApp(*srcPath, *importPath)
 	app.BindAddr = *bindAddr
 	svr := app.NewServer()
-
+	svr.Init()
 {{range $idx, $codeGen := $.codeGens }}{{$codeGen.Generate "app" "svr" $.importPaths}}{{end}}
 
 	go func(){
