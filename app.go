@@ -18,6 +18,7 @@ type App struct {
 	BasePath   string
 	DevMode    bool
 	BindAddr   string
+	Security   string
 }
 
 func SearchSrcRoot(imp string) string {

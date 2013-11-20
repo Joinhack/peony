@@ -171,6 +171,7 @@ func NewController(w http.ResponseWriter, r *http.Request, tl *TemplateLoader) *
 
 func (server *Server) handlerInner(w http.ResponseWriter, r *http.Request) {
 	c := NewController(w, r, server.templateLoader)
+	c.Server = server
 	server.filters[0](c, server.filters[1:])
 	if c.render != nil {
 		c.render.Apply(c)

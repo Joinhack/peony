@@ -1,35 +1,40 @@
 package peony
 
 import (
+	"bytes"
+	"encoding/base32"
+	"encoding/gob"
 	"github.com/streadway/simpleuuid"
 	"net/http"
 	"time"
 )
 
+var encoding *base32.Encoding
+
 type Session struct {
-	attribute map[string]interface{}
-	id        string
+	Attribute map[string]interface{}
+	Id        string
 }
 
 //Set attribute
 func (s *Session) Set(key string, value interface{}) {
-	s.attribute[key] = value
+	s.Attribute[key] = value
 }
 
 //Get attribute
 func (s *Session) Get(key string) (val interface{}, ok bool) {
-	val, ok = s.attribute[key]
+	val, ok = s.Attribute[key]
 	return
 }
 
 //Get session id
-func (s *Session) Id() string {
-	return s.id
+func (s *Session) GetId() string {
+	return s.Id
 }
 
 //Set session id
 func (s *Session) SetId(id string) {
-	s.id = id
+	s.Id = id
 }
 
 type SessionManager interface {
@@ -38,11 +43,11 @@ type SessionManager interface {
 	Get(c *Controller) *Session      //get session
 }
 
-type CookieSessionManager struct {
+type SimpleSessionManager struct {
 	SessionManager
 }
 
-func (c *CookieSessionManager) GenerateId() string {
+func (c *SimpleSessionManager) GenerateId() string {
 	uuid, err := simpleuuid.NewTime(time.Now())
 	if err != nil {
 		panic(err) // never happend
@@ -50,31 +55,57 @@ func (c *CookieSessionManager) GenerateId() string {
 	return uuid.String()
 }
 
-func (cm *CookieSessionManager) Save(c *Controller, s *Session) {
+func (cm *SimpleSessionManager) Store(c *Controller, s *Session) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(s)
+	if err != nil {
+		ERROR.Println(err)
+	}
+
+	val := encoding.EncodeToString(buf.Bytes())
 	cookie := &http.Cookie{
-		Name:     "PEONY_SID",
+		Name:     "PEONY_SESSION",
 		HttpOnly: false,
 		Secure:   false,
-		Value:    "asdasds",
+		Value:    val,
 		Path:     "/",
-		Expires:  time.Now().UTC(),
+		Expires:  time.Now().Add(30 * time.Second).UTC(),
 	}
 	http.SetCookie(c.Resp, cookie)
 }
 
-func (cm *CookieSessionManager) Get(c *Controller) *Session {
-	cookie, err := c.Req.Cookie("PEONY_SID")
+func (cm *SimpleSessionManager) Get(c *Controller) *Session {
+	cookie, err := c.Req.Cookie("PEONY_SESSION")
 	if err != nil {
-		return &Session{attribute: make(map[string]interface{}), id: cm.GenerateId()}
+		return &Session{Attribute: make(map[string]interface{}), Id: cm.GenerateId()}
 	}
-	println(cookie)
-	return nil
+	var bs []byte
+	bs, err = encoding.DecodeString(cookie.Value)
+	if err != nil {
+		ERROR.Println(err)
+		return &Session{Attribute: make(map[string]interface{}), Id: cm.GenerateId()}
+	}
+	var buf = bytes.NewBuffer(bs)
+	enc := gob.NewDecoder(buf)
+	var session = &Session{}
+	if err = enc.Decode(session); err != nil {
+		ERROR.Println(err)
+		return &Session{Attribute: make(map[string]interface{}), Id: cm.GenerateId()}
+	}
+	return session
 }
 
 //default sessionManager use the cookie session manager
 func init() {
 	OnServerInit(func(s *Server) {
-		s.SessionManager = &CookieSessionManager{}
+		s.SessionManager = &SimpleSessionManager{}
+		gob.Register((*Session)(nil))
+		sec := s.App.Security
+		if len(sec) == 0 {
+			sec = "1234567890.BCDESX%/abcdefghi-kmn"
+		}
+		encoding = base32.NewEncoding(sec)
 	})
 }
 

@@ -24,6 +24,8 @@ func RecoverFilter(c *Controller, filter []Filter) {
 			} else {
 				c.Resp.Write(stack)
 			}
+			//if error happend don't use render
+			c.render = nil
 		}
 	}()
 	filter[0](c, filter[1:])
@@ -41,6 +43,7 @@ func NewErrorFromPanic(app *App, stack string) *Error {
 		return nil
 	}
 	errorLine := stack[idx : idx+end]
+
 	matched := PANICRegexp.FindStringSubmatch(errorLine)
 	if matched == nil {
 		return nil
