@@ -26,7 +26,7 @@ type Server struct {
 	filters        []Filter
 	converter      *Converter
 	actions        *ActionContainer
-	notifiter      *Notifier
+	notifier       *Notifier
 	templateLoader *TemplateLoader
 	App            *App
 	SessionManager SessionManager
@@ -181,11 +181,11 @@ func (server *Server) handlerInner(w http.ResponseWriter, r *http.Request) {
 func (s *Server) BindDefaultFilters() {
 	s.filters = []Filter{
 		RecoverFilter,
-		GetNotifyFilter(s.notifiter),
-		GetRouterFilter(s.router),
+		GetNotifyFilter(s),
+		GetRouterFilter(s),
 		GetSessionFilter(s),
 		ParamsFilter,
-		GetActionFilter(s),
+		GetActionInvokeFilter(s),
 	}
 }
 
@@ -255,8 +255,8 @@ func (s *Server) Init() {
 	s.converter = NewConverter()
 	//the default views is priority, used for render error, follower template loader error.
 	s.templateLoader = NewTemplateLoader([]string{path.Join(PEONYPATH, "views"), s.App.ViewPath})
-	s.notifiter = NewNotifier()
-	s.notifiter.Watch(s.templateLoader)
+	s.notifier = NewNotifier()
+	s.notifier.Watch(s.templateLoader)
 
 	s.BindDefaultFilters()
 	for _, f := range serverInitHooks {

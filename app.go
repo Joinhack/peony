@@ -40,9 +40,9 @@ func getLogger(name string) *log.Logger {
 }
 
 func init() {
-	WARN = log.New(os.Stdout, "WARN ", log.Ldate|log.Ltime)
-	INFO = log.New(os.Stdout, "INFO ", log.Ldate|log.Ltime)
-	ERROR = log.New(os.Stderr, "ERROR ", log.Ldate|log.Ltime)
+	WARN = log.New(os.Stdout, "WARN ", log.Ldate|log.Ltime|log.Lshortfile)
+	INFO = log.New(os.Stdout, "INFO ", log.Ldate|log.Ltime|log.Lshortfile)
+	ERROR = log.New(os.Stderr, "ERROR ", log.Ldate|log.Ltime|log.Lshortfile)
 	importPath := "github.com/joinhack/peony"
 	PEONYPATH = filepath.Join(SearchSrcRoot(importPath), importPath)
 }

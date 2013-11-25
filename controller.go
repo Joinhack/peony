@@ -93,33 +93,23 @@ func (c *Controller) NotFound(msg string, args ...interface{}) {
 	c.Resp.Write([]byte(text))
 }
 
-func ActionInvoke(converter *Converter, controller *Controller) {
-	args := controller.action.Args()
-	methodArgs := make([]reflect.Value, 0, len(args))
-	for _, arg := range args {
-		argValue := ArgConvert(converter, controller.params, arg)
-		methodArgs = append(methodArgs, argValue)
-	}
-	rsSlice := controller.action.Call(methodArgs)
-	if len(rsSlice) > 0 {
-		rs := rsSlice[0]
-		if rs.Type().Kind() == reflect.String {
-			controller.render = &TextRender{Text: rs.String()}
-		} else if rs.Type().Implements(renderType) {
-			controller.render = rs.Interface().(Render)
-		}
-	}
-}
-
-func GetActionFilter(server *Server) Filter {
+func GetActionInvokeFilter(server *Server) Filter {
 	return func(controller *Controller, _ []Filter) {
-		// bind actionMethod to controller
-		controller.action = server.actions.FindAction(controller.actionName)
-		if controller.action == nil {
-			controller.NotFound("intenal error")
-			ERROR.Println("can't find action method by name:", controller.actionName)
-			return
+		converter := server.converter
+		args := controller.action.Args()
+		methodArgs := make([]reflect.Value, 0, len(args))
+		for _, arg := range args {
+			argValue := ArgConvert(converter, controller.params, arg)
+			methodArgs = append(methodArgs, argValue)
 		}
-		ActionInvoke(server.converter, controller)
+		rsSlice := controller.action.Call(methodArgs)
+		if len(rsSlice) > 0 {
+			rs := rsSlice[0]
+			if rs.Type().Kind() == reflect.String {
+				controller.render = &TextRender{Text: rs.String()}
+			} else if rs.Type().Implements(renderType) {
+				controller.render = rs.Interface().(Render)
+			}
+		}
 	}
 }

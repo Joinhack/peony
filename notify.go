@@ -122,9 +122,9 @@ func (n *Notifier) Notify() error {
 	return nil
 }
 
-func GetNotifyFilter(notifier *Notifier) Filter {
+func GetNotifyFilter(svr *Server) Filter {
 	return func(c *Controller, filter []Filter) {
-		if err := notifier.Notify(); err != nil {
+		if err := svr.notifier.Notify(); err != nil {
 			NewErrorRender(err).Apply(c)
 			return
 		}

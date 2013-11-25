@@ -16,12 +16,16 @@ var (
 	bindAddr   *string = flag.String("bindAddr", ":8080", "By default, read from app.conf")
 	importPath *string = flag.String("importPath", "", "Go Import Path for the app.")
 	srcPath    *string = flag.String("srcPath", "", "Path to the source root.")
+	devMode    *bool    = flag.Bool("devMode", false, "Path to the source root.")
 )
 
 func main() {
 	flag.Parse()
 	app := peony.NewApp(*srcPath, *importPath)
 	app.BindAddr = *bindAddr
+	if devMode != nil {
+		app.DevMode = *devMode
+	}
 	svr := app.NewServer()
 	svr.Init()
 	svr.Mapper("/", (*controllers0.Login)(nil), &peony.TypeAction{Name: "Login.Index", MethodName: "Index", MethodArgs:[]*peony.MethodArgType{&peony.MethodArgType{Name:"user", Type:reflect.TypeOf((*[]*controllers0.Mail)(nil)).Elem()},

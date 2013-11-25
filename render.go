@@ -130,23 +130,23 @@ func (t *TemplateRender) Apply(c *Controller) {
 	}
 }
 
-func NewJsonRender(json interface{}) Render {
+func NewJsonRender(json interface{}) *JsonRender {
 	return &JsonRender{Json: json}
 }
 
-func NewXmlRender(xml interface{}) Render {
+func NewXmlRender(xml interface{}) *XmlRender {
 	return &XmlRender{Xml: xml}
 }
 
-func NewTextRender(s string) Render {
+func NewTextRender(s string) *TextRender {
 	return &TextRender{Text: s}
 }
 
 //renderParam for is the parameter for template execute. templateName is for point the template.
-func NewTemplateRender(renderParam interface{}, templateName ...string) Render {
+func NewTemplateRender(param interface{}, templateName ...string) *TemplateRender {
 	name := ""
 	if len(templateName) > 0 {
 		name = templateName[0]
 	}
-	return &TemplateRender{RenderParam: renderParam, TemplateName: name}
+	return &TemplateRender{RenderParam: param, TemplateName: name}
 }
