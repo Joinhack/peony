@@ -273,12 +273,13 @@ func GetRouterFilter(svr *Server) Filter {
 		}
 
 		// bind actionMethod to controller
-		controller.action = svr.actions.FindAction(controller.actionName)
-		if controller.action == nil {
+		action := svr.actions.FindAction(controller.actionName)
+		if action == nil {
 			controller.NotFound("intenal error")
 			ERROR.Println("can't find action method by name:", controller.actionName)
 			return
 		}
+		controller.action = action.Dup()
 		filter[0](controller, filter[1:])
 	}
 }

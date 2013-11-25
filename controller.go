@@ -19,6 +19,7 @@ type Controller struct {
 
 type Action interface {
 	GetName() string
+	Dup() Action
 	Args() []*MethodArgType
 	Call([]reflect.Value) []reflect.Value
 }
@@ -32,6 +33,7 @@ type MethodAction struct {
 type TypeAction struct {
 	Name       string
 	RecvType   reflect.Type
+	Recv       interface{}
 	MethodName string
 	MethodArgs []*MethodArgType
 }
@@ -40,18 +42,30 @@ func (t *TypeAction) GetName() string {
 	return t.Name
 }
 
+func (t *TypeAction) Dup() Action {
+	typeAction := new(TypeAction)
+	*typeAction = *t
+	typeAction.Recv = reflect.New(typeAction.RecvType).Interface()
+	return typeAction
+}
 func (t *TypeAction) Args() []*MethodArgType {
 	return t.MethodArgs
 }
 
 func (t *TypeAction) Call(in []reflect.Value) []reflect.Value {
-	value := reflect.New(t.RecvType)
+	value := reflect.ValueOf(t.Recv)
 	method := value.MethodByName(t.MethodName)
 	return method.Call(in)
 }
 
 func (m *MethodAction) GetName() string {
 	return m.Name
+}
+
+func (m *MethodAction) Dup() Action {
+	methodAction := new(MethodAction)
+	*methodAction = *m
+	return methodAction
 }
 
 func (m *MethodAction) Args() []*MethodArgType {
