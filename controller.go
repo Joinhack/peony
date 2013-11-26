@@ -17,6 +17,8 @@ type Controller struct {
 	Server         *Server
 }
 
+var ControllerPtrType = reflect.TypeOf((*Controller)(nil))
+
 type Action interface {
 	GetName() string
 	Dup() Action
@@ -32,8 +34,8 @@ type FuncAction struct {
 
 type MethodAction struct {
 	Name       string
-	RecvType   reflect.Type
-	Recv       interface{}
+	TargetType reflect.Type
+	Target     reflect.Value
 	MethodName string
 	MethodArgs []*ArgType
 }
@@ -45,7 +47,7 @@ func (m *MethodAction) GetName() string {
 func (m *MethodAction) Dup() Action {
 	methodAction := new(MethodAction)
 	*methodAction = *m
-	methodAction.Recv = reflect.New(methodAction.RecvType).Interface()
+	methodAction.Target = reflect.New(methodAction.TargetType)
 	return methodAction
 }
 func (m *MethodAction) Args() []*ArgType {
@@ -53,7 +55,7 @@ func (m *MethodAction) Args() []*ArgType {
 }
 
 func (m *MethodAction) Call(in []reflect.Value) []reflect.Value {
-	value := reflect.ValueOf(m.Recv)
+	value := m.Target
 	method := value.MethodByName(m.MethodName)
 	return method.Call(in)
 }

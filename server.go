@@ -223,7 +223,7 @@ func (s *Server) MethodMapper(expr string, recv interface{}, action *MethodActio
 		ERROR.Println("Mapper error:", NoSuchMethod)
 		return NoSuchMethod
 	}
-	action.RecvType = recvType.Elem()
+	action.TargetType = recvType.Elem()
 	return s.mapper(&UrlActionPair{expr, action})
 }
 
