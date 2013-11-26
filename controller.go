@@ -20,42 +20,22 @@ type Controller struct {
 type Action interface {
 	GetName() string
 	Dup() Action
-	Args() []*MethodArgType
+	Args() []*ArgType
 	Call([]reflect.Value) []reflect.Value
+}
+
+type FuncAction struct {
+	Name       string
+	value      reflect.Value
+	MethodArgs []*ArgType
 }
 
 type MethodAction struct {
 	Name       string
-	value      reflect.Value
-	MethodArgs []*MethodArgType
-}
-
-type TypeAction struct {
-	Name       string
 	RecvType   reflect.Type
 	Recv       interface{}
 	MethodName string
-	MethodArgs []*MethodArgType
-}
-
-func (t *TypeAction) GetName() string {
-	return t.Name
-}
-
-func (t *TypeAction) Dup() Action {
-	typeAction := new(TypeAction)
-	*typeAction = *t
-	typeAction.Recv = reflect.New(typeAction.RecvType).Interface()
-	return typeAction
-}
-func (t *TypeAction) Args() []*MethodArgType {
-	return t.MethodArgs
-}
-
-func (t *TypeAction) Call(in []reflect.Value) []reflect.Value {
-	value := reflect.ValueOf(t.Recv)
-	method := value.MethodByName(t.MethodName)
-	return method.Call(in)
+	MethodArgs []*ArgType
 }
 
 func (m *MethodAction) GetName() string {
@@ -65,37 +45,57 @@ func (m *MethodAction) GetName() string {
 func (m *MethodAction) Dup() Action {
 	methodAction := new(MethodAction)
 	*methodAction = *m
+	methodAction.Recv = reflect.New(methodAction.RecvType).Interface()
 	return methodAction
 }
-
-func (m *MethodAction) Args() []*MethodArgType {
+func (m *MethodAction) Args() []*ArgType {
 	return m.MethodArgs
 }
 
 func (m *MethodAction) Call(in []reflect.Value) []reflect.Value {
-	return m.value.Call(in)
+	value := reflect.ValueOf(m.Recv)
+	method := value.MethodByName(m.MethodName)
+	return method.Call(in)
 }
 
-type MethodArgType struct {
+func (m *FuncAction) GetName() string {
+	return m.Name
+}
+
+func (f *FuncAction) Dup() Action {
+	FuncAction := new(FuncAction)
+	*FuncAction = *f
+	return FuncAction
+}
+
+func (f *FuncAction) Args() []*ArgType {
+	return f.MethodArgs
+}
+
+func (f *FuncAction) Call(in []reflect.Value) []reflect.Value {
+	return f.value.Call(in)
+}
+
+type ArgType struct {
 	Name string // arg name
 	Type reflect.Type
 }
 
 type ActionContainer struct {
-	methodActions map[string]Action
+	Actions map[string]Action
 }
 
 func NewActionContainer() *ActionContainer {
-	actions := &ActionContainer{methodActions: make(map[string]Action, 0)}
+	actions := &ActionContainer{Actions: make(map[string]Action, 0)}
 	return actions
 }
 
 func (a *ActionContainer) FindAction(name string) Action {
-	return a.methodActions[name]
+	return a.Actions[name]
 }
 
 func (a *ActionContainer) RegisterAction(action Action) {
-	a.methodActions[action.GetName()] = action
+	a.Actions[action.GetName()] = action
 }
 
 func (c *Controller) NotFound(msg string, args ...interface{}) {

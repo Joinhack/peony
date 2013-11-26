@@ -16,7 +16,7 @@ var (
 	bindAddr   *string = flag.String("bindAddr", ":8080", "By default, read from app.conf")
 	importPath *string = flag.String("importPath", "", "Go Import Path for the app.")
 	srcPath    *string = flag.String("srcPath", "", "Path to the source root.")
-	devMode    *bool    = flag.Bool("devMode", false, "Path to the source root.")
+	devMode    *bool    = flag.Bool("devMode", false, "Run mode")
 )
 
 func main() {
@@ -28,10 +28,10 @@ func main() {
 	}
 	svr := app.NewServer()
 	svr.Init()
-	svr.Mapper("/", (*controllers0.Login)(nil), &peony.TypeAction{Name: "Login.Index", MethodName: "Index", MethodArgs:[]*peony.MethodArgType{&peony.MethodArgType{Name:"user", Type:reflect.TypeOf((*[]*controllers0.Mail)(nil)).Elem()},
-		&peony.MethodArgType{Name:"m", Type:reflect.TypeOf((*models0.User)(nil))}}})
-	svr.Mapper("/test", controllers0.Index, &peony.MethodAction{Name:"Index", MethodArgs:[]*peony.MethodArgType{&peony.MethodArgType{Name:"s", Type:reflect.TypeOf((*controllers1.S)(nil))},
-		&peony.MethodArgType{Name:"ss", Type:reflect.TypeOf((*string)(nil)).Elem()}}})
+	svr.Mapper("/", (*controllers0.Login)(nil), &peony.MethodAction{Name: "Login.Index", MethodName: "Index", MethodArgs:[]*peony.ArgType{&peony.ArgType{Name:"user", Type:reflect.TypeOf((*[]*controllers0.Mail)(nil)).Elem()},
+		&peony.ArgType{Name:"m", Type:reflect.TypeOf((*models0.User)(nil))}}})
+	svr.Mapper("/test", controllers0.Index, &peony.FuncAction{Name:"Index", MethodArgs:[]*peony.ArgType{&peony.ArgType{Name:"s", Type:reflect.TypeOf((*controllers1.S)(nil))},
+		&peony.ArgType{Name:"ss", Type:reflect.TypeOf((*string)(nil)).Elem()}}})
 
 
 	go func(){

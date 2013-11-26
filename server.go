@@ -204,7 +204,7 @@ func (s *Server) mapper(tuple *UrlActionPair) error {
 }
 
 //mapper the func, e.g. func Index() ...
-func (s *Server) MethodMapper(expr string, method interface{}, action *MethodAction) error {
+func (s *Server) FuncMapper(expr string, method interface{}, action *FuncAction) error {
 	actionType := reflect.TypeOf(method)
 	if actionType.Kind() != reflect.Func {
 		ERROR.Println("Mapper error:", NotAction)
@@ -215,7 +215,7 @@ func (s *Server) MethodMapper(expr string, method interface{}, action *MethodAct
 }
 
 //mapper the func with recv, e.g. func (c *C) Index() ...
-func (s *Server) TypeMapper(expr string, recv interface{}, action *TypeAction) error {
+func (s *Server) MethodMapper(expr string, recv interface{}, action *MethodAction) error {
 	//every time I get typeof recv, because they are the same, so don't worry.
 	recvType := reflect.TypeOf(recv)
 	var ok bool
@@ -229,10 +229,10 @@ func (s *Server) TypeMapper(expr string, recv interface{}, action *TypeAction) e
 
 func (s *Server) Mapper(expr string, i interface{}, a Action) error {
 	switch action := a.(type) {
+	case *FuncAction:
+		return s.FuncMapper(expr, i, action)
 	case *MethodAction:
 		return s.MethodMapper(expr, i, action)
-	case *TypeAction:
-		return s.TypeMapper(expr, i, action)
 	}
 	return nil
 }

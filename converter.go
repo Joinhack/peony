@@ -81,7 +81,7 @@ func (c *Converter) Convert(value string, typ reflect.Type) reflect.Value {
 	return reflect.Zero(typ)
 }
 
-func ArgConvert(c *Converter, p *Params, argType *MethodArgType) reflect.Value {
+func ArgConvert(c *Converter, p *Params, argType *ArgType) reflect.Value {
 	vals, ok := p.Values[argType.Name]
 	if !ok || len(vals) == 0 {
 		return reflect.Zero(argType.Type)

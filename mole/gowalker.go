@@ -35,16 +35,16 @@ func (m *MapperCommentCodeGen) Generate(appName, serverName string, alias map[st
 	info := m.ActionInfo
 	argsList := []string{}
 	for _, arg := range m.ActionInfo.Args {
-		argsList = append(argsList, fmt.Sprintf("&peony.MethodArgType{Name:\"%s\", Type:%s}", arg.Name, arg.TypeExpr(alias)))
+		argsList = append(argsList, fmt.Sprintf("&peony.ArgType{Name:\"%s\", Type:%s}", arg.Name, arg.TypeExpr(alias)))
 	}
 	var argCode string
 	if len(argsList) > 0 {
-		argCode = fmt.Sprintf("MethodArgs:[]*peony.MethodArgType{%s}", strings.Join(argsList, ",\n\t\t"))
+		argCode = fmt.Sprintf("MethodArgs:[]*peony.ArgType{%s}", strings.Join(argsList, ",\n\t\t"))
 	}
 	if info.RecvName == "" {
-		code = fmt.Sprintf("\t%s.Mapper(\"%s\", %s.%s, &peony.MethodAction{Name:\"%s\", %s})\n", serverName, m.UrlExpr, pkgName, info.MethodSpec.Name, info.ActionName, argCode)
+		code = fmt.Sprintf("\t%s.Mapper(\"%s\", %s.%s, &peony.FuncAction{Name:\"%s\", %s})\n", serverName, m.UrlExpr, pkgName, info.MethodSpec.Name, info.ActionName, argCode)
 	} else {
-		code = fmt.Sprintf("\t%s.Mapper(\"%s\", (*%s.%s)(nil), &peony.TypeAction{Name: \"%s\", MethodName: \"%s\", %s})\n", serverName, m.UrlExpr, pkgName, m.ActionInfo.RecvName, info.ActionName, info.Name, argCode)
+		code = fmt.Sprintf("\t%s.Mapper(\"%s\", (*%s.%s)(nil), &peony.MethodAction{Name: \"%s\", MethodName: \"%s\", %s})\n", serverName, m.UrlExpr, pkgName, m.ActionInfo.RecvName, info.ActionName, info.Name, argCode)
 	}
 	return code
 }

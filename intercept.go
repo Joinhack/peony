@@ -9,11 +9,11 @@ const (
 	DEFER
 )
 
-type Interceptor struct {
+type Interceptors struct {
 	Point  Point
 	Action Action
 }
 
-func (i *Interceptor) name() {
+func (i *Interceptors) name() {
 
 }

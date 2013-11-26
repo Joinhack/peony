@@ -40,14 +40,14 @@ func TestServer(t *testing.T) {
 	app.BindAddr = ":8080"
 	svr := app.NewServer()
 	svr.Init()
-	err = svr.Mapper("/", (*AS)(nil), &TypeAction{Name: "AS.T", MethodName: "T"})
+	err = svr.Mapper("/", (*AS)(nil), &MethodAction{Name: "AS.T", MethodName: "T"})
 	if err != nil {
 		panic(err)
 	}
-	svr.Mapper("/json", Json, &MethodAction{Name: "xssxeem"})
-	svr.Mapper("/template", Template, &MethodAction{Name: "recover.go"})
-	svr.Mapper("/xml", Xml, &MethodAction{Name: "xml"})
-	svr.Mapper("/<int:join>", text, &MethodAction{Name: "xxeemw", MethodArgs: []*MethodArgType{&MethodArgType{Name: "join", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
+	svr.Mapper("/json", Json, &FuncAction{Name: "xssxeem"})
+	svr.Mapper("/template", Template, &FuncAction{Name: "recover.go"})
+	svr.Mapper("/xml", Xml, &FuncAction{Name: "xml"})
+	svr.Mapper("/<int:join>", text, &FuncAction{Name: "xxeemw", MethodArgs: []*ArgType{&ArgType{Name: "join", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
 	err = svr.Run()
 	if err != nil {
 		t.Fatal(err)
