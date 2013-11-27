@@ -28,9 +28,9 @@ func main() {
 	}
 	svr := app.NewServer()
 	svr.Init()
-	svr.Mapper("/", (*controllers0.Login)(nil), &peony.MethodAction{Name: "Login.Index", MethodName: "Index", MethodArgs:[]*peony.ArgType{&peony.ArgType{Name:"user", Type:reflect.TypeOf((*[]*controllers0.Mail)(nil)).Elem()},
+	svr.MethodMapper("/", (*controllers0.Login).Index, &peony.Action{Name: "Login.Index", Args:[]*peony.ArgType{&peony.ArgType{Name:"user", Type:reflect.TypeOf((*[]*controllers0.Mail)(nil)).Elem()},
 		&peony.ArgType{Name:"m", Type:reflect.TypeOf((*models0.User)(nil))}}})
-	svr.Mapper("/test", controllers0.Index, &peony.FuncAction{Name:"Index", MethodArgs:[]*peony.ArgType{&peony.ArgType{Name:"s", Type:reflect.TypeOf((*controllers1.S)(nil))},
+	svr.FuncMapper("/test", controllers0.Index, &peony.Action{Name:"Index", Args:[]*peony.ArgType{&peony.ArgType{Name:"s", Type:reflect.TypeOf((*controllers1.S)(nil))},
 		&peony.ArgType{Name:"ss", Type:reflect.TypeOf((*string)(nil)).Elem()}}})
 
 

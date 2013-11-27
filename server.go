@@ -6,12 +6,10 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"reflect"
 	"strings"
 )
 
 var (
-	NotAction        = errors.New("action should be a func")
 	ActionExist      = errors.New("Action already exist")
 	NoSuchMethod     = errors.New("No Such method")
 	ShouldTypeAction = errors.New("Action should be TypeAction")
@@ -27,7 +25,7 @@ type Server struct {
 	converter      *Converter
 	actions        *ActionContainer
 	notifier       *Notifier
-	interceptors   Interceptors
+	Interceptors   Interceptors
 	templateLoader *TemplateLoader
 	App            *App
 	SessionManager SessionManager
@@ -186,56 +184,31 @@ func (s *Server) BindDefaultFilters() {
 		GetRouterFilter(s),
 		GetSessionFilter(s),
 		ParamsFilter,
+		GetInterceptorFilter(s),
 		GetActionInvokeFilter(s),
 	}
 }
 
-type UrlActionPair struct {
-	Expr   string
-	Action Action
-}
-
-func (s *Server) mapper(tuple *UrlActionPair) error {
-	if s.actions.FindAction(tuple.Action.GetName()) != nil {
+//mapper the func, e.g. func Index() ...
+func (s *Server) FuncMapper(expr string, function interface{}, action *Action) error {
+	if s.actions.FindAction(action.Name) != nil {
 		return ActionExist
 	}
-	s.router.AddRule(&Rule{Path: tuple.Expr, Action: tuple.Action.GetName()})
-	s.actions.RegisterAction(tuple.Action)
-	return nil
-}
-
-//mapper the func, e.g. func Index() ...
-func (s *Server) FuncMapper(expr string, method interface{}, action *FuncAction) error {
-	actionType := reflect.TypeOf(method)
-	if actionType.Kind() != reflect.Func {
-		ERROR.Println("Mapper error:", NotAction)
-		return NotAction
+	if err := s.actions.RegisterFuncAction(function, action); err != nil {
+		return err
 	}
-	action.value = reflect.ValueOf(method)
-	return s.mapper(&UrlActionPair{expr, action})
+	return s.router.AddRule(&Rule{Path: expr, Action: action.Name})
 }
 
 //mapper the func with recv, e.g. func (c *C) Index() ...
-func (s *Server) MethodMapper(expr string, recv interface{}, action *MethodAction) error {
-	//every time I get typeof recv, because they are the same, so don't worry.
-	recvType := reflect.TypeOf(recv)
-	var ok bool
-	if _, ok = recvType.MethodByName(action.MethodName); !ok {
-		ERROR.Println("Mapper error:", NoSuchMethod)
-		return NoSuchMethod
+func (s *Server) MethodMapper(expr string, method interface{}, action *Action) error {
+	if s.actions.FindAction(action.Name) != nil {
+		return ActionExist
 	}
-	action.TargetType = recvType.Elem()
-	return s.mapper(&UrlActionPair{expr, action})
-}
-
-func (s *Server) Mapper(expr string, i interface{}, a Action) error {
-	switch action := a.(type) {
-	case *FuncAction:
-		return s.FuncMapper(expr, i, action)
-	case *MethodAction:
-		return s.MethodMapper(expr, i, action)
+	if err := s.actions.RegisterMethodAction(method, action); err != nil {
+		return err
 	}
-	return nil
+	return s.router.AddRule(&Rule{Path: expr, Action: action.Name})
 }
 
 func NewServer(app *App) *Server {
@@ -254,7 +227,7 @@ func (s *Server) Init() {
 	s.router = NewRouter()
 	s.actions = NewActionContainer()
 	s.converter = NewConverter()
-	s.interceptors = NewInterceptors()
+	s.Interceptors = NewInterceptors()
 	//the default views is priority, used for render error, follower template loader error.
 	s.templateLoader = NewTemplateLoader([]string{path.Join(PEONYPATH, "views"), s.App.ViewPath})
 	s.notifier = NewNotifier()

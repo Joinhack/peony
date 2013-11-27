@@ -31,11 +31,11 @@ type Interceptor struct {
 func GetInterceptorFilter(svr *Server) Filter {
 	return func(c *Controller, filter []Filter) {
 		// just now can't support interceptor for func action
-		if _, ok := c.action.(*MethodAction); !ok {
+		if c.action.method == nil {
 			filter[0](c, filter[1:])
 			return
 		}
-		interceptors := svr.interceptors
+		interceptors := svr.Interceptors
 		defer interceptors.Invoke(c, FINALLY)
 		interceptors.Invoke(c, BEFORE)
 		//already get the result
@@ -48,9 +48,7 @@ func GetInterceptorFilter(svr *Server) Filter {
 }
 
 func (i *Interceptors) Invoke(c *Controller, when int) {
-	var methodAction *MethodAction
-	methodAction = c.action.(*MethodAction)
-	interceptors := i.GetInterceptor(methodAction.TargetType, when)
+	interceptors := i.GetInterceptor(c.action.targetType, when)
 	for _, interceptor := range interceptors {
 		rsSlice := interceptor.Invoke(c)
 		if len(rsSlice) > 0 && rsSlice[0].Type().Implements(renderType) {
@@ -68,13 +66,11 @@ func (i *Interceptor) Invoke(c *Controller) []reflect.Value {
 			args = append(args, reflect.ValueOf(c))
 		}
 	} else {
-		var methodAction *MethodAction
-		var ok bool
-		if methodAction, ok = c.action.(*MethodAction); !ok {
-			ERROR.Println("the action are not MethodAction")
+		if c.action.method == nil {
+			ERROR.Println("the action are not method action")
 			return []reflect.Value{}
 		}
-		args = append(args, methodAction.Target)
+		args = append(args, c.action.target)
 		if i.NumIn == 2 {
 			//if func have arg controller
 			args = append(args, reflect.ValueOf(c))

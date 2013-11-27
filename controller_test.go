@@ -18,11 +18,11 @@ func (s *S) A() string {
 
 func TestRegister(t *testing.T) {
 	actions := NewActionContainer()
-	actions.RegisterAction(&FuncAction{Name: "xxee", value: reflect.ValueOf(A)})
-	actions.RegisterAction(&FuncAction{Name: "xxeem", value: reflect.ValueOf((&S{}).A)})
+	actions.RegisterFuncAction(A, &Action{Name: "1"})
+	actions.RegisterMethodAction((*S).A, &Action{Name: "2"})
 	var methodArgs []reflect.Value
-	action := actions.FindAction("xxee")
-	t.Log(action.Call(methodArgs))
-	action = actions.FindAction("xxeem")
-	t.Log(action.Call(methodArgs))
+	action := actions.FindAction("1")
+	t.Log(action.Invoke(methodArgs))
+	action = actions.FindAction("2")
+	t.Log(action.Dup().Invoke(methodArgs))
 }
