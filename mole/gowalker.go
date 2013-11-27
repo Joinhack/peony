@@ -39,7 +39,7 @@ func (m *MapperCommentCodeGen) Generate(appName, serverName string, alias map[st
 	}
 	var argCode string
 	if len(argsList) > 0 {
-		argCode = fmt.Sprintf("MethodArgs:[]*peony.ArgType{%s}", strings.Join(argsList, ",\n\t\t"))
+		argCode = fmt.Sprintf("Args:[]*peony.ArgType{%s}", strings.Join(argsList, ",\n\t\t"))
 	}
 	if info.RecvName == "" {
 		code = fmt.Sprintf("\t%s.Mapper(\"%s\", %s.%s, &peony.FuncAction{Name:\"%s\", %s})\n", serverName, m.UrlExpr, pkgName, info.MethodSpec.Name, info.ActionName, argCode)

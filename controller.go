@@ -22,22 +22,22 @@ var ControllerPtrType = reflect.TypeOf((*Controller)(nil))
 type Action interface {
 	GetName() string
 	Dup() Action
-	Args() []*ArgType
+	GetArgs() []*ArgType
 	Call([]reflect.Value) []reflect.Value
 }
 
 type FuncAction struct {
-	Name       string
-	value      reflect.Value
-	MethodArgs []*ArgType
+	Name  string        //action name
+	value reflect.Value //function value
+	Args  []*ArgType
 }
 
 type MethodAction struct {
-	Name       string
+	Name       string //action name
 	TargetType reflect.Type
-	Target     reflect.Value
-	MethodName string
-	MethodArgs []*ArgType
+	Target     reflect.Value //the recv value, new when dup
+	MethodName string        //method name
+	Args       []*ArgType
 }
 
 func (m *MethodAction) GetName() string {
@@ -50,8 +50,8 @@ func (m *MethodAction) Dup() Action {
 	methodAction.Target = reflect.New(methodAction.TargetType)
 	return methodAction
 }
-func (m *MethodAction) Args() []*ArgType {
-	return m.MethodArgs
+func (m *MethodAction) GetArgs() []*ArgType {
+	return m.Args
 }
 
 func (m *MethodAction) Call(in []reflect.Value) []reflect.Value {
@@ -70,8 +70,8 @@ func (f *FuncAction) Dup() Action {
 	return FuncAction
 }
 
-func (f *FuncAction) Args() []*ArgType {
-	return f.MethodArgs
+func (f *FuncAction) GetArgs() []*ArgType {
+	return f.Args
 }
 
 func (f *FuncAction) Call(in []reflect.Value) []reflect.Value {
@@ -112,7 +112,7 @@ func (c *Controller) NotFound(msg string, args ...interface{}) {
 func GetActionInvokeFilter(server *Server) Filter {
 	return func(controller *Controller, _ []Filter) {
 		converter := server.converter
-		args := controller.action.Args()
+		args := controller.action.GetArgs()
 		methodArgs := make([]reflect.Value, 0, len(args))
 		for _, arg := range args {
 			argValue := ArgConvert(converter, controller.params, arg)

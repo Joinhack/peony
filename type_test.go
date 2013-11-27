@@ -57,6 +57,7 @@ type ptrType struct {
 }
 
 func TestAddr(t *testing.T) {
+
 	//Test type have the same type addr
 	t.Logf("TestType Ptr addr:%p", typeaddr((*TestType)(nil)))
 	t.Logf("TestType Ptr addr:%p", typeaddr((*TestType)(nil)))

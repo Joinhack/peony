@@ -27,6 +27,7 @@ type Server struct {
 	converter      *Converter
 	actions        *ActionContainer
 	notifier       *Notifier
+	interceptors   Interceptors
 	templateLoader *TemplateLoader
 	App            *App
 	SessionManager SessionManager
@@ -253,6 +254,7 @@ func (s *Server) Init() {
 	s.router = NewRouter()
 	s.actions = NewActionContainer()
 	s.converter = NewConverter()
+	s.interceptors = NewInterceptors()
 	//the default views is priority, used for render error, follower template loader error.
 	s.templateLoader = NewTemplateLoader([]string{path.Join(PEONYPATH, "views"), s.App.ViewPath})
 	s.notifier = NewNotifier()
