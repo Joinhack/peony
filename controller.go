@@ -49,7 +49,15 @@ func (a *Action) Dup() *Action {
 	newAction := new(Action)
 	*newAction = *a
 	if a.method != nil {
-		newAction.target = reflect.New(a.targetType)
+		var target reflect.Value
+		var targetType = a.targetType
+		//when targetType is ptr like (*Struct).Call, the first arguments should be ptr value
+		if targetType.Kind() == reflect.Ptr {
+			target = reflect.New(targetType.Elem())
+		} else {
+			target = reflect.New(targetType).Elem()
+		}
+		newAction.target = target
 	}
 	return newAction
 }
@@ -96,12 +104,7 @@ func (a *ActionContainer) RegisterMethodAction(method interface{}, action *Actio
 	targetType := methodType.In(0)
 	action.method = method
 	action.call = methodVal
-	if targetType.Kind() == reflect.Ptr {
-		action.targetType = targetType.Elem()
-	} else {
-		action.targetType = targetType
-	}
-
+	action.targetType = targetType
 	a.Actions[action.Name] = action
 	return nil
 }
