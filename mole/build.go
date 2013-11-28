@@ -130,9 +130,11 @@ func Build(app *peony.App) error {
 	for _, pkg := range si.Pkgs {
 		codeGens = append(codeGens, pkg.CodeGens...)
 	}
-
+	alias := getAlais(si)
+	//rename peony
+	alias["github.com/joinhack/peony"] = "peony"
 	args := map[string]interface{}{
-		"importPaths": getAlais(si),
+		"importPaths": alias,
 		"codeGens":    codeGens,
 	}
 	genSource(path.Join(app.AppPath, "tmp"), "main.go", MAIN, args)
@@ -188,7 +190,6 @@ func genSource(dir, filename, tpl string, args map[string]interface{}) {
 var MAIN = `
 package main
 import (
-	"github.com/joinhack/peony"
 	"reflect"
 	"time"
 	"fmt"

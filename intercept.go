@@ -51,8 +51,12 @@ func (i *Interceptors) Invoke(c *Controller, when int) {
 	interceptors := i.GetInterceptor(c.action.targetType, when)
 	for _, interceptor := range interceptors {
 		rsSlice := interceptor.Invoke(c)
-		if len(rsSlice) > 0 && rsSlice[0].Type().Implements(renderType) {
-			c.render = rsSlice[0].Interface().(Render)
+		if len(rsSlice) > 0 {
+			rsVal := rsSlice[0]
+			rs := rsVal.Interface()
+			if rs != nil && rsVal.Type().Implements(renderType) {
+				c.render = rsSlice[0].Interface().(Render)
+			}
 			return
 		}
 	}

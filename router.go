@@ -259,7 +259,7 @@ func (r *Router) AddRule(rule *Rule) error {
 
 func GetRouterFilter(svr *Server) Filter {
 	return func(controller *Controller, filter []Filter) {
-		router := svr.router
+		router := svr.Router
 		actionName, routerParams := router.Match(controller.Req.URL.Path)
 		if actionName == "" {
 			controller.NotFound("Not Found")
@@ -273,7 +273,7 @@ func GetRouterFilter(svr *Server) Filter {
 		}
 
 		// bind actionMethod to controller
-		action := svr.actions.FindAction(controller.actionName)
+		action := svr.FindAction(controller.actionName)
 		if action == nil {
 			controller.NotFound("intenal error")
 			ERROR.Println("can't find action method by name:", controller.actionName)

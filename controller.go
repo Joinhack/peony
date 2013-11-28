@@ -130,11 +130,15 @@ func GetActionInvokeFilter(server *Server) Filter {
 		}
 		rsSlice := controller.action.Invoke(callArgs)
 		if len(rsSlice) > 0 {
-			rs := rsSlice[0]
-			if rs.Type().Kind() == reflect.String {
-				controller.render = &TextRender{Text: rs.String()}
-			} else if rs.Type().Implements(renderType) {
-				controller.render = rs.Interface().(Render)
+			rsVal := rsSlice[0]
+			if rsVal.Type().Kind() == reflect.String {
+				controller.render = &TextRender{Text: rsVal.String()}
+				return
+			} else if rsVal.Type().Implements(renderType) {
+				rs := rsVal.Interface()
+				if rs != nil {
+					controller.render = rs.(Render)
+				}
 			}
 		}
 	}

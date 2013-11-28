@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-	<head>
+<head>
 	<title>Application error</title>
 	<style>
 	html, body {
@@ -91,34 +91,34 @@
 		font-weight: bold;
 	}
 	</style>
-	</head>
-	<body>
-		{{range .}}
-		<div class='item'>
-		<div class="header block">
-			<h1>
-				{{.Title}}
-			</h1>
-			<p>
-				<strong>{{.Description}}</strong>
-			</p>
-				{{if .Path}}
-			<div  class="block source">
-			<h2>In {{.Path}}
-				{{if .Line}}
-					({{if .Line}}line: {{.Line}}{{end}}{{if .Column}} column: {{.Column}}{{end}})
-				{{end}}
-			</h2>
-			{{range .ContextSource}}
-				<div class="line {{if .IsError}}error{{end}}">
-					<span class="lineNumber">{{.Line}}:</span>
-					<pre>{{.Source}} </pre>
-				</div>
+</head>
+<body>
+	{{range .}}
+	<div class='item'>
+	<div class="header block">
+		<h1>
+			{{.Title}}
+		</h1>
+		<p>
+			<strong>{{.Description}}</strong>
+		</p>
+			{{if .Path}}
+		<div  class="block source">
+		<h2>In {{.Path}}
+			{{if .Line}}
+				({{if .Line}}line: {{.Line}}{{end}}{{if .Column}} column: {{.Column}}{{end}})
 			{{end}}
+		</h2>
+		{{range .ContextSource}}
+			<div class="line {{if .IsError}}error{{end}}">
+				<span class="lineNumber">{{.Line}}:</span>
+				<pre>{{.Source}} </pre>
 			</div>
-			{{end}}
-		</div>
+		{{end}}
 		</div>
 		{{end}}
-	</body>
+	</div>
+	</div>
+	{{end}}
+</body>
 </html>

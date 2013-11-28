@@ -18,17 +18,17 @@ var (
 type Filter func(*Controller, []Filter)
 
 type Server struct {
-	Addr           string
-	httpServer     *http.Server
-	router         *Router
+	Interceptors
+	*http.Server
+	*Router
+	*ActionContainer
 	filters        []Filter
 	converter      *Converter
-	actions        *ActionContainer
 	notifier       *Notifier
-	Interceptors   Interceptors
 	templateLoader *TemplateLoader
 	App            *App
 	SessionManager SessionManager
+	Addr           string
 }
 
 type Request struct {
@@ -191,24 +191,24 @@ func (s *Server) BindDefaultFilters() {
 
 //mapper the func, e.g. func Index() ...
 func (s *Server) FuncMapper(expr string, function interface{}, action *Action) error {
-	if s.actions.FindAction(action.Name) != nil {
+	if s.FindAction(action.Name) != nil {
 		return ActionExist
 	}
-	if err := s.actions.RegisterFuncAction(function, action); err != nil {
+	if err := s.RegisterFuncAction(function, action); err != nil {
 		return err
 	}
-	return s.router.AddRule(&Rule{Path: expr, Action: action.Name})
+	return s.AddRule(&Rule{Path: expr, Action: action.Name})
 }
 
 //mapper the func with recv, e.g. func (c *C) Index() ...
 func (s *Server) MethodMapper(expr string, method interface{}, action *Action) error {
-	if s.actions.FindAction(action.Name) != nil {
+	if s.FindAction(action.Name) != nil {
 		return ActionExist
 	}
-	if err := s.actions.RegisterMethodAction(method, action); err != nil {
+	if err := s.RegisterMethodAction(method, action); err != nil {
 		return err
 	}
-	return s.router.AddRule(&Rule{Path: expr, Action: action.Name})
+	return s.AddRule(&Rule{Path: expr, Action: action.Name})
 }
 
 func NewServer(app *App) *Server {
@@ -224,8 +224,8 @@ func OnServerInit(f func(*Server)) {
 }
 
 func (s *Server) Init() {
-	s.router = NewRouter()
-	s.actions = NewActionContainer()
+	s.Router = NewRouter()
+	s.ActionContainer = NewActionContainer()
 	s.converter = NewConverter()
 	s.Interceptors = NewInterceptors()
 	//the default views is priority, used for render error, follower template loader error.
@@ -240,6 +240,6 @@ func (s *Server) Init() {
 }
 
 func (server *Server) Run() error {
-	server.httpServer = &http.Server{Addr: server.Addr, Handler: http.HandlerFunc(server.handler)}
-	return server.httpServer.ListenAndServe()
+	server.Server = &http.Server{Addr: server.Addr, Handler: http.HandlerFunc(server.handler)}
+	return server.Server.ListenAndServe()
 }

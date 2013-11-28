@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	//"strconv"
 	"strings"
 )
 
@@ -25,12 +26,19 @@ type CodeGen interface {
 type CodeGenCreater func(comment string, spec CodeGenSpec) (bool, CodeGen)
 
 type MapperCommentCodeGen struct {
-	UrlExpr    string
-	ActionInfo *ActionInfo
+	*ActionInfo
+	UrlExpr string
 }
 
+type InterceptCommentCodeGen struct {
+	*ActionInfo
+	When     int
+	Priority int
+}
+
+//generate the code for mapper tag
 func (m *MapperCommentCodeGen) Generate(appName, serverName string, alias map[string]string) string {
-	pkgName := alias[m.ActionInfo.ImportPath]
+	pkgName := alias[m.ImportPath]
 	var code string
 	info := m.ActionInfo
 	argsList := []string{}
@@ -42,20 +50,26 @@ func (m *MapperCommentCodeGen) Generate(appName, serverName string, alias map[st
 		argCode = fmt.Sprintf("Args:[]*peony.ArgType{%s}", strings.Join(argsList, ",\n\t\t"))
 	}
 	if info.RecvName == "" {
-		code = fmt.Sprintf("\t%s.FuncMapper(\"%s\", %s.%s, &peony.Action{Name:\"%s\", %s})\n", serverName, m.UrlExpr, pkgName, info.MethodSpec.Name, info.ActionName, argCode)
+		code = fmt.Sprintf("\t%s.FuncMapper(\"%s\", %s.%s, \n\t\t&peony.Action{Name:\"%s\", %s})\n", serverName, m.UrlExpr, pkgName, info.MethodSpec.Name, info.ActionName, argCode)
 	} else {
-		code = fmt.Sprintf("\t%s.MethodMapper(\"%s\", (*%s.%s).%s, &peony.Action{Name: \"%s\", %s})\n", serverName, m.UrlExpr, pkgName, m.ActionInfo.RecvName, info.Name, info.ActionName, argCode)
+		code = fmt.Sprintf("\t%s.MethodMapper(\"%s\", (*%s.%s).%s, \n\t\t&peony.Action{Name: \"%s\", %s})\n", serverName, m.UrlExpr, pkgName, info.RecvName, info.Name, info.ActionName, argCode)
 	}
 	return code
 }
 
-func (m *MapperCommentCodeGen) BuildAlias(alias map[string][]string) {
-	m.ActionInfo.BuildAlias(alias)
+//generate the code for intercept tag
+func (i *InterceptCommentCodeGen) Generate(appName, serverName string, alias map[string]string) string {
+	pkgName := alias[i.ImportPath]
+	var code string
+	info := i.ActionInfo
+	code = fmt.Sprintf("\t%s.InterceptMethod((*%s.%s).%s, %d, %d)\n", serverName, pkgName, info.RecvName, info.Name, i.When, i.Priority)
+	return code
 }
 
 var (
 	CodeGenCreaters = []CodeGenCreater{}
-	MapperRegexp    = regexp.MustCompile("@Mapper\\(\"(.*)\"\\)")
+	MapperRegexp    = regexp.MustCompile(`@Mapper\("(.*)"\)`)
+	InterceptRegexp = regexp.MustCompile(`@Intercept\((?i)(before|after|finally|panic)(,\d+)?\)`)
 )
 
 func RegisterCodeGenCreater(builder CodeGenCreater) {
@@ -64,15 +78,41 @@ func RegisterCodeGenCreater(builder CodeGenCreater) {
 
 func init() {
 	RegisterCodeGenCreater(MapperCommentCodeGenCreater)
+	RegisterCodeGenCreater(InterceptCommentCodeGenCreater)
 }
 
+//create the mapper for comment generator.
 func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (bool, CodeGen) {
 	if actionInfo, ok := spec.(*ActionInfo); ok {
 		expr := MapperRegexp.FindStringSubmatch(comment)
 		if expr == nil {
 			return false, nil
 		}
-		return true, &MapperCommentCodeGen{expr[1], actionInfo}
+		return true, &MapperCommentCodeGen{actionInfo, expr[1]}
+	}
+	return false, nil
+}
+
+//create the intercept for comment generator.
+func InterceptCommentCodeGenCreater(comment string, spec CodeGenSpec) (bool, CodeGen) {
+	if actionInfo, ok := spec.(*ActionInfo); ok {
+		expr := InterceptRegexp.FindStringSubmatch(comment)
+		priority := 0
+		if expr == nil || len(expr) < 2 {
+			return false, nil
+		}
+		when := 0
+		switch strings.ToUpper(expr[1]) {
+		case "BEFORE":
+			when = peony.BEFORE
+		case "AFTER":
+			when = peony.AFTER
+		case "FINALLY":
+			when = peony.FINALLY
+		case "PANIC":
+			when = peony.PANIC
+		}
+		return true, &InterceptCommentCodeGen{actionInfo, when, priority}
 	}
 	return false, nil
 }

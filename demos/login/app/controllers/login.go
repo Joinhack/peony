@@ -7,6 +7,7 @@ import (
 )
 
 type Login struct {
+	xx string
 }
 
 type Mail struct {
@@ -14,8 +15,14 @@ type Mail struct {
 
 // @Mapper("/")
 func (l *Login) Index(user []*Mail, m *model.User) app.Render {
+	println(l.xx)
+	return nil
+}
 
-	return app.NewTemplateRender(nil, "Index.html")
+// @Intercept(Before)
+func (l *Login) Before(c *app.Controller) app.Render {
+	l.xx = "1000"
+	return nil
 }
 
 // @Mapper("/test")
