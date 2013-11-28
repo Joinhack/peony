@@ -55,6 +55,7 @@ func (a *Action) Dup() *Action {
 		if targetType.Kind() == reflect.Ptr {
 			target = reflect.New(targetType.Elem())
 		} else {
+			//when targetType is not ptr like Struct.Call, the first arguments should be ptr's elem.
 			target = reflect.New(targetType).Elem()
 		}
 		newAction.target = target
