@@ -19,7 +19,7 @@ func (l *Login) Index(user []*Mail, m *model.User) app.Render {
 	return nil
 }
 
-// @Intercept(Before)
+// @Intercept(Before,1)
 func (l *Login) Before(c *app.Controller) app.Render {
 	l.xx = "1000"
 	return nil

@@ -12,7 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	//"strconv"
+	"strconv"
 	"strings"
 )
 
@@ -69,7 +69,7 @@ func (i *InterceptCommentCodeGen) Generate(appName, serverName string, alias map
 var (
 	CodeGenCreaters = []CodeGenCreater{}
 	MapperRegexp    = regexp.MustCompile(`@Mapper\("(.*)"\)`)
-	InterceptRegexp = regexp.MustCompile(`@Intercept\((?i)(before|after|finally|panic)(,\d+)?\)`)
+	InterceptRegexp = regexp.MustCompile(`@Intercept\((?i)(before|after|finally|panic)(,(\d+))?\)`)
 )
 
 func RegisterCodeGenCreater(builder CodeGenCreater) {
@@ -98,6 +98,7 @@ func InterceptCommentCodeGenCreater(comment string, spec CodeGenSpec) (bool, Cod
 	if actionInfo, ok := spec.(*ActionInfo); ok {
 		expr := InterceptRegexp.FindStringSubmatch(comment)
 		priority := 0
+		fmt.Println(expr)
 		if expr == nil || len(expr) < 2 {
 			return false, nil
 		}
@@ -112,6 +113,8 @@ func InterceptCommentCodeGenCreater(comment string, spec CodeGenSpec) (bool, Cod
 		case "PANIC":
 			when = peony.PANIC
 		}
+
+		priority, _ = strconv.Atoi(expr[3])
 		return true, &InterceptCommentCodeGen{actionInfo, when, priority}
 	}
 	return false, nil
