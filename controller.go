@@ -14,13 +14,13 @@ var (
 type Controller struct {
 	Resp           *Response
 	Req            *Request
+	Session        *Session
+	Server         *Server
 	actionName     string
 	action         *Action
 	params         *Params
 	render         Render
 	templateLoader *TemplateLoader
-	Session        *Session
-	Server         *Server
 }
 
 var ControllerPtrType = reflect.TypeOf((*Controller)(nil))
@@ -31,14 +31,18 @@ type Action struct {
 	function   interface{}   //if Action is function, not nil
 	method     interface{}   //if Action is method, not nil
 	targetType reflect.Type  //if is method action, targetType is recv type. e.g. (*X).DO *X is  the targetType
-	target     reflect.Value // the value of targetType
+	targetPtr  reflect.Value // the ptr value for targetType, always is a ptr value
 	Args       []*ArgType
 }
 
 func (a *Action) Invoke(args []reflect.Value) []reflect.Value {
 	var callArgs []reflect.Value
 	if a.method != nil {
-		callArgs = append(append(callArgs, a.target), args...)
+		target := a.targetPtr
+		if a.targetType.Kind() != reflect.Ptr {
+			target = target.Elem()
+		}
+		callArgs = append(append(callArgs, target), args...)
 	} else {
 		callArgs = append(callArgs, args...)
 	}
@@ -49,16 +53,15 @@ func (a *Action) Dup() *Action {
 	newAction := new(Action)
 	*newAction = *a
 	if a.method != nil {
-		var target reflect.Value
+		var ptr reflect.Value
 		var targetType = a.targetType
-		//when targetType is ptr like (*Struct).Call, the first arguments should be ptr value
+		//when targetType is ptr like (*Struct).Call, the first arguments should be ptr's elem
 		if targetType.Kind() == reflect.Ptr {
-			target = reflect.New(targetType.Elem())
+			ptr = reflect.New(targetType.Elem())
 		} else {
-			//when targetType is not ptr like Struct.Call, the first arguments should be ptr's elem.
-			target = reflect.New(targetType).Elem()
+			ptr = reflect.New(targetType)
 		}
-		newAction.target = target
+		newAction.targetPtr = ptr
 	}
 	return newAction
 }

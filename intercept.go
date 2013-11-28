@@ -74,7 +74,11 @@ func (i *Interceptor) Invoke(c *Controller) []reflect.Value {
 			ERROR.Println("the action are not method action")
 			return []reflect.Value{}
 		}
-		args = append(args, c.action.target)
+		target := c.action.targetPtr
+		if i.Target.Kind() != reflect.Ptr {
+			target = target.Elem()
+		}
+		args = append(args, target)
 		if i.NumIn == 2 {
 			//if func have arg controller
 			args = append(args, reflect.ValueOf(c))
@@ -83,7 +87,11 @@ func (i *Interceptor) Invoke(c *Controller) []reflect.Value {
 	return i.Call.Call(args)
 }
 
+//always use original type addr for key.
 func (i *Interceptors) genKey(target reflect.Type, when int) string {
+	if target.Kind() == reflect.Ptr {
+		return fmt.Sprintf("%p:%i", target.Elem(), when)
+	}
 	return fmt.Sprintf("%p:%i", target, when)
 }
 
