@@ -34,6 +34,10 @@ func (e *Error) ContextSource() []sourceLine {
 		end = len(e.SourceLines)
 	}
 
+	if start > end {
+		start = end
+	}
+
 	var lines []sourceLine = make([]sourceLine, end-start)
 	for i, src := range e.SourceLines[start:end] {
 		fileLine := start + i + 1

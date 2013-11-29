@@ -67,6 +67,12 @@ func NewTemplateLoader(base []string) *TemplateLoader {
 	return tl
 }
 
+var (
+	TemplateFuncs = map[string]interface{}{
+		"IsDevMode": func() bool { return DevMode },
+	}
+)
+
 func (t *TemplateLoader) load() error {
 
 	for _, base := range t.basePath {
@@ -95,7 +101,7 @@ func (t *TemplateLoader) load() error {
 				return err
 			}
 			tmplName := templateName(path[len(base)+1:])
-			_, err = template.New(tmplName).Parse(string(data))
+			_, err = template.New(tmplName).Funcs(TemplateFuncs).Parse(string(data))
 			if err != nil {
 				complieError := &Error{
 					SourceLines: strings.Split(string(data), "\n"),

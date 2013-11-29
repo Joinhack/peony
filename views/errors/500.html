@@ -93,6 +93,7 @@
 	</style>
 </head>
 <body>
+	{{if IsDevMode}}
 	{{range .}}
 	<div class='item'>
 	<div class="header block">
@@ -119,6 +120,9 @@
 		{{end}}
 	</div>
 	</div>
+	{{end}}
+	{{else}}
+	<h1>Oops~! Application error.</h1>
 	{{end}}
 </body>
 </html>

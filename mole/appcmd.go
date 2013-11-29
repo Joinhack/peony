@@ -18,9 +18,14 @@ type AppCmd struct {
 
 func NewAppCmd(app *peony.App, binPath, addr string) *AppCmd {
 	appCmd := &AppCmd{BinPath: binPath, Addr: addr}
+	devMode := "false"
+	if peony.DevMode {
+		devMode = "true"
+	}
 	appCmd.Cmd = exec.Command(appCmd.BinPath, "--bindAddr="+addr,
 		"--importPath="+app.ImportPath,
-		"--srcPath="+app.SourcePath)
+		"--srcPath="+app.SourcePath,
+		"--devMode="+devMode)
 	return appCmd
 }
 

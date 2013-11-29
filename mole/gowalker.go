@@ -1,6 +1,7 @@
 package mole
 
 import (
+	"errors"
 	"fmt"
 	"github.com/joinhack/peony"
 	"go/ast"
@@ -23,7 +24,7 @@ type CodeGen interface {
 	BuildAlias(alias map[string][]string)
 }
 
-type CodeGenCreater func(comment string, spec CodeGenSpec) (bool, CodeGen)
+type CodeGenCreater func(comment string, spec CodeGenSpec) (CodeGen, error)
 
 type MapperCommentCodeGen struct {
 	*ActionInfo
@@ -66,41 +67,93 @@ func (i *InterceptCommentCodeGen) Generate(appName, serverName string, alias map
 	return code
 }
 
+type CodeGenCreaters map[string][]CodeGenCreater
+
+func (c *CodeGenCreaters) ProcessComments(fileSet *token.FileSet, commentGroup *ast.CommentGroup, typ string, spec CodeGenSpec, codeGens *[]CodeGen) error {
+	for _, comment := range commentGroup.List {
+		if comment.Text[:2] == "//" {
+			content := strings.TrimSpace(comment.Text[2:])
+			if len(content) == 0 || content[0] != '@' {
+				continue
+			}
+			for _, codeGenCreater := range (*c)[typ] {
+				if codeGen, err := codeGenCreater(content, spec); err == nil {
+					(*codeGens) = append((*codeGens), codeGen)
+				} else {
+					if err == NotMatch {
+						continue
+					}
+					position := fileSet.Position(comment.Pos())
+					var path = position.Filename
+					var lines []string
+					var rerr error
+					if lines, rerr = peony.ReadLines(path); rerr != nil {
+						peony.ERROR.Println("read file error:", rerr)
+						path = ""
+					}
+					return &peony.Error{
+						Title:       "Compile error",
+						Path:        path,
+						FileName:    path,
+						Line:        position.Line,
+						Column:      position.Column,
+						Description: err.Error(),
+						SourceLines: lines,
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
 var (
-	CodeGenCreaters = []CodeGenCreater{}
+	codeGenCreaters = CodeGenCreaters{}
 	MapperRegexp    = regexp.MustCompile(`@Mapper\("(.*)"\)`)
 	InterceptRegexp = regexp.MustCompile(`@Intercept\((?i)(before|after|finally|panic)(,(\d+))?\)`)
 )
 
-func RegisterCodeGenCreater(builder CodeGenCreater) {
-	CodeGenCreaters = append(CodeGenCreaters, builder)
+func (c *CodeGenCreaters) RegisterCodeGenCreater(name string, builder CodeGenCreater) {
+	(*c)[name] = append((*c)[name], builder)
 }
 
 func init() {
-	RegisterCodeGenCreater(MapperCommentCodeGenCreater)
-	RegisterCodeGenCreater(InterceptCommentCodeGenCreater)
+	codeGenCreaters.RegisterCodeGenCreater("func", MapperCommentCodeGenCreater)
+	codeGenCreaters.RegisterCodeGenCreater("func", InterceptCommentCodeGenCreater)
 }
 
+var (
+	NotMatch       = errors.New("the comment not match")
+	NotSupportFunc = errors.New("Intecept must used for method, not support func. method e.g. func (*Struct) Method{...}")
+)
+
 //create the mapper for comment generator.
-func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (bool, CodeGen) {
+func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, error) {
 	if actionInfo, ok := spec.(*ActionInfo); ok {
 		expr := MapperRegexp.FindStringSubmatch(comment)
 		if expr == nil {
-			return false, nil
+			return nil, NotMatch
 		}
-		return true, &MapperCommentCodeGen{actionInfo, expr[1]}
+		return &MapperCommentCodeGen{actionInfo, expr[1]}, nil
 	}
-	return false, nil
+	return nil, NotMatch
 }
 
 //create the intercept for comment generator.
-func InterceptCommentCodeGenCreater(comment string, spec CodeGenSpec) (bool, CodeGen) {
+func InterceptCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, error) {
 	if actionInfo, ok := spec.(*ActionInfo); ok {
+		//The regexp is complex, so I do string compare first.
+		if !strings.HasPrefix(comment, "@Intercept") {
+			return nil, NotMatch
+		}
 		expr := InterceptRegexp.FindStringSubmatch(comment)
 		priority := 0
-		fmt.Println(expr)
 		if expr == nil || len(expr) < 2 {
-			return false, nil
+			return nil, NotMatch
+		}
+		if actionInfo.RecvName == "" {
+			//it's func, now we don't support
+			return nil, NotSupportFunc
 		}
 		when := 0
 		switch strings.ToUpper(expr[1]) {
@@ -115,9 +168,9 @@ func InterceptCommentCodeGenCreater(comment string, spec CodeGenSpec) (bool, Cod
 		}
 
 		priority, _ = strconv.Atoi(expr[3])
-		return true, &InterceptCommentCodeGen{actionInfo, when, priority}
+		return &InterceptCommentCodeGen{actionInfo, when, priority}, nil
 	}
-	return false, nil
+	return nil, NotMatch
 }
 
 type SourceInfo struct {
@@ -283,10 +336,10 @@ func processImports(imports map[string]string, importSpecs []*ast.ImportSpec) {
 	}
 }
 
-func processAction(pkgInfo *PkgInfo, imports map[string]string, funcDecl *ast.FuncDecl) {
+func processAction(fileSet *token.FileSet, pkgInfo *PkgInfo, imports map[string]string, funcDecl *ast.FuncDecl) error {
 
 	if !funcDecl.Name.IsExported() {
-		return
+		return nil
 	}
 	importPath := pkgInfo.ImportPath
 	actionInfo := &ActionInfo{ImportPath: importPath}
@@ -299,7 +352,7 @@ func processAction(pkgInfo *PkgInfo, imports map[string]string, funcDecl *ast.Fu
 		importPath, typeExpr := NewTypeExpr(pkgInfo.Name, pkgInfo.ImportPath, imports, param.Type)
 		//ignore this action
 		if !typeExpr.Valid {
-			return
+			return nil
 		}
 		for _, name := range param.Names {
 			actionInfo.Args = append(actionInfo.Args, &MethodArg{
@@ -309,36 +362,26 @@ func processAction(pkgInfo *PkgInfo, imports map[string]string, funcDecl *ast.Fu
 			})
 		}
 	}
+	actionInfo.RecvName, actionInfo.ActionName = actionName(funcDecl)
 	if funcDecl.Doc != nil && len(funcDecl.Doc.List) > 0 {
-		for _, comment := range funcDecl.Doc.List {
-			if comment.Text[:2] == "//" {
-				content := strings.TrimSpace(comment.Text[2:])
-				if len(content) == 0 || content[0] != '@' {
-					continue
-				}
-				for _, codeGenCreater := range CodeGenCreaters {
-					if ok, codeGen := codeGenCreater(content, actionInfo); ok {
-						pkgInfo.CodeGens = append(pkgInfo.CodeGens, codeGen)
-					}
-				}
-			}
+		if err := codeGenCreaters.ProcessComments(fileSet, funcDecl.Doc, "func", actionInfo, &pkgInfo.CodeGens); err != nil {
+			return err
 		}
 	}
-	actionInfo.RecvName, actionInfo.ActionName = actionName(funcDecl)
-
-	//actionInfo.Methods = append(actionInfo.Methods, methodSpec)
+	return nil
 }
 
-func processFile(file *ast.File, pkgInfo *PkgInfo) {
+func processFile(fileSet *token.FileSet, file *ast.File, pkgInfo *PkgInfo) error {
 	imports := map[string]string{}
 	processImports(imports, file.Imports)
 	for _, decl := range file.Decls {
-		switch decl.(type) {
+		switch specDecl := decl.(type) {
 		case *ast.FuncDecl:
-			processAction(pkgInfo, imports, decl.(*ast.FuncDecl))
+			if err := processAction(fileSet, pkgInfo, imports, specDecl); err != nil {
+				return err
+			}
 		case *ast.GenDecl:
-			genDecl := decl.(*ast.GenDecl)
-			if genDecl.Tok != token.TYPE || len(genDecl.Specs) != 1 {
+			if specDecl.Tok != token.TYPE || len(specDecl.Specs) != 1 {
 				continue
 			}
 			//spec := genDecl.Specs[0]
@@ -346,16 +389,20 @@ func processFile(file *ast.File, pkgInfo *PkgInfo) {
 			//typeSpec = spec.(*ast.TypeSpec)
 		}
 	}
+	return nil
 }
 
-func processPackage(si *SourceInfo, importPath string, pkg *ast.Package) {
+func processPackage(si *SourceInfo, importPath string, pkg *ast.Package, fileSet *token.FileSet) error {
 	pkgInfo := &PkgInfo{ImportPath: importPath, Name: pkg.Name}
 	if pkg.Name == "controllers" {
 		for _, file := range pkg.Files {
-			processFile(file, pkgInfo)
+			if err := processFile(fileSet, file, pkgInfo); err != nil {
+				return err
+			}
 		}
 	}
 	si.Pkgs = append(si.Pkgs, pkgInfo)
+	return nil
 }
 
 func NewSourceInfo() *SourceInfo {
@@ -440,9 +487,10 @@ func ProcessSources(roots []string) (*SourceInfo, error) {
 			if len(astPkgs) == 0 {
 				return nil
 			}
-
 			for _, pkg := range astPkgs {
-				processPackage(si, importPath, pkg)
+				if err := processPackage(si, importPath, pkg, fileSet); err != nil {
+					return err
+				}
 			}
 			return nil
 		})
