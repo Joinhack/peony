@@ -72,7 +72,6 @@ func newBuildError(out string) error {
 		}
 	}
 	fileSources := map[string][]string{}
-	errorList := peony.ErrorList{}
 	for _, match := range matchs {
 
 		filep, _ := filepath.Abs(match[1])
@@ -90,7 +89,8 @@ func newBuildError(out string) error {
 			source = peony.MustReadLines(filep)
 			fileSources[filep] = source
 		}
-		errorList = append(errorList, &peony.Error{
+		//just get the first error
+		return &peony.Error{
 			Title:       "Complie error",
 			FileName:    filename,
 			Path:        filep,
@@ -98,11 +98,9 @@ func newBuildError(out string) error {
 			Line:        line,
 			Column:      column,
 			Description: desc,
-		})
-		//just get the first error
-		break
+		}
 	}
-	return errorList
+	return nil
 }
 
 func GetBinPath(app *peony.App) (string, error) {

@@ -451,7 +451,6 @@ func ProcessSources(roots []string) (*SourceInfo, error) {
 				//err is ErrorList
 				if errList, ok := err.(scanner.ErrorList); ok {
 					fileSources := map[string][]string{}
-					rerrList := make(peony.ErrorList, 0, len(errList))
 					for _, err := range errList {
 						var hasSource = false
 						var source []string
@@ -460,7 +459,7 @@ func ProcessSources(roots []string) (*SourceInfo, error) {
 							fileSources[err.Pos.Filename] = source
 						}
 
-						rerrList = append(rerrList, &peony.Error{
+						return &peony.Error{
 							Title:       "Compile error",
 							FileName:    err.Pos.Filename,
 							Path:        err.Pos.Filename,
@@ -468,9 +467,8 @@ func ProcessSources(roots []string) (*SourceInfo, error) {
 							Line:        err.Pos.Line,
 							Column:      err.Pos.Column,
 							SourceLines: source,
-						})
+						}
 					}
-					return rerrList
 				}
 				ast.Print(nil, err)
 			}

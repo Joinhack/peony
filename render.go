@@ -3,6 +3,7 @@ package peony
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"net/http"
 	"reflect"
 )
@@ -51,29 +52,30 @@ func NewErrorRender(err error) Render {
 func (r *ErrorRender) Apply(c *Controller) {
 	resp := c.Resp
 	req := c.Req
-	tplName := "errors/500.html"
+	status := resp.Status
+	if status == 0 {
+		status = http.StatusInternalServerError
+	}
+	tplName := fmt.Sprintf("errors/%d.%s", status, req.Accept)
 	tpl := c.templateLoader.Lookup(tplName)
 	if tpl == nil {
-		resp.WriteContentTypeCode(http.StatusInternalServerError, "text/"+req.Accept)
+		resp.WriteContentTypeCode(status, "text/"+req.Accept)
 		resp.Write([]byte(r.Error.Error()))
 		WARN.Println("can't find template", tplName)
 		return
 	}
-	resp.WriteContentTypeCode(http.StatusInternalServerError, "text/html")
-	var errorlist ErrorList
+	resp.WriteContentTypeCode(status, "text/html")
+	var err *Error
 	switch r.Error.(type) {
-	case ErrorList:
-		errorlist = r.Error.(ErrorList)
 	case *Error:
-		err := r.Error.(*Error)
-		errorlist = ErrorList{err}
+		err = r.Error.(*Error)
 	default:
-		errorlist = ErrorList{&Error{
+		err = &Error{
 			Title:       "error",
 			Description: r.Error.Error(),
-		}}
+		}
 	}
-	tpl.Execute(c.Resp, errorlist)
+	tpl.Execute(c.Resp, err)
 }
 
 func (j *JsonRender) Apply(c *Controller) {
