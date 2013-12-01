@@ -208,7 +208,7 @@ func main() {
 	app := peony.NewApp(*srcPath, *importPath)
 	app.BindAddr = *bindAddr
 	if devMode != nil {
-		peony.DevMode = *devMode
+		app.DevMode = *devMode
 	}
 	svr := app.NewServer()
 	svr.Init()

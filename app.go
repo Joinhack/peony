@@ -18,6 +18,7 @@ type App struct {
 	BasePath   string
 	BindAddr   string
 	Security   string
+	DevMode    bool
 }
 
 func SearchSrcRoot(imp string) string {
@@ -29,10 +30,9 @@ func SearchSrcRoot(imp string) string {
 }
 
 var (
-	WARN    *log.Logger
-	INFO    *log.Logger
-	ERROR   *log.Logger
-	DevMode = false
+	WARN  *log.Logger
+	INFO  *log.Logger
+	ERROR *log.Logger
 )
 
 func getLogger(name string) *log.Logger {

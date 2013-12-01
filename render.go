@@ -75,7 +75,9 @@ func (r *ErrorRender) Apply(c *Controller) {
 			Description: r.Error.Error(),
 		}
 	}
-	tpl.Execute(c.Resp, err)
+	if err := tpl.Execute(c.Resp, err); err != nil {
+		ERROR.Println(err)
+	}
 }
 
 func (j *JsonRender) Apply(c *Controller) {

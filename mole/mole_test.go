@@ -19,7 +19,7 @@ func TestProcessSources(t *testing.T) {
 
 func TestBuild(t *testing.T) {
 	app := peony.NewApp(filepath.Join(build.Default.GOPATH, "src"), "github.com/joinhack/peony/demos/login")
-	peony.DevMode = true
+	app.DevMode = true
 	ag, _ := NewAgent(app)
 	ag.Run(":8080")
 }

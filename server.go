@@ -231,6 +231,7 @@ func (s *Server) Init() {
 	s.Interceptors = NewInterceptors()
 	//the default views is priority, used for render error, follower template loader error.
 	s.templateLoader = NewTemplateLoader([]string{path.Join(PEONYPATH, "views"), s.App.ViewPath})
+	s.templateLoader.BindServerTemplateFunc(s)
 	s.notifier = NewNotifier()
 	s.notifier.Watch(s.templateLoader)
 

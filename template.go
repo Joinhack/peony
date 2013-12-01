@@ -19,6 +19,7 @@ var (
 type TemplateLoader struct {
 	template    *tmpl.Template //
 	basePath    []string
+	funcMap     tmpl.FuncMap
 	forceNotify bool //force notify when the first time
 }
 
@@ -63,15 +64,26 @@ func templateName(path string) string {
 }
 
 func NewTemplateLoader(base []string) *TemplateLoader {
-	tl := &TemplateLoader{basePath: base, forceNotify: true}
+	tl := &TemplateLoader{
+		basePath:    base,
+		forceNotify: true,
+		funcMap:     tmpl.FuncMap{},
+	}
 	return tl
 }
 
-var (
-	TemplateFuncs = map[string]interface{}{
-		"IsDevMode": func() bool { return DevMode },
+func (t *TemplateLoader) BindServerTemplateFunc(svr *Server) {
+	t.funcMap["IsDevMode"] = func() bool {
+		return svr.App.DevMode
 	}
-)
+	if svr.App.DevMode {
+
+	}
+}
+
+func (t *TemplateLoader) AddTemplateFunc(name string, funcation interface{}) {
+	t.funcMap[name] = funcation
+}
 
 func (t *TemplateLoader) load() error {
 
@@ -101,8 +113,9 @@ func (t *TemplateLoader) load() error {
 				return err
 			}
 			tmplName := templateName(path[len(base)+1:])
-			_, err = template.New(tmplName).Funcs(TemplateFuncs).Parse(string(data))
+			_, err = template.New(tmplName).Funcs(t.funcMap).Parse(string(data))
 			if err != nil {
+				ERROR.Println("template parse error:", err)
 				complieError := &Error{
 					SourceLines: strings.Split(string(data), "\n"),
 					Title:       "Template compile error",
