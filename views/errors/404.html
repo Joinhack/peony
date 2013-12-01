@@ -4,7 +4,9 @@
 	<title>Not found</title>
 </head>
 <body>
+{{if not IsDevMode}}
 <h1>{{.Title}}</h1>
 <p>{{.Description}}</p>
+{{end}}
 </body>
 </html>
