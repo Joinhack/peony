@@ -19,7 +19,7 @@ var (
 type TemplateLoader struct {
 	template     *tmpl.Template //
 	basePath     []string
-	funcMap      tmpl.FuncMap
+	FuncMap      tmpl.FuncMap
 	extendParams map[string]interface{}
 	forceNotify  bool //force notify when the first time
 }
@@ -68,24 +68,20 @@ func NewTemplateLoader(base []string) *TemplateLoader {
 	tl := &TemplateLoader{
 		basePath:     base,
 		forceNotify:  true,
-		funcMap:      tmpl.FuncMap{},
+		FuncMap:      tmpl.FuncMap{},
 		extendParams: map[string]interface{}{},
 	}
-	tl.AddTemplateFunc("ExtParams", func() map[string]interface{} { return tl.extendParams })
+	tl.FuncMap["ExtParams"] = func() map[string]interface{} { return tl.extendParams }
 	return tl
 }
 
 func (t *TemplateLoader) BindServerTemplateFunc(svr *Server) {
-	t.funcMap["IsDevMode"] = func() bool {
+	t.FuncMap["IsDevMode"] = func() bool {
 		return svr.App.DevMode
 	}
 	if svr.App.DevMode {
 		t.extendParams["Rules"] = func() []*Rule { return svr.rules }
 	}
-}
-
-func (t *TemplateLoader) AddTemplateFunc(name string, funcation interface{}) {
-	t.funcMap[name] = funcation
 }
 
 func (t *TemplateLoader) load() error {
@@ -116,7 +112,7 @@ func (t *TemplateLoader) load() error {
 				return err
 			}
 			tmplName := templateName(path[len(base)+1:])
-			_, err = template.New(tmplName).Funcs(t.funcMap).Parse(string(data))
+			_, err = template.New(tmplName).Funcs(t.FuncMap).Parse(string(data))
 			if err != nil {
 				ERROR.Println("template parse error:", err)
 				complieError := &Error{

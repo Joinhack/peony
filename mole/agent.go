@@ -94,7 +94,7 @@ func NewAgent(app *peony.App) (agent *Agent, err error) {
 	agent.templateLoader = peony.NewTemplateLoader([]string{
 		path.Join(path.Join(peony.PEONYPATH, "views")),
 	})
-	agent.templateLoader.AddTemplateFunc("IsDevMode", func() bool { return true })
+	agent.templateLoader.FuncMap["IsDevMode"] = func() bool { return true }
 	agent.notifier.Watch(agent.templateLoader)
 
 	agent.notifier.Watch(agent)
