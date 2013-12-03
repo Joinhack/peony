@@ -11,18 +11,20 @@ import (
 	"os/signal"
 	"path"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
 type Agent struct {
-	app            *peony.App
-	appCmd         *AppCmd
-	appBinPath     string
-	AppAddr        string
-	templateLoader *peony.TemplateLoader
-	notifier       *peony.Notifier
-	forceRefresh   bool
-	proxy          *httputil.ReverseProxy
+	app                 *peony.App
+	appCmd              *AppCmd
+	appBinPath          string
+	AppAddr             string
+	templateLoader      *peony.TemplateLoader
+	notifier            *peony.Notifier
+	forceRefresh        bool
+	lastErrorProcessing int32
+	proxy               *httputil.ReverseProxy
 }
 
 func (a *Agent) Path() []string {
@@ -58,7 +60,7 @@ func (a *Agent) IgnoreDir(info os.FileInfo) bool {
 }
 
 func (a *Agent) IgnoreFile(f string) bool {
-	if strings.HasSuffix(f, ".html") {
+	if strings.HasSuffix(f, ".go") {
 		return false
 	}
 	return true
@@ -105,11 +107,16 @@ func (a *Agent) processError(err error, w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *Agent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if a.lastErrorProcessing == 1 {
+		return
+	}
 	err := a.notifier.Notify()
 	if err != nil {
+		atomic.CompareAndSwapInt32(&a.lastErrorProcessing, 0, 1)
 		a.processError(err, w, r)
 		return
 	}
+	atomic.CompareAndSwapInt32(&a.lastErrorProcessing, 1, 0)
 	a.proxy.ServeHTTP(w, r)
 }
 

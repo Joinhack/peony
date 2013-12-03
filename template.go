@@ -17,10 +17,11 @@ var (
 )
 
 type TemplateLoader struct {
-	template    *tmpl.Template //
-	basePath    []string
-	funcMap     tmpl.FuncMap
-	forceNotify bool //force notify when the first time
+	template     *tmpl.Template //
+	basePath     []string
+	funcMap      tmpl.FuncMap
+	extendParams map[string]interface{}
+	forceNotify  bool //force notify when the first time
 }
 
 func (t *TemplateLoader) IgnoreDir(file os.FileInfo) bool {
@@ -65,10 +66,12 @@ func templateName(path string) string {
 
 func NewTemplateLoader(base []string) *TemplateLoader {
 	tl := &TemplateLoader{
-		basePath:    base,
-		forceNotify: true,
-		funcMap:     tmpl.FuncMap{},
+		basePath:     base,
+		forceNotify:  true,
+		funcMap:      tmpl.FuncMap{},
+		extendParams: map[string]interface{}{},
 	}
+	tl.AddTemplateFunc("ExtParams", func() map[string]interface{} { return tl.extendParams })
 	return tl
 }
 
@@ -77,7 +80,7 @@ func (t *TemplateLoader) BindServerTemplateFunc(svr *Server) {
 		return svr.App.DevMode
 	}
 	if svr.App.DevMode {
-
+		t.extendParams["Rules"] = func() []*Rule { return svr.rules }
 	}
 }
 

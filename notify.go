@@ -62,6 +62,10 @@ func (n *Notifier) Watch(o Observer) {
 		}
 		var watcher *fsnotify.Watcher
 		watcher, err = fsnotify.NewWatcher()
+		//collect 100 events
+		watcher.Event = make(chan *fsnotify.FileEvent, 200)
+		//collect 10 error
+		watcher.Error = make(chan error, 20)
 		obsWatcher := &observerWatcher{o, watcher, abspath}
 		n.watchers = append(n.watchers, obsWatcher)
 
@@ -93,30 +97,32 @@ func (n *Notifier) Watch(o Observer) {
 func (n *Notifier) Notify() error {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
+	flush := false
 	for _, obswatcher := range n.watchers {
-		if obswatcher.observer.ForceRefresh() {
+		//get all event events store in chan obswatcher.watcher.Event
+		for {
+			select {
+			case evt := <-obswatcher.watcher.Event:
+				//ignore file name start with "." like ".xxx"
+				if !strings.HasPrefix(filepath.Base(evt.Name), ".") {
+					if ignoreObserver, ok := obswatcher.observer.(IgnoreObserver); ok {
+						if ignoreObserver.IgnoreFile(evt.Name) {
+							continue
+						}
+					}
+					flush = true
+				}
+				continue
+			case <-obswatcher.watcher.Error:
+				continue
+			default:
+			}
+			break
+		}
+		if obswatcher.observer.ForceRefresh() || flush {
 			if err := obswatcher.observer.Refresh(); err != nil {
 				return err
 			}
-			continue
-		}
-		select {
-		case evt := <-obswatcher.watcher.Event:
-			//ignore file name start with "." like ".xxx"
-			if !strings.HasPrefix(filepath.Base(evt.Name), ".") {
-				if ignoreObserver, ok := obswatcher.observer.(IgnoreObserver); ok {
-					if ignoreObserver.IgnoreFile(evt.Name) {
-						continue
-					}
-				}
-			}
-		case err := <-obswatcher.watcher.Error:
-			return err
-		default:
-			continue
-		}
-		if err := obswatcher.observer.Refresh(); err != nil {
-			return err
 		}
 	}
 	return nil

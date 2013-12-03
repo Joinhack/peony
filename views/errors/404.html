@@ -1,12 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
+<style type="text/css">
+	html, body {
+		margin: 0;
+		padding: 0;
+		font-family: Helvetica, Arial, Sans;
+		background: #EEEEEE;
+	}
+	.block {
+		padding: 20px;
+		border-bottom: 1px solid #aaa;
+	}
+	#header h1 {
+		font-weight: normal;
+		font-size: 28px;
+		margin: 0;
+	}
+	#more {
+		color: #666;
+		font-size: 80%;
+		border: none;
+	}
+	#header {
+		background: #FFFFCC;
+	}
+	#rules p {
+		color: #333;
+	}
+	#rules {
+		background: #f6f6f6;
+	}
+	#rules h2 {
+		font-weight: normal;
+		font-size: 18px;
+		margin: 0 0 10px 0;
+	}
+	#rules ol {
+
+	}
+	#rules li {
+		font-size: 14px;
+		font-family: monospace;
+		color: #333;
+	}
+	#rules li span {
+		float: right;
+	}
+</style>
 <head>
 	<title>Not found</title>
 </head>
 <body>
-{{if not IsDevMode}}
+<div id="header" class="block">
 <h1>{{.Title}}</h1>
 <p>{{.Description}}</p>
+</div>
+{{if IsDevMode}}
+<div id="rules" class="block">
+	<h2>These rules have been registed:</h2>
+	<ol>
+{{with ExtParams}}
+{{with call .Rules}}
+{{range .}}
+<li>{{.Path}}  <span>{{.Action}}</span></li>
+{{end}}
+{{end}}
+{{end}}
+	</ol>
+</div>
 {{end}}
 </body>
 </html>

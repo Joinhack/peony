@@ -17,8 +17,9 @@ func run(args []string) {
 	}
 	importPath := args[0]
 	srcRoot := peony.SearchSrcRoot(importPath)
-	peony.DevMode = true
+
 	app := peony.NewApp(srcRoot, importPath)
+	app.DevMode = true
 	ag, _ := mole.NewAgent(app)
 	var addr = ":8000"
 	if len(args) > 1 {
