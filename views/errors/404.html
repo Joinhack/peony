@@ -16,11 +16,6 @@
 		font-size: 28px;
 		margin: 0;
 	}
-	#more {
-		color: #666;
-		font-size: 80%;
-		border: none;
-	}
 	#header {
 		background: #FFFFCC;
 	}
@@ -43,14 +38,26 @@
 		font-family: monospace;
 		color: #333;
 	}
-	#rules li span {
-		float: right;
+	#rules li ul {
+		margin: 0px;
+		padding: 0px;
+		list-style-type: none;
+	}
+	#rules li ul li {
+		list-style: none;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		display: inline-block;
+	}
+	#rules li ul li.url {
+		width: 400px;
 	}
 </style>
 <head>
 	<title>Not found</title>
 </head>
 <body>
+
 <div id="header" class="block">
 <h1>{{.Title}}</h1>
 <p>{{.Description}}</p>
@@ -62,7 +69,7 @@
 {{with ExtParams}}
 {{with call .Rules}}
 {{range .}}
-<li>{{.Path}}  <span>{{.Action}}</span></li>
+<li><ul><li class='url' title="{{.Path}}">{{.Path}}</li><li title="{{.Action}}">{{.Action}}</li></ul></li>
 {{end}}
 {{end}}
 {{end}}
