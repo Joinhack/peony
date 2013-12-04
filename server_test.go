@@ -22,8 +22,13 @@ func Xml() Render {
 	return NewXmlRender("hi")
 }
 
-func text(join string) string {
+func Text(join string) string {
 	return join
+}
+
+func File(path string) Render {
+	println(path)
+	return NewFileRender(path)
 }
 
 type AS int
@@ -38,6 +43,7 @@ func TestServer(t *testing.T) {
 	app := NewApp(".", ".")
 	app.ViewPath, err = filepath.Abs(".")
 	app.BindAddr = ":8080"
+	app.DevMode = true
 	svr := app.NewServer()
 	svr.Init()
 	err = svr.MethodMapper("/", (*AS).T, &Action{Name: "AS.T"})
@@ -47,7 +53,8 @@ func TestServer(t *testing.T) {
 	svr.FuncMapper("/json", Json, &Action{Name: "xssxeem"})
 	svr.FuncMapper("/template", Template, &Action{Name: "recover.go"})
 	svr.FuncMapper("/xml", Xml, &Action{Name: "xml"})
-	svr.FuncMapper("/<int:join>", text, &Action{Name: "xxeemw", Args: []*ArgType{&ArgType{Name: "join", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
+	svr.FuncMapper("/<int:join>", Text, &Action{Name: "xxeemw", Args: []*ArgType{&ArgType{Name: "join", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
+	svr.FuncMapper("/static/<string:path>", File, &Action{Name: "file", Args: []*ArgType{&ArgType{Name: "path", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
 	err = svr.Run()
 	if err != nil {
 		t.Fatal(err)

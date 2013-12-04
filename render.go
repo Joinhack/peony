@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	//"path/filepath"
 	"reflect"
 	"strconv"
 	"time"
@@ -85,7 +86,15 @@ func NewFileRender(path string) Render {
 	var finfo os.FileInfo
 	var file *os.File
 	if finfo, err = os.Stat(path); err != nil {
-		return NewErrorRender(err)
+		notFound := &Error{Title: "Not Found", Description: err.Error()}
+		render := NewErrorRender(notFound)
+		render.Status = http.StatusNotFound
+		return render
+	}
+	if finfo.IsDir() {
+		render := NewErrorRender(&Error{Title: "Forbidden", Description: "Directory listing not allowed"})
+		render.Status = http.StatusForbidden
+		return render
 	}
 	if file, err = os.Open(path); err != nil {
 		return NewErrorRender(err)

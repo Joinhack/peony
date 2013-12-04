@@ -13,6 +13,10 @@ type Login struct {
 type Mail struct {
 }
 
+func FileDown() app.Render {
+	return NewFileRender(".")
+}
+
 // @Mapper("/")
 func (l *Login) Index(user []*Mail, m *model.User) app.Render {
 	println(l.xx)
