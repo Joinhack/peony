@@ -114,12 +114,13 @@ func (a *ActionContainer) RegisterMethodAction(method interface{}, action *Actio
 }
 
 func (c *Controller) NotFound(msg string, args ...interface{}) {
-	c.Resp.Status = 404
 	text := msg
 	if len(args) > 0 {
 		text = fmt.Sprintf(msg, args)
 	}
-	c.render = NewErrorRender(&Error{Title: "Not Found", Description: text})
+	render := NewErrorRender(&Error{Title: "Not Found", Description: text})
+	render.Status = 404
+	c.render = render
 }
 
 func GetActionInvokeFilter(server *Server) Filter {

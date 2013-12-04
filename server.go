@@ -39,7 +39,6 @@ type Request struct {
 
 type Response struct {
 	http.ResponseWriter
-	Status      int //respone status e.g. 200, 404,500 etc.
 	ContentType string
 }
 

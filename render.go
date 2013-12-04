@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"reflect"
 	"strconv"
 	"time"
@@ -45,7 +46,8 @@ type TemplateRender struct {
 
 type ErrorRender struct {
 	Render
-	Error error
+	Status int
+	Error  error
 }
 
 type BinaryRender struct {
@@ -54,10 +56,10 @@ type BinaryRender struct {
 	Name               string
 	ContentDisposition string
 	Len                int64
-	ModifyTime         time.Time
+	ModTime            time.Time
 }
 
-func NewErrorRender(err error) Render {
+func NewErrorRender(err error) *ErrorRender {
 	return &ErrorRender{Error: err}
 }
 
@@ -66,7 +68,7 @@ func (b *BinaryRender) Apply(c *Controller) {
 	contentDisposition := fmt.Sprintf("%s; filename=%s", b.ContentDisposition, b.Name)
 	resp.Header().Set("Content-Disposition", contentDisposition)
 	if readSeeker, ok := b.Reader.(io.ReadSeeker); ok {
-		http.ServeContent(c.Resp.ResponseWriter, c.Req.Request, b.Name, b.ModifyTime, readSeeker)
+		http.ServeContent(c.Resp.ResponseWriter, c.Req.Request, b.Name, b.ModTime, readSeeker)
 	} else {
 		if b.Len >= 0 {
 			resp.Header().Set("Content-Length", strconv.FormatInt(b.Len, 10))
@@ -78,10 +80,23 @@ func (b *BinaryRender) Apply(c *Controller) {
 	}
 }
 
+func NewFileRender(path string) Render {
+	var err error
+	var finfo os.FileInfo
+	var file *os.File
+	if finfo, err = os.Stat(path); err != nil {
+		return NewErrorRender(err)
+	}
+	if file, err = os.Open(path); err != nil {
+		return NewErrorRender(err)
+	}
+	return &BinaryRender{ModTime: finfo.ModTime(), Reader: file}
+}
+
 func (r *ErrorRender) Apply(c *Controller) {
 	resp := c.Resp
 	req := c.Req
-	status := resp.Status
+	status := r.Status
 	if status == 0 {
 		status = http.StatusInternalServerError
 	}
