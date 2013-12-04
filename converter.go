@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 type Convert func(*Params, string, reflect.Type) reflect.Value
@@ -67,12 +68,71 @@ func FloatConvert(value string, typ reflect.Type) reflect.Value {
 	return val.Elem()
 }
 
-// func StructConvert(v string, typ reflect.Type) reflect.Value {
-// 	return
-// }
+func nextKey(key string) string {
+	fieldLen := strings.IndexAny(key, ".[")
+	if fieldLen == -1 {
+		return key
+	}
+	return key[:fieldLen]
+}
+
+//covert struct
+func GetStructConvert(c *Convertors) Convert {
+	return func(p *Params, n string, typ reflect.Type) reflect.Value {
+		result := reflect.New(typ).Elem()
+		fieldValues := make(map[string]reflect.Value)
+		for key, _ := range p.Values {
+			if !strings.HasPrefix(key, n+".") {
+				continue
+			}
+
+			suffix := key[len(n)+1:]
+			fieldName := nextKey(suffix)
+			fieldLen := len(fieldName)
+			//convert the field
+			if _, ok := fieldValues[fieldName]; !ok {
+				fieldValue := result.FieldByName(fieldName)
+				if !fieldValue.IsValid() {
+					WARN.Println("W: bindStruct: Field not found:", fieldName)
+					continue
+				}
+				if !fieldValue.CanSet() {
+					WARN.Println("W: bindStruct: Field not settable:", fieldName)
+					continue
+				}
+				convertVal := c.Convert(p, key[:len(n)+1+fieldLen], fieldValue.Type())
+				fieldValue.Set(convertVal)
+				fieldValues[fieldName] = convertVal
+			}
+		}
+		return result
+	}
+}
+
+func GetStructReverseConvert(c *Convertors) ReverseConvert {
+	return func(p map[string]string, name string, v interface{}) {
+		val := reflect.ValueOf(v)
+		typ := val.Type()
+		for i := 0; i < val.NumField(); i++ {
+			structField := typ.Field(i)
+			fieldValue := val.Field(i)
+			if structField.PkgPath == "" {
+				c.ReverseConvert(p, fmt.Sprintf("%s.%s", name, structField.Name), fieldValue.Interface())
+			}
+		}
+	}
+}
 
 func IntReverseConvert(p map[string]string, name string, v interface{}) {
 	p[name] = fmt.Sprintf("%d", v)
+}
+
+func StringReverseConvert(p map[string]string, name string, v interface{}) {
+	p[name] = fmt.Sprintf("%s", v)
+}
+
+func FloatReverseConvert(p map[string]string, name string, v interface{}) {
+	p[name] = fmt.Sprintf("%f", v)
 }
 
 func NewConvertors() *Convertors {
@@ -92,12 +152,15 @@ func NewConvertors() *Convertors {
 	c.KindConvertors[reflect.Uint32] = ValueConvertor(UintConvert, IntReverseConvert)
 	c.KindConvertors[reflect.Uint64] = ValueConvertor(UintConvert, IntReverseConvert)
 
-	c.KindConvertors[reflect.Float32] = ValueConvertor(FloatConvert, IntReverseConvert)
-	c.KindConvertors[reflect.Float64] = ValueConvertor(FloatConvert, IntReverseConvert)
+	c.KindConvertors[reflect.Float32] = ValueConvertor(FloatConvert, FloatReverseConvert)
+	c.KindConvertors[reflect.Float64] = ValueConvertor(FloatConvert, FloatReverseConvert)
 
-	c.KindConvertors[reflect.String] = ValueConvertor(StringConvert, IntReverseConvert)
+	c.KindConvertors[reflect.String] = ValueConvertor(StringConvert, StringReverseConvert)
 
-	//c.KindConverts[reflect.Struct] = StructConvert
+	c.KindConvertors[reflect.Struct] = &Convertor{
+		GetStructConvert(c),
+		GetStructReverseConvert(c),
+	}
 
 	c.KindConvertors[reflect.Ptr] = &Convertor{
 		func(p *Params, name string, typ reflect.Type) reflect.Value {
