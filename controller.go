@@ -124,11 +124,11 @@ func (c *Controller) NotFound(msg string, args ...interface{}) {
 
 func GetActionInvokeFilter(server *Server) Filter {
 	return func(controller *Controller, _ []Filter) {
-		converter := server.converter
+		convertors := server.convertors
 		args := controller.action.Args
 		callArgs := make([]reflect.Value, 0, len(args))
 		for _, arg := range args {
-			argValue := ArgConvert(converter, controller.params, arg)
+			argValue := convertors.Convert(controller.params, arg.Name, arg.Type)
 			callArgs = append(callArgs, argValue)
 		}
 		rsSlice := controller.action.Invoke(callArgs)
