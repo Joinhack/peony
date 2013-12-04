@@ -13,7 +13,11 @@ import (
 	"time"
 )
 
-var renderType reflect.Type
+var (
+	renderType reflect.Type
+	Attachment string = "attachment"
+	Inline     string = "inline"
+)
 
 func init() {
 	renderType = reflect.TypeOf((*Render)(nil)).Elem()
@@ -66,7 +70,11 @@ func NewErrorRender(err error) *ErrorRender {
 
 func (b *BinaryRender) Apply(c *Controller) {
 	resp := c.Resp
-	contentDisposition := fmt.Sprintf("%s; filename=%s", b.ContentDisposition, b.Name)
+	prefix := b.ContentDisposition
+	if b.ContentDisposition == "" {
+		prefix = Inline
+	}
+	contentDisposition := fmt.Sprintf("%s; filename=%s", prefix, b.Name)
 	resp.Header().Set("Content-Disposition", contentDisposition)
 	if readSeeker, ok := b.Reader.(io.ReadSeeker); ok {
 		http.ServeContent(c.Resp.ResponseWriter, c.Req.Request, b.Name, b.ModTime, readSeeker)
@@ -99,7 +107,7 @@ func NewFileRender(path string) Render {
 	if file, err = os.Open(path); err != nil {
 		return NewErrorRender(err)
 	}
-	return &BinaryRender{ModTime: finfo.ModTime(), Reader: file}
+	return &BinaryRender{ModTime: finfo.ModTime(), Name: finfo.Name(), Reader: file}
 }
 
 func (r *ErrorRender) Apply(c *Controller) {
