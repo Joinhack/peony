@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"net/http"
 	"reflect"
+	"strconv"
+	"time"
 )
 
 var renderType reflect.Type
@@ -45,8 +48,34 @@ type ErrorRender struct {
 	Error error
 }
 
+type BinaryRender struct {
+	Render
+	Reader             io.Reader
+	Name               string
+	ContentDisposition string
+	Len                int64
+	ModifyTime         time.Time
+}
+
 func NewErrorRender(err error) Render {
 	return &ErrorRender{Error: err}
+}
+
+func (b *BinaryRender) Apply(c *Controller) {
+	resp := c.Resp
+	contentDisposition := fmt.Sprintf("%s; filename=%s", b.ContentDisposition, b.Name)
+	resp.Header().Set("Content-Disposition", contentDisposition)
+	if readSeeker, ok := b.Reader.(io.ReadSeeker); ok {
+		http.ServeContent(c.Resp.ResponseWriter, c.Req.Request, b.Name, b.ModifyTime, readSeeker)
+	} else {
+		if b.Len >= 0 {
+			resp.Header().Set("Content-Length", strconv.FormatInt(b.Len, 10))
+		}
+		io.Copy(resp, b.Reader)
+	}
+	if closer, ok := b.Reader.(io.Closer); ok {
+		closer.Close()
+	}
 }
 
 func (r *ErrorRender) Apply(c *Controller) {
