@@ -110,7 +110,7 @@ func (c *CodeGenCreaters) ProcessComments(fileSet *token.FileSet, commentGroup *
 var (
 	codeGenCreaters = CodeGenCreaters{}
 	MapperRegexp    = regexp.MustCompile(`@Mapper\("(.*)"\)`)
-	InterceptRegexp = regexp.MustCompile(`@Intercept\((?i)(before|after|finally|panic)(,(\d+))?\)`)
+	InterceptRegexp = regexp.MustCompile(`@Intercept\(\"(\w)+\"(,(\d+))?\)`)
 )
 
 func (c *CodeGenCreaters) RegisterCodeGenCreater(name string, builder CodeGenCreater) {
@@ -125,6 +125,7 @@ func init() {
 var (
 	NotMatch       = errors.New("the comment not match")
 	NotSupportFunc = errors.New("Intecept must used for method, not support func. method e.g. func (*Struct) Method{...}")
+	UnkownArguemnt = errors.New("unknown argument")
 )
 
 //create the mapper for comment generator.
@@ -165,6 +166,8 @@ func InterceptCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, 
 			when = peony.FINALLY
 		case "PANIC":
 			when = peony.PANIC
+		default:
+			return nil, UnkownArguemnt
 		}
 
 		priority, _ = strconv.Atoi(expr[3])

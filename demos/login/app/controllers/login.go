@@ -13,8 +13,9 @@ type Login struct {
 type Mail struct {
 }
 
-func FileDown() app.Render {
-	return NewFileRender(".")
+// @Mapper("/static/<string:path>")
+func FileDown(path string) app.Render {
+	return app.NewFileRender(path)
 }
 
 // @Mapper("/")

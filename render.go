@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	//"path/filepath"
 	"reflect"
 	"strconv"
 	"time"
@@ -107,7 +106,7 @@ func NewFileRender(path string) Render {
 	if file, err = os.Open(path); err != nil {
 		return NewErrorRender(err)
 	}
-	return &BinaryRender{ModTime: finfo.ModTime(), Name: finfo.Name(), Reader: file}
+	return &BinaryRender{ModTime: finfo.ModTime(), Name: finfo.Name(), Reader: file, Len: finfo.Size()}
 }
 
 func (r *ErrorRender) Apply(c *Controller) {

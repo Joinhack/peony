@@ -27,7 +27,6 @@ func Text(join string) string {
 }
 
 func File(path string) Render {
-	println(path)
 	return NewFileRender(path)
 }
 

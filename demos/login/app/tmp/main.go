@@ -28,10 +28,11 @@ func main() {
 	}
 	svr := app.NewServer()
 	svr.Init()
+	svr.FuncMapper("/static/<string:path>", controllers0.FileDown, 
+		&peony.Action{Name:"FileDown", Args:[]*peony.ArgType{&peony.ArgType{Name:"path", Type:reflect.TypeOf((*string)(nil)).Elem()}}})
 	svr.MethodMapper("/", (*controllers0.Login).Index, 
 		&peony.Action{Name: "Login.Index", Args:[]*peony.ArgType{&peony.ArgType{Name:"user", Type:reflect.TypeOf((*[]*controllers0.Mail)(nil)).Elem()},
 		&peony.ArgType{Name:"m", Type:reflect.TypeOf((*models0.User)(nil))}}})
-	svr.InterceptMethod((*controllers0.Login).Before, 0, 1)
 	svr.FuncMapper("/test", controllers0.Index, 
 		&peony.Action{Name:"Index", Args:[]*peony.ArgType{&peony.ArgType{Name:"s", Type:reflect.TypeOf((*controllers1.S)(nil))},
 		&peony.ArgType{Name:"ss", Type:reflect.TypeOf((*string)(nil)).Elem()}}})
