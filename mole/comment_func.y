@@ -3,6 +3,7 @@ package mole
 
 import(
 	//"fmt"
+	"strconv"
 )
 
 type CommentValueType int
@@ -65,15 +66,16 @@ type CommentArg struct {
 	s string
 }
 
-%token<s> str_const tok_name
-%token<fconst> tok_float_const
-%token<iconst> tok_int_const
+%token<s> str_const tok_name numstr_const
+%token<iconst> tok_hex
+%type<s> INTEXPR FLOATEXPR
 %type<value> VALUE STRING
 %type<values> VALUES ELEMENTS
 %type<args> ARGS_ELEMENTS
 %type<argument> ARGUMENT
 %type<function> FUNCTION
 %type<function> RESULT
+%left '-'
 %%
 
 RESULT: FUNCTION {
@@ -129,15 +131,36 @@ STRING: str_const {
 	$$ = &value
 }
 
+INTEXPR: numstr_const {
+	$$ = $1
+}
+| '-' numstr_const {
+	$$ = "-" + $2
+}
+
+
+FLOATEXPR: '-' numstr_const '.' numstr_const {
+	$$ = "-" + $2 + $4
+} 
+| numstr_const '.' numstr_const {
+	$$ = $1 + "." + $3
+}
+
 VALUE: STRING {
 	$$ = $1
 }
-| tok_float_const {
-	value := CommentFloatValue($1)
+| FLOATEXPR {
+	f, _ := strconv.ParseFloat($1, 64)
+	value := CommentFloatValue(f)
 	$$ = &value
 }
-| tok_int_const {
+| tok_hex {
 	value := CommentIntValue($1)
+	$$ = &value
+}
+| INTEXPR {
+	i, _ := strconv.Atoi($1)
+	value := CommentIntValue(i)
 	$$ = &value
 }
 | VALUES {

@@ -14,6 +14,8 @@ const quotes = int('"')
 
 func (c *CommentLexer) Lex(lval *yySymType) int {
 	length := len(c.Comment)
+	//manual parse hex.
+	var tmphex int64 = 0
 	for c.Pos < length {
 		chr := int(c.Comment[c.Pos])
 		switch {
@@ -36,16 +38,52 @@ func (c *CommentLexer) Lex(lval *yySymType) int {
 			//collect a-z A-Z - _
 			switch {
 			case (chr >= '0' && chr <= '9'):
-				goto GOON
 			case (chr >= 'a' && chr <= 'z'):
-				goto GOON
 			case chr == '_' || chr == '-':
-				goto GOON
 			default:
 				c.currentState = 0
 				lval.s = c.Comment[c.PrevPos:c.Pos]
 				return tok_name
 			}
+		case c.currentState == 0 && chr == '0':
+			if c.Pos != len(c.Comment)-1 {
+				next := c.Comment[c.Pos+1]
+				if next == 'x' || next == 'X' {
+					c.PrevPos = c.Pos + 1
+					c.currentState = tok_hex
+					//skip x or X
+					c.Pos++
+					tmphex = 0
+				}
+			}
+		case (chr >= '0' && chr <= '9') && c.currentState == 0:
+			c.currentState = numstr_const
+			c.PrevPos = c.Pos
+		case c.currentState == numstr_const:
+			if chr >= '0' && chr <= '9' {
+				break
+			} else {
+				c.currentState = 0
+				lval.s = c.Comment[c.PrevPos:c.Pos]
+				return numstr_const
+			}
+		case c.currentState == tok_hex:
+			switch {
+			case (chr >= '0' && chr <= '9'):
+				tmphex *= 16
+				tmphex += int64(chr - '0')
+			case (chr >= 'a' && chr <= 'f'):
+				tmphex *= 16
+				tmphex += 10 + int64(chr-'a')
+			case (chr >= 'A' && chr <= 'F'):
+				tmphex *= 16
+				tmphex += 10 + int64(chr-'A')
+			default:
+				lval.iconst = tmphex
+				c.currentState = 0
+				return tok_hex
+			}
+
 		case c.currentState == str_const:
 			//collect all
 			break
@@ -56,7 +94,6 @@ func (c *CommentLexer) Lex(lval *yySymType) int {
 			c.Pos++
 			return chr
 		}
-	GOON:
 		c.Pos++
 	}
 	return 0

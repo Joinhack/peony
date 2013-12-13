@@ -6,6 +6,7 @@ import __yyfmt__ "fmt"
 		
 import(
 	//"fmt"
+	"strconv"
 )
 
 type CommentValueType int
@@ -56,7 +57,7 @@ type CommentArg struct {
 }
 
 
-//line comment_func.y:57
+//line comment_func.y:58
 type yySymType struct {
 	yys int
 	function *CommentFunc
@@ -71,14 +72,15 @@ type yySymType struct {
 
 const str_const = 57346
 const tok_name = 57347
-const tok_float_const = 57348
-const tok_int_const = 57349
+const numstr_const = 57348
+const tok_hex = 57349
 
 var yyToknames = []string{
 	"str_const",
 	"tok_name",
-	"tok_float_const",
-	"tok_int_const",
+	"numstr_const",
+	"tok_hex",
+	" -",
 }
 var yyStatenames = []string{}
 
@@ -86,7 +88,7 @@ const yyEofCode = 1
 const yyErrCode = 2
 const yyMaxDepth = 200
 
-//line comment_func.y:147
+//line comment_func.y:170
 
 
 
@@ -98,52 +100,60 @@ var yyExca = []int{
 	-2, 0,
 }
 
-const yyNprod = 17
+const yyNprod = 22
 const yyPrivate = 57344
 
 var yyTokenNames []string
 var yyStates []string
 
-const yyLast = 40
+const yyLast = 51
 
 var yyAct = []int{
 
-	10, 15, 8, 12, 13, 19, 15, 9, 12, 13,
-	16, 21, 7, 17, 18, 16, 26, 22, 5, 25,
-	24, 23, 15, 9, 12, 13, 15, 27, 12, 13,
-	4, 16, 3, 1, 2, 16, 6, 20, 14, 11,
+	10, 16, 8, 18, 13, 17, 16, 9, 18, 13,
+	17, 19, 26, 7, 30, 33, 19, 24, 32, 22,
+	27, 20, 21, 29, 28, 16, 9, 18, 13, 17,
+	5, 3, 34, 31, 35, 19, 16, 23, 18, 13,
+	17, 4, 1, 2, 6, 25, 19, 15, 11, 12,
+	14,
 }
 var yyPact = []int{
 
-	24, -1000, -1000, 25, 9, 2, 3, -1000, -1000, -7,
-	-1000, -1000, -1000, -1000, -1000, -1000, -3, -1000, 18, 22,
-	5, -1000, -1000, -1000, -1000, -1000, 22, -1000,
+	22, -1000, -1000, 36, 20, 2, 10, -1000, -1000, 6,
+	-1000, -1000, -1000, -1000, -1000, -1000, -1000, 31, 1, -3,
+	-1000, 21, 32, -2, 27, 3, -1000, -1000, -1000, -1000,
+	26, -1000, -1000, 32, -1000, -1000,
 }
 var yyPgo = []int{
 
-	0, 0, 39, 38, 37, 36, 2, 34, 33,
+	0, 50, 49, 0, 48, 47, 45, 44, 2, 43,
+	42,
 }
 var yyR1 = []int{
 
-	0, 8, 7, 7, 5, 5, 6, 6, 3, 3,
-	4, 4, 2, 1, 1, 1, 1,
+	0, 10, 9, 9, 7, 7, 8, 8, 5, 5,
+	6, 6, 4, 1, 1, 2, 2, 3, 3, 3,
+	3, 3,
 }
 var yyR2 = []int{
 
 	0, 1, 5, 4, 3, 1, 3, 1, 3, 2,
-	3, 1, 1, 1, 1, 1, 1,
+	3, 1, 1, 1, 2, 4, 3, 1, 1, 1,
+	1, 1,
 }
 var yyChk = []int{
 
-	-1000, -8, -7, 8, 5, 9, -5, 10, -6, 5,
-	-1, -2, 6, 7, -3, 4, 13, 10, 11, 12,
-	-4, 14, -1, -6, -1, 14, 11, -1,
+	-1000, -10, -9, 9, 5, 10, -7, 11, -8, 5,
+	-3, -4, -2, 7, -1, -5, 4, 8, 6, 14,
+	11, 12, 13, 6, 16, -6, 15, -3, -8, -3,
+	16, 6, 15, 12, 6, -3,
 }
 var yyDef = []int{
 
 	0, -2, 1, 0, 0, 0, 0, 3, 5, 0,
-	7, 13, 14, 15, 16, 12, 0, 2, 0, 0,
-	0, 9, 11, 4, 6, 8, 0, 10,
+	7, 17, 18, 19, 20, 21, 12, 0, 13, 0,
+	2, 0, 0, 14, 0, 0, 9, 11, 4, 6,
+	0, 16, 8, 0, 15, 10,
 }
 var yyTok1 = []int{
 
@@ -151,12 +161,12 @@ var yyTok1 = []int{
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-	9, 10, 3, 3, 11, 3, 3, 3, 3, 3,
+	10, 11, 3, 3, 12, 8, 16, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-	3, 12, 3, 3, 8, 3, 3, 3, 3, 3,
+	3, 13, 3, 3, 9, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-	3, 13, 3, 14,
+	3, 14, 3, 15,
 }
 var yyTok2 = []int{
 
@@ -392,12 +402,12 @@ yydefault:
 	switch yynt {
 
 	case 1:
-		//line comment_func.y:79
+		//line comment_func.y:81
 		{
 		yylex.(*CommentLexer).Function = yyS[yypt-0].function
 	}
 	case 2:
-		//line comment_func.y:83
+		//line comment_func.y:85
 		{
 		function := &CommentFunc{}
 		function.Name = yyS[yypt-3].s
@@ -405,24 +415,24 @@ yydefault:
 		yyVAL.function = function
 	}
 	case 3:
-		//line comment_func.y:88
+		//line comment_func.y:90
 		{
 		function := &CommentFunc{}
 		function.Name = yyS[yypt-2].s
 		function.Args = []*CommentArg{}
 	}
 	case 4:
-		//line comment_func.y:94
+		//line comment_func.y:96
 		{
 		yyVAL.args = append(yyS[yypt-2].args, yyS[yypt-0].argument)
 	}
 	case 5:
-		//line comment_func.y:97
+		//line comment_func.y:99
 		{
 		yyVAL.args = []*CommentArg{yyS[yypt-0].argument}
 	}
 	case 6:
-		//line comment_func.y:101
+		//line comment_func.y:103
 		{
 		arg := &CommentArg{}
 		arg.Name = yyS[yypt-2].s
@@ -430,58 +440,86 @@ yydefault:
 		yyVAL.argument = arg
 	}
 	case 7:
-		//line comment_func.y:107
+		//line comment_func.y:109
 		{
 		arg := &CommentArg{}
 		arg.Value = yyS[yypt-0].value
 		yyVAL.argument = arg
 	}
 	case 8:
-		//line comment_func.y:113
+		//line comment_func.y:115
 		{
 		yyVAL.values = yyS[yypt-1].values
 	}
 	case 9:
-		//line comment_func.y:115
+		//line comment_func.y:117
 		{
 		yyVAL.values = &CommentArrayValue{}
 	}
 	case 10:
-		//line comment_func.y:119
+		//line comment_func.y:121
 		{
 		vals := append(*yyS[yypt-2].values, yyS[yypt-0].value)
 		yyVAL.values = &vals
 	}
 	case 11:
-		//line comment_func.y:123
+		//line comment_func.y:125
 		{
 		yyVAL.values = &CommentArrayValue{yyS[yypt-0].value}
 	}
 	case 12:
-		//line comment_func.y:127
+		//line comment_func.y:129
 		{
 		value := CommentStringValue(yyS[yypt-0].s)
 		yyVAL.value = &value
 	}
 	case 13:
-		//line comment_func.y:132
+		//line comment_func.y:134
+		{
+		yyVAL.s = yyS[yypt-0].s
+	}
+	case 14:
+		//line comment_func.y:137
+		{
+		yyVAL.s = "-" + yyS[yypt-0].s
+	}
+	case 15:
+		//line comment_func.y:142
+		{
+		yyVAL.s = "-" + yyS[yypt-2].s + yyS[yypt-0].s
+	}
+	case 16:
+		//line comment_func.y:145
+		{
+		yyVAL.s = yyS[yypt-2].s + "." + yyS[yypt-0].s
+	}
+	case 17:
+		//line comment_func.y:149
 		{
 		yyVAL.value = yyS[yypt-0].value
 	}
-	case 14:
-		//line comment_func.y:135
+	case 18:
+		//line comment_func.y:152
 		{
-		value := CommentFloatValue(yyS[yypt-0].fconst)
+		f, _ := strconv.ParseFloat(yyS[yypt-0].s, 64)
+		value := CommentFloatValue(f)
 		yyVAL.value = &value
 	}
-	case 15:
-		//line comment_func.y:139
+	case 19:
+		//line comment_func.y:157
 		{
 		value := CommentIntValue(yyS[yypt-0].iconst)
 		yyVAL.value = &value
 	}
-	case 16:
-		//line comment_func.y:143
+	case 20:
+		//line comment_func.y:161
+		{
+		i, _ := strconv.Atoi(yyS[yypt-0].s)
+		value := CommentIntValue(i)
+		yyVAL.value = &value
+	}
+	case 21:
+		//line comment_func.y:166
 		{
 		yyVAL.value = yyS[yypt-0].values
 	}
