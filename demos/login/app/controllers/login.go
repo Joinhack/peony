@@ -18,13 +18,13 @@ func FileDown(path string) app.Render {
 	return app.NewFileRender(path)
 }
 
-// @Mapper("/")
+// @Mapper("post:/")
 func (l *Login) Index(user []*Mail, m *model.User) app.Render {
 	println(l.xx)
 	return nil
 }
 
-// @Intercept(Before,1)
+// @Intercept("before",1)
 func (l *Login) Before(c *app.Controller) app.Render {
 	l.xx = "1000"
 	return nil

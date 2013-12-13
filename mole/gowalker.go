@@ -109,7 +109,7 @@ func (c *CodeGenCreaters) ProcessComments(fileSet *token.FileSet, commentGroup *
 
 var (
 	codeGenCreaters = CodeGenCreaters{}
-	MapperRegexp    = regexp.MustCompile(`@Mapper\("(.*)"\)`)
+	MapperRegexp    = regexp.MustCompile(`@Mapper\("(.*)"(,\[(["a-zA-Z,]+)\])?\)`)
 	InterceptRegexp = regexp.MustCompile(`@Intercept\(\"(\w)+\"(,(\d+))?\)`)
 )
 
@@ -131,7 +131,11 @@ var (
 //create the mapper for comment generator.
 func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, error) {
 	if actionInfo, ok := spec.(*ActionInfo); ok {
+		if !strings.HasPrefix(comment, "@Mapper") {
+			return nil, NotMatch
+		}
 		expr := MapperRegexp.FindStringSubmatch(comment)
+		fmt.Println(expr)
 		if expr == nil {
 			return nil, NotMatch
 		}
