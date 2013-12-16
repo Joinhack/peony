@@ -45,15 +45,15 @@ func TestServer(t *testing.T) {
 	app.DevMode = true
 	svr := app.NewServer()
 	svr.Init()
-	err = svr.MethodMapper("/", (*AS).T, &Action{Name: "AS.T"})
+	err = svr.MethodMapper("/", HttpMethods, (*AS).T, &Action{Name: "AS.T"})
 	if err != nil {
 		panic(err)
 	}
-	svr.FuncMapper("/json", Json, &Action{Name: "xssxeem"})
-	svr.FuncMapper("/template", Template, &Action{Name: "recover.go"})
-	svr.FuncMapper("/xml", Xml, &Action{Name: "xml"})
-	svr.FuncMapper("/<int:join>", Text, &Action{Name: "xxeemw", Args: []*ArgType{&ArgType{Name: "join", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
-	svr.FuncMapper("/static/<string:path>", File, &Action{Name: "file", Args: []*ArgType{&ArgType{Name: "path", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
+	svr.FuncMapper("/json", HttpMethods, Json, &Action{Name: "xssxeem"})
+	svr.FuncMapper("/template", HttpMethods, Template, &Action{Name: "recover.go"})
+	svr.FuncMapper("/xml", HttpMethods, Xml, &Action{Name: "xml"})
+	svr.FuncMapper("/<int:join>", HttpMethods, Text, &Action{Name: "xxeemw", Args: []*ArgType{&ArgType{Name: "join", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
+	svr.FuncMapper("/static/<string:path>", HttpMethods, File, &Action{Name: "file", Args: []*ArgType{&ArgType{Name: "path", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
 	err = svr.Run()
 	if err != nil {
 		t.Fatal(err)

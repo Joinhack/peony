@@ -12,8 +12,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -28,7 +26,8 @@ type CodeGenCreater func(comment string, spec CodeGenSpec) (CodeGen, error)
 
 type MapperCommentCodeGen struct {
 	*ActionInfo
-	UrlExpr string
+	UrlExpr     string
+	HttpMethods []string
 }
 
 type InterceptCommentCodeGen struct {
@@ -47,13 +46,14 @@ func (m *MapperCommentCodeGen) Generate(appName, serverName string, alias map[st
 		argsList = append(argsList, fmt.Sprintf("&peony.ArgType{Name:\"%s\", Type:%s}", arg.Name, arg.TypeExpr(alias)))
 	}
 	var argCode string
+	httpMethods := strings.Join(m.HttpMethods, "\",\"")
 	if len(argsList) > 0 {
 		argCode = fmt.Sprintf("Args:[]*peony.ArgType{%s}", strings.Join(argsList, ",\n\t\t"))
 	}
 	if info.RecvName == "" {
-		code = fmt.Sprintf("\t%s.FuncMapper(\"%s\", %s.%s, \n\t\t&peony.Action{Name:\"%s\", %s})\n", serverName, m.UrlExpr, pkgName, info.MethodSpec.Name, info.ActionName, argCode)
+		code = fmt.Sprintf("\t%s.FuncMapper(\"%s\", []string{\"%s\"}, %s.%s, \n\t\t&peony.Action{Name:\"%s\", %s})\n", serverName, m.UrlExpr, httpMethods, pkgName, info.MethodSpec.Name, info.ActionName, argCode)
 	} else {
-		code = fmt.Sprintf("\t%s.MethodMapper(\"%s\", (*%s.%s).%s, \n\t\t&peony.Action{Name: \"%s\", %s})\n", serverName, m.UrlExpr, pkgName, info.RecvName, info.Name, info.ActionName, argCode)
+		code = fmt.Sprintf("\t%s.MethodMapper(\"%s\", []string{\"%s\"}, (*%s.%s).%s, \n\t\t&peony.Action{Name: \"%s\", %s})\n", serverName, m.UrlExpr, httpMethods, pkgName, info.RecvName, info.Name, info.ActionName, argCode)
 	}
 	return code
 }
@@ -109,8 +109,6 @@ func (c *CodeGenCreaters) ProcessComments(fileSet *token.FileSet, commentGroup *
 
 var (
 	codeGenCreaters = CodeGenCreaters{}
-	MapperRegexp    = regexp.MustCompile(`@Mapper\("(.*)"(,\[(["a-zA-Z,]+)\])?\)`)
-	InterceptRegexp = regexp.MustCompile(`@Intercept\(\"(\w)+\"(,(\d+))?\)`)
 )
 
 func (c *CodeGenCreaters) RegisterCodeGenCreater(name string, builder CodeGenCreater) {
@@ -123,9 +121,19 @@ func init() {
 }
 
 var (
-	NotMatch       = errors.New("the comment not match")
-	NotSupportFunc = errors.New("Intecept must used for method, not support func. method e.g. func (*Struct) Method{...}")
-	UnkownArguemnt = errors.New("unknown argument")
+	NotMatch               = errors.New("the comment not match")
+	UrlArgumentRequired    = errors.New("url argument is required")
+	ArgMustbeString        = errors.New("Arg must be string")
+	WhenArgMustbeString    = errors.New("arg 'when' must be string, e.g. \"BEFORE\", \"AFTER\", \"FINALLY\",\"PANIC\"")
+	MethodsArgMustbeString = errors.New("methods arg must be string array")
+
+	PriorityArgMustbeInt = errors.New("prioprity arg must be int")
+
+	ArgMustbeArray        = errors.New("Arg must be array")
+	UnknownArgument       = errors.New("unknown argument")
+	UnknownMethodArgument = errors.New("unknown method, method should be POST, GET, PUT, DELETE")
+	NotSupportFunc        = errors.New("Intecept must used for method, not support func. method e.g. func (*Struct) Method{...}")
+	UnkownArguemnt        = errors.New("unknown argument")
 )
 
 //create the mapper for comment generator.
@@ -134,12 +142,62 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 		if !strings.HasPrefix(comment, "@Mapper") {
 			return nil, NotMatch
 		}
-		expr := MapperRegexp.FindStringSubmatch(comment)
-		fmt.Println(expr)
-		if expr == nil {
-			return nil, NotMatch
+		lexer := &CommentLexer{}
+		cfun, err := lexer.Parse(comment)
+		if err != nil {
+			return nil, err
 		}
-		return &MapperCommentCodeGen{actionInfo, expr[1]}, nil
+		url := ""
+		methods := peony.HttpMethods
+		if len(cfun.Args) > 0 {
+			for idx, arg := range cfun.Args {
+				if (idx == 0 && arg.Name == "") || arg.Name == "url" {
+					//set url argument
+					if arg.Value.ValueType() != CommentStringType {
+						return nil, ArgMustbeString
+					}
+					url = string(*arg.Value.(*CommentStringValue))
+				} else if arg.Name == "methods" {
+					//set methods argument
+					if arg.Value.ValueType() != CommentArrayType {
+						return nil, ArgMustbeArray
+					}
+					array := *arg.Value.(*CommentArrayValue)
+					methods = []string{}
+					for _, value := range array {
+						if value.ValueType() != CommentStringType {
+							return nil, MethodsArgMustbeString
+						}
+						meth := string(*value.(*CommentStringValue))
+						if meth == "*" {
+							methods = peony.HttpMethods
+							break
+						}
+						//is the httpmethods suppport.
+						if !peony.StringSliceContain(peony.HttpMethods, meth) {
+							return nil, UnknownMethodArgument
+						}
+						//append method
+						if !peony.StringSliceContain(methods, meth) {
+							methods = append(methods, meth)
+						}
+					}
+				} else {
+					return nil, UnknownArgument
+				}
+			}
+		} else {
+			//use default rule
+			if actionInfo.RecvName == "" {
+				url = "/" + strings.ToLower(actionInfo.ActionName)
+			} else {
+				url = "/" + strings.Replace(strings.ToLower(actionInfo.ActionName), ".", "/", 1)
+			}
+		}
+		if url == "" {
+			return nil, UrlArgumentRequired
+		}
+		return &MapperCommentCodeGen{actionInfo, url, methods}, nil
 	}
 	return nil, NotMatch
 }
@@ -147,34 +205,49 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 //create the intercept for comment generator.
 func InterceptCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, error) {
 	if actionInfo, ok := spec.(*ActionInfo); ok {
-		//The regexp is complex, so I do string compare first.
+
+		//The synax analyze is complex, so I do string compare first.
 		if !strings.HasPrefix(comment, "@Intercept") {
 			return nil, NotMatch
 		}
-		expr := InterceptRegexp.FindStringSubmatch(comment)
-		priority := 0
-		if expr == nil || len(expr) < 2 {
-			return nil, NotMatch
-		}
+
 		if actionInfo.RecvName == "" {
 			//it's func, now we don't support
 			return nil, NotSupportFunc
 		}
-		when := 0
-		switch strings.ToUpper(expr[1]) {
-		case "BEFORE":
-			when = peony.BEFORE
-		case "AFTER":
-			when = peony.AFTER
-		case "FINALLY":
-			when = peony.FINALLY
-		case "PANIC":
-			when = peony.PANIC
-		default:
-			return nil, UnkownArguemnt
+		lexer := &CommentLexer{}
+		cfun, err := lexer.Parse(comment)
+		priority := 0
+		if err != nil {
+			return nil, err
 		}
 
-		priority, _ = strconv.Atoi(expr[3])
+		when := 0
+		for idx, arg := range cfun.Args {
+			if (idx == 0 && arg.Name == "") || arg.Name == "when" {
+				if arg.Value.ValueType() != CommentStringType {
+					return nil, WhenArgMustbeString
+				}
+				whenString := string(*arg.Value.(*CommentStringValue))
+				switch whenString {
+				case "BEFORE":
+					when = peony.BEFORE
+				case "AFTER":
+					when = peony.AFTER
+				case "FINALLY":
+					when = peony.FINALLY
+				case "PANIC":
+					when = peony.PANIC
+				default:
+					return nil, UnkownArguemnt
+				}
+			} else if arg.Name == "priority" {
+				if arg.Value.ValueType() != CommentIntType {
+					return nil, WhenArgMustbeString
+				}
+				priority = int(*arg.Value.(*CommentIntValue))
+			}
+		}
 		return &InterceptCommentCodeGen{actionInfo, when, priority}, nil
 	}
 	return nil, NotMatch

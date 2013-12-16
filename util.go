@@ -56,3 +56,12 @@ func ExecuteTemplate(t template, args interface{}) string {
 	}
 	return b.String()
 }
+
+func StringSliceContain(vals []string, val string) bool {
+	for _, v := range vals {
+		if v == val {
+			return true
+		}
+	}
+	return false
+}

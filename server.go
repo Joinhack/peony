@@ -190,25 +190,19 @@ func (s *Server) BindDefaultFilters() {
 }
 
 //mapper the func, e.g. func Index() ...
-func (s *Server) FuncMapper(expr string, function interface{}, action *Action) error {
-	if s.FindAction(action.Name) != nil {
-		return ActionExist
-	}
+func (s *Server) FuncMapper(expr string, httpMethods []string, function interface{}, action *Action) error {
 	if err := s.RegisterFuncAction(function, action); err != nil {
 		return err
 	}
-	return s.AddRule(&Rule{Path: expr, Action: action.Name})
+	return s.AddRule(&Rule{Path: expr, Action: action.Name, HttpMethods: httpMethods})
 }
 
 //mapper the func with recv, e.g. func (c *C) Index() ...
-func (s *Server) MethodMapper(expr string, method interface{}, action *Action) error {
-	if s.FindAction(action.Name) != nil {
-		return ActionExist
-	}
+func (s *Server) MethodMapper(expr string, httpMethods []string, method interface{}, action *Action) error {
 	if err := s.RegisterMethodAction(method, action); err != nil {
 		return err
 	}
-	return s.AddRule(&Rule{Path: expr, Action: action.Name})
+	return s.AddRule(&Rule{Path: expr, Action: action.Name, HttpMethods: httpMethods})
 }
 
 func NewServer(app *App) *Server {

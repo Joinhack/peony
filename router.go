@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	ruleRE *regexp.Regexp
+	ruleRE      *regexp.Regexp
+	HttpMethods = []string{"GET", "POST", "PUT", "DELETE"}
 )
 
 func init() {
@@ -31,12 +32,12 @@ type trace struct {
 }
 
 type Rule struct {
-	Method    []string //e.g. GET, POST
-	Action    string   //e.g. Controller.Call
-	Path      string   //e.g. /app /app/<int:name>
-	traces    []*trace
-	args      map[string]Parser
-	PathRegex *regexp.Regexp
+	HttpMethods []string //e.g. GET, POST
+	Action      string   //e.g. Controller.Call
+	Path        string   //e.g. /app /app/<int:name>
+	traces      []*trace
+	args        map[string]Parser
+	PathRegex   *regexp.Regexp
 }
 
 type Parser func(string) string
@@ -145,7 +146,10 @@ func (r *Rule) Build(params map[string]string) string {
 	return strings.Join(rs, "")
 }
 
-func (r *Rule) Match(path string) (string, map[string]string) {
+func (r *Rule) Match(httpmethod string, path string) (string, map[string]string) {
+	if !StringSliceContain(r.HttpMethods, httpmethod) {
+		return "", nil
+	}
 	if len(r.args) == 0 {
 		if r.Path == path {
 			return r.Action, nil
@@ -181,11 +185,11 @@ func NewRouter() *Router {
 	return router
 }
 
-func (r *Router) Match(path string) (string, map[string]string) {
+func (r *Router) Match(httpmethod string, path string) (string, map[string]string) {
 	var action string
 	var match map[string]string
 	for _, rule := range r.rules {
-		if action, match = rule.Match(path); action != "" {
+		if action, match = rule.Match(httpmethod, path); action != "" {
 			return action, match
 		}
 	}
@@ -260,7 +264,7 @@ func (r *Router) AddRule(rule *Rule) error {
 func GetRouterFilter(svr *Server) Filter {
 	return func(controller *Controller, filter []Filter) {
 		router := svr.Router
-		actionName, routerParams := router.Match(controller.Req.URL.Path)
+		actionName, routerParams := router.Match(controller.Req.Method, controller.Req.URL.Path)
 		if actionName == "" {
 			controller.NotFound("No match rule found")
 			return

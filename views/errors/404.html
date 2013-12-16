@@ -52,6 +52,9 @@
 	#rules li ul li.url {
 		width: 400px;
 	}
+	#rules li ul li.httpmethods {
+		width: 200px;
+	}
 </style>
 <head>
 	<title>Not found</title>
@@ -69,7 +72,7 @@
 {{with ExtParams}}
 {{with call .Rules}}
 {{range .}}
-<li><ul><li class='url' title="{{.Path}}">{{.Path}}</li><li title="{{.Action}}">{{.Action}}</li></ul></li>
+<li><ul><li class='url' title="{{.Path}}">{{.Path}}</li><li title="{{.HttpMethods}}" class='httpmethods'>{{.HttpMethods}}</li><li title="{{.Action}}">{{.Action}}</li></ul></li>
 {{end}}
 {{end}}
 {{end}}

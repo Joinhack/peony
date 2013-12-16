@@ -87,10 +87,18 @@ FUNCTION: '@' tok_name '(' ARGS_ELEMENTS ')' {
 	function.Name = $2
 	function.Args = $4
 	$$ = function
-} | '@' tok_name '('  ')' {
+} 
+| '@' tok_name '('  ')' {
 	function := &CommentFunc{}
 	function.Name = $2
 	function.Args = []*CommentArg{}
+	$$ = function
+}
+| '@' tok_name {
+	function := &CommentFunc{}
+	function.Name = $2
+	function.Args = []*CommentArg{}
+	$$ = function
 }
 
 ARGS_ELEMENTS: ARGS_ELEMENTS ',' ARGUMENT {

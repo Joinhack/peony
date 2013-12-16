@@ -88,7 +88,7 @@ const yyEofCode = 1
 const yyErrCode = 2
 const yyMaxDepth = 200
 
-//line comment_func.y:170
+//line comment_func.y:178
 
 
 
@@ -100,7 +100,7 @@ var yyExca = []int{
 	-2, 0,
 }
 
-const yyNprod = 22
+const yyNprod = 23
 const yyPrivate = 57344
 
 var yyTokenNames []string
@@ -131,15 +131,15 @@ var yyPgo = []int{
 }
 var yyR1 = []int{
 
-	0, 10, 9, 9, 7, 7, 8, 8, 5, 5,
-	6, 6, 4, 1, 1, 2, 2, 3, 3, 3,
-	3, 3,
+	0, 10, 9, 9, 9, 7, 7, 8, 8, 5,
+	5, 6, 6, 4, 1, 1, 2, 2, 3, 3,
+	3, 3, 3,
 }
 var yyR2 = []int{
 
-	0, 1, 5, 4, 3, 1, 3, 1, 3, 2,
-	3, 1, 1, 1, 2, 4, 3, 1, 1, 1,
-	1, 1,
+	0, 1, 5, 4, 2, 3, 1, 3, 1, 3,
+	2, 3, 1, 1, 1, 2, 4, 3, 1, 1,
+	1, 1, 1,
 }
 var yyChk = []int{
 
@@ -150,10 +150,10 @@ var yyChk = []int{
 }
 var yyDef = []int{
 
-	0, -2, 1, 0, 0, 0, 0, 3, 5, 0,
-	7, 17, 18, 19, 20, 21, 12, 0, 13, 0,
-	2, 0, 0, 14, 0, 0, 9, 11, 4, 6,
-	0, 16, 8, 0, 15, 10,
+	0, -2, 1, 0, 4, 0, 0, 3, 6, 0,
+	8, 18, 19, 20, 21, 22, 13, 0, 14, 0,
+	2, 0, 0, 15, 0, 0, 10, 12, 5, 7,
+	0, 17, 9, 0, 16, 11,
 }
 var yyTok1 = []int{
 
@@ -415,111 +415,120 @@ yydefault:
 		yyVAL.function = function
 	}
 	case 3:
-		//line comment_func.y:90
+		//line comment_func.y:91
 		{
 		function := &CommentFunc{}
 		function.Name = yyS[yypt-2].s
 		function.Args = []*CommentArg{}
+		yyVAL.function = function
 	}
 	case 4:
-		//line comment_func.y:96
+		//line comment_func.y:97
+		{
+		function := &CommentFunc{}
+		function.Name = yyS[yypt-0].s
+		function.Args = []*CommentArg{}
+		yyVAL.function = function
+	}
+	case 5:
+		//line comment_func.y:104
 		{
 		yyVAL.args = append(yyS[yypt-2].args, yyS[yypt-0].argument)
 	}
-	case 5:
-		//line comment_func.y:99
+	case 6:
+		//line comment_func.y:107
 		{
 		yyVAL.args = []*CommentArg{yyS[yypt-0].argument}
 	}
-	case 6:
-		//line comment_func.y:103
+	case 7:
+		//line comment_func.y:111
 		{
 		arg := &CommentArg{}
 		arg.Name = yyS[yypt-2].s
 		arg.Value = yyS[yypt-0].value
 		yyVAL.argument = arg
 	}
-	case 7:
-		//line comment_func.y:109
+	case 8:
+		//line comment_func.y:117
 		{
 		arg := &CommentArg{}
 		arg.Value = yyS[yypt-0].value
 		yyVAL.argument = arg
 	}
-	case 8:
-		//line comment_func.y:115
+	case 9:
+		//line comment_func.y:123
 		{
 		yyVAL.values = yyS[yypt-1].values
 	}
-	case 9:
-		//line comment_func.y:117
+	case 10:
+		//line comment_func.y:125
 		{
 		yyVAL.values = &CommentArrayValue{}
 	}
-	case 10:
-		//line comment_func.y:121
+	case 11:
+		//line comment_func.y:129
 		{
 		vals := append(*yyS[yypt-2].values, yyS[yypt-0].value)
 		yyVAL.values = &vals
 	}
-	case 11:
-		//line comment_func.y:125
+	case 12:
+		//line comment_func.y:133
 		{
 		yyVAL.values = &CommentArrayValue{yyS[yypt-0].value}
 	}
-	case 12:
-		//line comment_func.y:129
+	case 13:
+		//line comment_func.y:137
 		{
 		value := CommentStringValue(yyS[yypt-0].s)
 		yyVAL.value = &value
 	}
-	case 13:
-		//line comment_func.y:134
+	case 14:
+		//line comment_func.y:142
 		{
 		yyVAL.s = yyS[yypt-0].s
 	}
-	case 14:
-		//line comment_func.y:137
+	case 15:
+		//line comment_func.y:145
 		{
 		yyVAL.s = "-" + yyS[yypt-0].s
 	}
-	case 15:
-		//line comment_func.y:142
+	case 16:
+		//line comment_func.y:150
 		{
 		yyVAL.s = "-" + yyS[yypt-2].s + yyS[yypt-0].s
 	}
-	case 16:
-		//line comment_func.y:145
+	case 17:
+		//line comment_func.y:153
 		{
 		yyVAL.s = yyS[yypt-2].s + "." + yyS[yypt-0].s
 	}
-	case 17:
-		//line comment_func.y:149
+	case 18:
+		//line comment_func.y:157
 		{
 		yyVAL.value = yyS[yypt-0].value
 	}
-	case 18:
-		//line comment_func.y:152
+	case 19:
+		//line comment_func.y:160
 		{
 		f, _ := strconv.ParseFloat(yyS[yypt-0].s, 64)
 		value := CommentFloatValue(f)
 		yyVAL.value = &value
 	}
-	case 19:
-		//line comment_func.y:157
+	case 20:
+		//line comment_func.y:165
 		{
 		value := CommentIntValue(yyS[yypt-0].iconst)
 		yyVAL.value = &value
 	}
-	case 20:
-		//line comment_func.y:161
+	case 21:
+		//line comment_func.y:169
 		{
 		i, _ := strconv.Atoi(yyS[yypt-0].s)
 		value := CommentIntValue(i)
 		yyVAL.value = &value
 	}
-	case 21:
-		//line comment_func.y:166
+	case 22:
+		//line comment_func.y:174
 		{
 		yyVAL.value = yyS[yypt-0].values
 	}

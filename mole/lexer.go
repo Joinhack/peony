@@ -1,5 +1,9 @@
 package mole
 
+import (
+	"errors"
+)
+
 type CommentLexer struct {
 	yyLexer
 	Function     *CommentFunc
@@ -11,6 +15,15 @@ type CommentLexer struct {
 }
 
 const quotes = int('"')
+
+func (c *CommentLexer) Parse(comment string) (*CommentFunc, error) {
+	c.Comment = comment
+	rs := yyParse(c)
+	if rs != 0 {
+		return nil, errors.New(c.Err)
+	}
+	return c.Function, nil
+}
 
 func (c *CommentLexer) Lex(lval *yySymType) int {
 	length := len(c.Comment)
@@ -32,15 +45,17 @@ func (c *CommentLexer) Lex(lval *yySymType) int {
 				return str_const
 			}
 		case ((chr >= 'a' && chr <= 'z') || (chr >= 'A' && chr <= 'Z')) && c.currentState == 0:
+			//tok_name start
 			c.currentState = tok_name
 			c.PrevPos = c.Pos
 		case c.currentState == tok_name:
-			//collect a-z A-Z - _
+			//collect a-z A-Z - _ to tok_name
 			switch {
 			case (chr >= '0' && chr <= '9'):
 			case (chr >= 'a' && chr <= 'z'):
 			case chr == '_' || chr == '-':
 			default:
+				//tok_name end
 				c.currentState = 0
 				lval.s = c.Comment[c.PrevPos:c.Pos]
 				return tok_name
@@ -61,8 +76,11 @@ func (c *CommentLexer) Lex(lval *yySymType) int {
 			c.PrevPos = c.Pos
 		case c.currentState == numstr_const:
 			if chr >= '0' && chr <= '9' {
+				//collect number
 				break
 			} else {
+				// number record end.
+				// so float should be "numstr_const '.' numstr_const".
 				c.currentState = 0
 				lval.s = c.Comment[c.PrevPos:c.Pos]
 				return numstr_const
@@ -74,16 +92,17 @@ func (c *CommentLexer) Lex(lval *yySymType) int {
 				tmphex += int64(chr - '0')
 			case (chr >= 'a' && chr <= 'f'):
 				tmphex *= 16
-				tmphex += 10 + int64(chr-'a')
+				//87 = ('a'-10), (chr - 87) = 10 + chr - 'a'
+				tmphex += int64(chr - 87)
 			case (chr >= 'A' && chr <= 'F'):
 				tmphex *= 16
-				tmphex += 10 + int64(chr-'A')
+				//55 = ('A'-10), (chr - 55) = 10 + chr - 'A'
+				tmphex += int64(chr - 55)
 			default:
 				lval.iconst = tmphex
 				c.currentState = 0
 				return tok_hex
 			}
-
 		case c.currentState == str_const:
 			//collect all
 			break
@@ -95,6 +114,11 @@ func (c *CommentLexer) Lex(lval *yySymType) int {
 			return chr
 		}
 		c.Pos++
+	}
+	//support method like "@Mapper"
+	if c.Pos == length && c.currentState == tok_name {
+		c.currentState = 0
+		return tok_name
 	}
 	return 0
 }
