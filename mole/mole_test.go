@@ -8,7 +8,7 @@ import (
 )
 
 func TestProcessSources(t *testing.T) {
-	path, _ := filepath.Abs("../demos/login/app")
+	path, _ := filepath.Abs("../demos/login/app/controllers/controllers")
 	si, err := ProcessSources([]string{path})
 	if err != nil {
 		t.Log("error:", err)
@@ -18,7 +18,7 @@ func TestProcessSources(t *testing.T) {
 }
 
 func TestBuild(t *testing.T) {
-	app := peony.NewApp(filepath.Join(build.Default.GOPATH, "src"), "github.com/joinhack/peony/demos/login")
+	app := peony.NewApp(filepath.Join(build.Default.GOPATH, "src"), "github.com/joinhack/peony/demos/login/controllers/controllers/")
 	app.DevMode = true
 	ag, _ := NewAgent(app)
 	ag.Run(":8080")

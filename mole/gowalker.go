@@ -69,7 +69,33 @@ func (i *InterceptCommentCodeGen) Generate(appName, serverName string, alias map
 
 type CodeGenCreaters map[string][]CodeGenCreater
 
-func (c *CodeGenCreaters) ProcessComments(fileSet *token.FileSet, commentGroup *ast.CommentGroup, typ string, spec CodeGenSpec, codeGens *[]CodeGen) error {
+func NewErrorFromPosition(position token.Position, err error) *peony.Error {
+	var path = position.Filename
+	var lines []string
+	var rerr error
+	if lines, rerr = peony.ReadLines(path); rerr != nil {
+		peony.ERROR.Println("read file error:", rerr)
+		path = ""
+	}
+	return &peony.Error{
+		Title:       "Compile error",
+		Path:        path,
+		FileName:    path,
+		Line:        position.Line,
+		Column:      position.Column,
+		Description: err.Error(),
+		SourceLines: lines,
+	}
+}
+
+var MapperStructCodeGen = make(map[string]*MapperCommentCodeGen)
+
+func (c *CodeGenCreaters) processComments(fileSet *token.FileSet, commentGroup *ast.CommentGroup, typ string, sepc CodeGenSpec) ([]CodeGen, error) {
+
+	codeGens := []CodeGen{}
+	if commentGroup == nil || len(commentGroup.List) <= 0 {
+		return codeGens, nil
+	}
 	for _, comment := range commentGroup.List {
 		if comment.Text[:2] == "//" {
 			content := strings.TrimSpace(comment.Text[2:])
@@ -77,33 +103,63 @@ func (c *CodeGenCreaters) ProcessComments(fileSet *token.FileSet, commentGroup *
 				continue
 			}
 			for _, codeGenCreater := range (*c)[typ] {
-				if codeGen, err := codeGenCreater(content, spec); err == nil {
-					(*codeGens) = append((*codeGens), codeGen)
+				if codeGen, err := codeGenCreater(content, sepc); err == nil {
+					codeGens = append(codeGens, codeGen)
 				} else {
 					if err == NotMatch {
 						continue
 					}
 					position := fileSet.Position(comment.Pos())
-					var path = position.Filename
-					var lines []string
-					var rerr error
-					if lines, rerr = peony.ReadLines(path); rerr != nil {
-						peony.ERROR.Println("read file error:", rerr)
-						path = ""
-					}
-					return &peony.Error{
-						Title:       "Compile error",
-						Path:        path,
-						FileName:    path,
-						Line:        position.Line,
-						Column:      position.Column,
-						Description: err.Error(),
-						SourceLines: lines,
-					}
+					perr := NewErrorFromPosition(position, err)
+					return nil, perr
 				}
 			}
 		}
 	}
+	return codeGens, nil
+}
+
+func (c *CodeGenCreaters) ProcessStructComments(fileSet *token.FileSet, commentGroup *ast.CommentGroup, structInfo *StructInfo) error {
+	codeGens, err := c.processComments(fileSet, commentGroup, "struct", structInfo)
+	if err != nil {
+		return err
+	}
+	for _, codeGen := range codeGens {
+		if codeGen, ok := codeGen.(*MapperCommentCodeGen); ok {
+			MapperStructCodeGen[fmt.Sprintf("%s.%s", structInfo.ImportPath, structInfo.Name)] = codeGen
+		}
+	}
+	return nil
+}
+
+func hasMapperCodeGen(codeGens []CodeGen) bool {
+	for _, codeGen := range codeGens {
+		if _, ok := codeGen.(*MapperCommentCodeGen); ok {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *CodeGenCreaters) ProcessActionComments(fileSet *token.FileSet, commentGroup *ast.CommentGroup, actionInfo *ActionInfo, codeGens *[]CodeGen) error {
+	commentCodeGens, err := c.processComments(fileSet, commentGroup, "action", actionInfo)
+	if err != nil {
+		return err
+	}
+	//support for mapper in struct
+	if len(actionInfo.RecvName) != 0 && (!hasMapperCodeGen(commentCodeGens) || len(commentCodeGens) == 0) {
+		if mapperCodeGen, ok := MapperStructCodeGen[fmt.Sprintf("%s.%s", actionInfo.ImportPath, actionInfo.RecvName)]; ok {
+			codeGen := &MapperCommentCodeGen{}
+			*codeGen = *mapperCodeGen
+			codeGen.ActionInfo = actionInfo
+			if !strings.HasSuffix(codeGen.UrlExpr, "/") {
+				codeGen.UrlExpr += "/"
+			}
+			codeGen.UrlExpr += strings.ToLower(actionInfo.Name)
+			commentCodeGens = append(commentCodeGens, codeGen)
+		}
+	}
+	*codeGens = append(*codeGens, commentCodeGens...)
 	return nil
 }
 
@@ -116,15 +172,16 @@ func (c *CodeGenCreaters) RegisterCodeGenCreater(name string, builder CodeGenCre
 }
 
 func init() {
-	codeGenCreaters.RegisterCodeGenCreater("func", MapperCommentCodeGenCreater)
-	codeGenCreaters.RegisterCodeGenCreater("func", InterceptCommentCodeGenCreater)
+	codeGenCreaters.RegisterCodeGenCreater("action", MapperCommentCodeGenCreater)
+	codeGenCreaters.RegisterCodeGenCreater("struct", MapperCommentCodeGenCreater)
+	codeGenCreaters.RegisterCodeGenCreater("action", InterceptCommentCodeGenCreater)
 }
 
 var (
 	NotMatch               = errors.New("the comment not match")
 	UrlArgumentRequired    = errors.New("url argument is required")
 	ArgMustbeString        = errors.New("Arg must be string")
-	WhenArgMustbeString    = errors.New("arg 'when' must be string, e.g. \"BEFORE\", \"AFTER\", \"FINALLY\",\"PANIC\"")
+	WhenArgMustbeString    = errors.New(`arg 'when' must be string, e.g. "BEFORE", "AFTER", "FINALLY","PANIC"`)
 	MethodsArgMustbeString = errors.New("methods arg must be string array")
 
 	PriorityArgMustbeInt = errors.New("prioprity arg must be int")
@@ -138,55 +195,63 @@ var (
 
 //create the mapper for comment generator.
 func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, error) {
-	if actionInfo, ok := spec.(*ActionInfo); ok {
-		if !strings.HasPrefix(comment, "@Mapper") {
-			return nil, NotMatch
-		}
-		lexer := &CommentLexer{}
-		cfun, err := lexer.Parse(comment)
-		if err != nil {
-			return nil, err
-		}
-		url := ""
-		methods := peony.HttpMethods
-		if len(cfun.Args) > 0 {
-			for idx, arg := range cfun.Args {
-				if (idx == 0 && arg.Name == "") || arg.Name == "url" {
-					//set url argument
-					if arg.Value.ValueType() != CommentStringType {
-						return nil, ArgMustbeString
-					}
-					url = string(*arg.Value.(*CommentStringValue))
-				} else if arg.Name == "methods" {
-					//set methods argument
-					if arg.Value.ValueType() != CommentArrayType {
-						return nil, ArgMustbeArray
-					}
-					array := *arg.Value.(*CommentArrayValue)
-					methods = []string{}
-					for _, value := range array {
-						if value.ValueType() != CommentStringType {
-							return nil, MethodsArgMustbeString
-						}
-						meth := string(*value.(*CommentStringValue))
-						if meth == "*" {
-							methods = peony.HttpMethods
-							break
-						}
-						//is the httpmethods suppport.
-						if !peony.StringSliceContain(peony.HttpMethods, meth) {
-							return nil, UnknownMethodArgument
-						}
-						//append method
-						if !peony.StringSliceContain(methods, meth) {
-							methods = append(methods, meth)
-						}
-					}
-				} else {
-					return nil, UnknownArgument
+	if !strings.HasPrefix(comment, "@Mapper") {
+		return nil, NotMatch
+	}
+	lexer := &CommentLexer{}
+	cfun, err := lexer.Parse(comment)
+	if err != nil {
+		return nil, err
+	}
+	url := ""
+	methods := peony.HttpMethods
+	if len(cfun.Args) > 0 {
+		for idx, arg := range cfun.Args {
+			if (idx == 0 && arg.Name == "") || arg.Name == "url" {
+				//set url argument
+				if arg.Value.ValueType() != CommentStringType {
+					return nil, ArgMustbeString
 				}
+				url = string(*arg.Value.(*CommentStringValue))
+			} else if arg.Name == "methods" {
+				//set methods argument
+				if arg.Value.ValueType() != CommentArrayType {
+					return nil, ArgMustbeArray
+				}
+				array := *arg.Value.(*CommentArrayValue)
+				methods = []string{}
+				for _, value := range array {
+					if value.ValueType() != CommentStringType {
+						return nil, MethodsArgMustbeString
+					}
+					meth := string(*value.(*CommentStringValue))
+					if meth == "*" {
+						methods = peony.HttpMethods
+						break
+					}
+					//is the httpmethods suppport.
+					if !peony.StringSliceContain(peony.HttpMethods, meth) {
+						return nil, UnknownMethodArgument
+					}
+					//append method
+					if !peony.StringSliceContain(methods, meth) {
+						methods = append(methods, meth)
+					}
+				}
+			} else {
+				return nil, UnknownArgument
 			}
-		} else {
+		}
+	}
+	if structInfo, ok := spec.(*StructInfo); ok {
+		//for struct code generate
+		if len(cfun.Args) == 0 {
+			url = structInfo.PkgName
+		}
+		return &MapperCommentCodeGen{nil, url, methods}, nil
+	}
+	if actionInfo, ok := spec.(*ActionInfo); ok {
+		if len(cfun.Args) == 0 {
 			//use default rule
 			if actionInfo.RecvName == "" {
 				url = "/" + strings.ToLower(actionInfo.ActionName)
@@ -258,9 +323,10 @@ type SourceInfo struct {
 }
 
 type PkgInfo struct {
-	Name       string
-	ImportPath string
-	CodeGens   []CodeGen
+	Name        string
+	ImportPath  string
+	MapperTypes []string
+	CodeGens    []CodeGen
 }
 
 type CodeGenSpec interface {
@@ -272,6 +338,13 @@ type ActionInfo struct {
 	MethodSpec
 	ImportPath string
 	ActionName string
+}
+
+type StructInfo struct {
+	CodeGenSpec
+	Name       string
+	PkgName    string
+	ImportPath string
 }
 
 func (a *ActionInfo) BuildAlias(alias map[string][]string) {
@@ -443,9 +516,25 @@ func processAction(fileSet *token.FileSet, pkgInfo *PkgInfo, imports map[string]
 		}
 	}
 	actionInfo.RecvName, actionInfo.ActionName = actionName(funcDecl)
-	if funcDecl.Doc != nil && len(funcDecl.Doc.List) > 0 {
-		if err := codeGenCreaters.ProcessComments(fileSet, funcDecl.Doc, "func", actionInfo, &pkgInfo.CodeGens); err != nil {
-			return err
+	if err := codeGenCreaters.ProcessActionComments(fileSet, funcDecl.Doc, actionInfo, &pkgInfo.CodeGens); err != nil {
+		return err
+	}
+	return nil
+}
+
+func processTypes(fileSet *token.FileSet, file *ast.File, pkgInfo *PkgInfo) error {
+	for _, decl := range file.Decls {
+		switch specDecl := decl.(type) {
+		case *ast.GenDecl:
+			if specDecl.Tok == token.TYPE && len(specDecl.Specs) == 1 {
+				typeSpec := specDecl.Specs[0].(*ast.TypeSpec)
+				if _, ok := typeSpec.Type.(*ast.StructType); ok {
+					err := codeGenCreaters.ProcessStructComments(fileSet, specDecl.Doc, &StructInfo{Name: typeSpec.Name.Name, PkgName: pkgInfo.Name, ImportPath: pkgInfo.ImportPath})
+					if err != nil {
+						return err
+					}
+				}
+			}
 		}
 	}
 	return nil
@@ -454,19 +543,15 @@ func processAction(fileSet *token.FileSet, pkgInfo *PkgInfo, imports map[string]
 func processFile(fileSet *token.FileSet, file *ast.File, pkgInfo *PkgInfo) error {
 	imports := map[string]string{}
 	processImports(imports, file.Imports)
+	if err := processTypes(fileSet, file, pkgInfo); err != nil {
+		return err
+	}
 	for _, decl := range file.Decls {
 		switch specDecl := decl.(type) {
 		case *ast.FuncDecl:
 			if err := processAction(fileSet, pkgInfo, imports, specDecl); err != nil {
 				return err
 			}
-		case *ast.GenDecl:
-			if specDecl.Tok != token.TYPE || len(specDecl.Specs) != 1 {
-				continue
-			}
-			//spec := genDecl.Specs[0]
-			//var typeSpec *ast.TypeSpec
-			//typeSpec = spec.(*ast.TypeSpec)
 		}
 	}
 	return nil

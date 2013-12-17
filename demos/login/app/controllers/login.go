@@ -6,10 +6,12 @@ import (
 	model "github.com/joinhack/peony/demos/login/app/models"
 )
 
+// @Mapper
 type Login struct {
 	xx string
 }
 
+//@Mapper
 type Mail struct {
 }
 
@@ -24,7 +26,7 @@ func (l *Login) Index(user []*Mail, m *model.User) app.Render {
 	return nil
 }
 
-//@Intercept("BEFORE")
+//@Intercept("BEFORE", priority=1)
 func (l *Login) Before(c *app.Controller) app.Render {
 	l.xx = "1000"
 	return nil
@@ -40,7 +42,6 @@ func Index(s *controllers.S, ss string) app.Render {
 	return app.NewTextRender("")
 }
 
-//@Mapper
 func (l *Login) Login(user []*Mail, m *model.User) app.Render {
-	return nil
+	return app.NewTextRender("success")
 }
