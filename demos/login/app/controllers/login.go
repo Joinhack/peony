@@ -20,12 +20,13 @@ func FileDown(path string) app.Render {
 	return app.NewFileRender(path)
 }
 
-// @Mapper(url="/", methods=["POST"])
+// @Mapper(url="/\t", methods=["GET"])
 func (l *Login) Index(user []*Mail, m *model.User) app.Render {
 	println(l.xx)
 	return nil
 }
 
+// @Mapper
 //@Intercept("BEFORE", priority=1)
 func (l *Login) Before(c *app.Controller) app.Render {
 	l.xx = "1000"

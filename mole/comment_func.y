@@ -11,6 +11,7 @@ type CommentValueType int
 const (
 	CommentStringType CommentValueType = iota
 	CommentIntType
+	CommentBoolType
 	CommentFloatType
 	CommentArrayType
 )
@@ -26,6 +27,12 @@ type Value interface {
 
 type CommentStringValue string
 
+type CommentBoolValue bool
+
+type CommentIntValue int64
+
+type CommentFloatValue float64
+
 type CommentArrayValue []Value
 
 func(str *CommentArrayValue) ValueType() CommentValueType {
@@ -36,16 +43,17 @@ func(str *CommentStringValue) ValueType() CommentValueType {
 	return CommentStringType
 }
 
-type CommentIntValue int64
 
 func(str *CommentIntValue) ValueType() CommentValueType {
 	return CommentIntType
 }
 
-type CommentFloatValue float64
-
 func(str *CommentFloatValue) ValueType() CommentValueType {
 	return CommentFloatType
+}
+
+func(str *CommentBoolValue) ValueType() CommentValueType {
+	return CommentBoolType
 }
 
 type CommentArg struct {
@@ -63,10 +71,12 @@ type CommentArg struct {
 	fconst float64
 	value Value
 	values *CommentArrayValue
+	b bool
 	s string
 }
 
 %token<s> str_const tok_name numstr_const
+%token<b> tok_bool
 %token<iconst> tok_hex
 %type<s> INTEXPR FLOATEXPR
 %type<value> VALUE STRING
@@ -165,6 +175,10 @@ VALUE: STRING {
 | tok_hex {
 	value := CommentIntValue($1)
 	$$ = &value
+}
+| tok_bool {
+	value := CommentBoolValue($1)
+	$$ = &value	
 }
 | INTEXPR {
 	i, _ := strconv.Atoi($1)

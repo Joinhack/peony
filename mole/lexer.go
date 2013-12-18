@@ -25,10 +25,25 @@ func (c *CommentLexer) Parse(comment string) (*CommentFunc, error) {
 	return c.Function, nil
 }
 
+func (c *CommentLexer) Bool(s string) (bool, bool) {
+	if len(s) != 4 {
+		return false, false
+	}
+	if s == "true" {
+		return true, true
+	}
+	if s == "false" {
+		return false, true
+	}
+	return false, false
+
+}
+
 func (c *CommentLexer) Lex(lval *yySymType) int {
 	length := len(c.Comment)
 	//manual parse hex.
 	var tmphex int64 = 0
+	var strbuf []byte
 	for c.Pos < length {
 		chr := int(c.Comment[c.Pos])
 		switch {
@@ -37,10 +52,11 @@ func (c *CommentLexer) Lex(lval *yySymType) int {
 			if c.currentState == 0 {
 				c.PrevPos = c.Pos
 				c.currentState = str_const
+				strbuf = make([]byte, 0, length-c.Pos)
 			} else if c.currentState == str_const {
 				//string end
 				c.currentState = 0
-				lval.s = c.Comment[c.PrevPos+1 : c.Pos]
+				lval.s = string(strbuf)
 				c.Pos++
 				return str_const
 			}
@@ -57,11 +73,16 @@ func (c *CommentLexer) Lex(lval *yySymType) int {
 			default:
 				//tok_name end
 				c.currentState = 0
-				lval.s = c.Comment[c.PrevPos:c.Pos]
+				s := c.Comment[c.PrevPos:c.Pos]
+				if b, ok := c.Bool(s); ok {
+					lval.b = b
+					return tok_bool
+				}
+				lval.s = s
 				return tok_name
 			}
 		case c.currentState == 0 && chr == '0':
-			if c.Pos != len(c.Comment)-1 {
+			if c.Pos != length-1 {
 				next := c.Comment[c.Pos+1]
 				if next == 'x' || next == 'X' {
 					c.PrevPos = c.Pos + 1
@@ -105,7 +126,27 @@ func (c *CommentLexer) Lex(lval *yySymType) int {
 			}
 		case c.currentState == str_const:
 			//collect all
-			break
+			if chr == '\\' && c.Pos != length-1 {
+				c.Pos++
+				switch nextChr := c.Comment[c.Pos]; nextChr {
+				case 'n':
+					strbuf = append(strbuf, '\n')
+				case 't':
+					strbuf = append(strbuf, '\t')
+				case 'b':
+					strbuf = append(strbuf, '\b')
+				case 'r':
+					strbuf = append(strbuf, '\r')
+				case '"':
+					strbuf = append(strbuf, '"')
+				case 'f':
+					strbuf = append(strbuf, '\f')
+				default:
+					return -1
+				}
+				break
+			}
+			strbuf = append(strbuf, byte(chr))
 		//when c.currentTok==0 ignore follow char
 		case chr == ' ' || chr == '\t' || chr == '\r' || chr == '\n':
 			break
@@ -118,6 +159,12 @@ func (c *CommentLexer) Lex(lval *yySymType) int {
 	//support method like "@Mapper"
 	if c.Pos == length && c.currentState == tok_name {
 		c.currentState = 0
+		s := c.Comment[c.PrevPos:c.Pos]
+		if b, ok := c.Bool(s); ok {
+			lval.b = b
+			return tok_bool
+		}
+		lval.s = s
 		return tok_name
 	}
 	return 0

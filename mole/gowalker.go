@@ -25,6 +25,7 @@ type CodeGen interface {
 type CodeGenCreater func(comment string, spec CodeGenSpec) (CodeGen, error)
 
 type MapperCommentCodeGen struct {
+	Ignore bool
 	*ActionInfo
 	UrlExpr     string
 	HttpMethods []string
@@ -50,10 +51,11 @@ func (m *MapperCommentCodeGen) Generate(appName, serverName string, alias map[st
 	if len(argsList) > 0 {
 		argCode = fmt.Sprintf("Args:[]*peony.ArgType{%s}", strings.Join(argsList, ",\n\t\t"))
 	}
+	url := m.UrlExpr
 	if info.RecvName == "" {
-		code = fmt.Sprintf("\t%s.FuncMapper(\"%s\", []string{\"%s\"}, %s.%s, \n\t\t&peony.Action{Name:\"%s\", %s})\n", serverName, m.UrlExpr, httpMethods, pkgName, info.MethodSpec.Name, info.ActionName, argCode)
+		code = fmt.Sprintf("\t%s.FuncMapper(\"%s\", []string{\"%s\"}, %s.%s, \n\t\t&peony.Action{Name:\"%s\", %s})\n", serverName, url, httpMethods, pkgName, info.MethodSpec.Name, info.ActionName, argCode)
 	} else {
-		code = fmt.Sprintf("\t%s.MethodMapper(\"%s\", []string{\"%s\"}, (*%s.%s).%s, \n\t\t&peony.Action{Name: \"%s\", %s})\n", serverName, m.UrlExpr, httpMethods, pkgName, info.RecvName, info.Name, info.ActionName, argCode)
+		code = fmt.Sprintf("\t%s.MethodMapper(\"%s\", []string{\"%s\"}, (*%s.%s).%s, \n\t\t&peony.Action{Name: \"%s\", %s})\n", serverName, url, httpMethods, pkgName, info.RecvName, info.Name, info.ActionName, argCode)
 	}
 	return code
 }
@@ -246,9 +248,9 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 	if structInfo, ok := spec.(*StructInfo); ok {
 		//for struct code generate
 		if len(cfun.Args) == 0 {
-			url = structInfo.PkgName
+			url = "/" + strings.ToLower(structInfo.Name)
 		}
-		return &MapperCommentCodeGen{nil, url, methods}, nil
+		return &MapperCommentCodeGen{false, nil, url, methods}, nil
 	}
 	if actionInfo, ok := spec.(*ActionInfo); ok {
 		if len(cfun.Args) == 0 {
@@ -262,7 +264,7 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 		if url == "" {
 			return nil, UrlArgumentRequired
 		}
-		return &MapperCommentCodeGen{actionInfo, url, methods}, nil
+		return &MapperCommentCodeGen{false, actionInfo, url, methods}, nil
 	}
 	return nil, NotMatch
 }
@@ -529,7 +531,8 @@ func processTypes(fileSet *token.FileSet, file *ast.File, pkgInfo *PkgInfo) erro
 			if specDecl.Tok == token.TYPE && len(specDecl.Specs) == 1 {
 				typeSpec := specDecl.Specs[0].(*ast.TypeSpec)
 				if _, ok := typeSpec.Type.(*ast.StructType); ok {
-					err := codeGenCreaters.ProcessStructComments(fileSet, specDecl.Doc, &StructInfo{Name: typeSpec.Name.Name, PkgName: pkgInfo.Name, ImportPath: pkgInfo.ImportPath})
+					structInfo := &StructInfo{Name: typeSpec.Name.Name, PkgName: pkgInfo.Name, ImportPath: pkgInfo.ImportPath}
+					err := codeGenCreaters.ProcessStructComments(fileSet, specDecl.Doc, structInfo)
 					if err != nil {
 						return err
 					}
