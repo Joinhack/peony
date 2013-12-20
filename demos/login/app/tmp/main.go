@@ -33,7 +33,7 @@ func main() {
 	svr.MethodMapper("/	", []string{"GET"}, (*controllers0.Login).Index, 
 		&peony.Action{Name: "Login.Index", Args:[]*peony.ArgType{&peony.ArgType{Name:"user", Type:reflect.TypeOf((*[]*controllers0.Mail)(nil)).Elem()},
 		&peony.ArgType{Name:"m", Type:reflect.TypeOf((*models0.User)(nil))}}})
-	svr.MethodMapper("/login/before", []string{"GET","POST","PUT","DELETE"}, (*controllers0.Login).Before, 
+	svr.MethodMapper("", []string{"GET","POST","PUT","DELETE"}, (*controllers0.Login).Before, 
 		&peony.Action{Name: "Login.Before", Args:[]*peony.ArgType{&peony.ArgType{Name:"c", Type:reflect.TypeOf((*peony.Controller)(nil))}}})
 	svr.InterceptMethod((*controllers0.Login).Before, 0, 1)
 	svr.FuncMapper("/test", []string{"GET","POST","PUT","DELETE"}, controllers0.Test, 

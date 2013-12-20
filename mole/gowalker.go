@@ -183,6 +183,7 @@ var (
 	NotMatch               = errors.New("the comment not match")
 	UrlArgumentRequired    = errors.New("url argument is required")
 	ArgMustbeString        = errors.New("Arg must be string")
+	ArgMustbeBool          = errors.New("Arg must be bool")
 	WhenArgMustbeString    = errors.New(`arg 'when' must be string, e.g. "BEFORE", "AFTER", "FINALLY","PANIC"`)
 	MethodsArgMustbeString = errors.New("methods arg must be string array")
 
@@ -207,15 +208,17 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 	}
 	url := ""
 	methods := peony.HttpMethods
+	ignore := false
 	if len(cfun.Args) > 0 {
 		for idx, arg := range cfun.Args {
-			if (idx == 0 && arg.Name == "") || arg.Name == "url" {
+			switch {
+			case (idx == 0 && arg.Name == "") || arg.Name == "url":
 				//set url argument
 				if arg.Value.ValueType() != CommentStringType {
 					return nil, ArgMustbeString
 				}
 				url = string(*arg.Value.(*CommentStringValue))
-			} else if arg.Name == "methods" {
+			case arg.Name == "methods":
 				//set methods argument
 				if arg.Value.ValueType() != CommentArrayType {
 					return nil, ArgMustbeArray
@@ -240,7 +243,12 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 						methods = append(methods, meth)
 					}
 				}
-			} else {
+			case arg.Name == "ignore":
+				if arg.Value.ValueType() != CommentBoolType {
+					return nil, ArgMustbeBool
+				}
+				ignore = bool(*arg.Value.(*CommentBoolValue))
+			default:
 				return nil, UnknownArgument
 			}
 		}
@@ -250,7 +258,7 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 		if len(cfun.Args) == 0 {
 			url = "/" + strings.ToLower(structInfo.Name)
 		}
-		return &MapperCommentCodeGen{false, nil, url, methods}, nil
+		return &MapperCommentCodeGen{ignore, nil, url, methods}, nil
 	}
 	if actionInfo, ok := spec.(*ActionInfo); ok {
 		if len(cfun.Args) == 0 {
@@ -261,10 +269,10 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 				url = "/" + strings.Replace(strings.ToLower(actionInfo.ActionName), ".", "/", 1)
 			}
 		}
-		if url == "" {
+		if !ignore && url == "" {
 			return nil, UrlArgumentRequired
 		}
-		return &MapperCommentCodeGen{false, actionInfo, url, methods}, nil
+		return &MapperCommentCodeGen{ignore, actionInfo, url, methods}, nil
 	}
 	return nil, NotMatch
 }

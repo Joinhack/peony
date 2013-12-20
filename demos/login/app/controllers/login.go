@@ -26,7 +26,7 @@ func (l *Login) Index(user []*Mail, m *model.User) app.Render {
 	return nil
 }
 
-// @Mapper
+// @Mapper(ignore=true)
 //@Intercept("BEFORE", priority=1)
 func (l *Login) Before(c *app.Controller) app.Render {
 	l.xx = "1000"
