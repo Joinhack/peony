@@ -28,22 +28,93 @@ func main() {
 	}
 	svr := app.NewServer()
 	svr.Init()
-	svr.FuncMapper("/static/<string:path>", []string{"GET","POST","PUT","DELETE"}, controllers0.FileDown, 
-		&peony.Action{Name:"FileDown", Args:[]*peony.ArgType{&peony.ArgType{Name:"path", Type:reflect.TypeOf((*string)(nil)).Elem()}}})
-	svr.MethodMapper("/", []string{"GET","POST","PUT","DELETE"}, (*controllers0.Login).Index, 
-		&peony.Action{Name: "Login/Index", Args:[]*peony.ArgType{&peony.ArgType{Name:"user", Type:reflect.TypeOf((*[]*controllers0.Mail)(nil)).Elem()},
-		&peony.ArgType{Name:"m", Type:reflect.TypeOf((*models0.User)(nil))}}})
-	svr.MethodMapper("/login/before", []string{"GET","POST","PUT","DELETE"}, (*controllers0.Login).Before, 
-		&peony.Action{Name: "Login/Before", Args:[]*peony.ArgType{&peony.ArgType{Name:"c", Type:reflect.TypeOf((*peony.Controller)(nil))}}})
+
+	svr.FuncMapper("/static/<string:path>", []string{"GET", "POST", "PUT", "DELETE"}, 
+		controllers0.FileDown, &peony.Action{
+			Name: "FileDown",
+			
+			Args: []*peony.ArgType{ 
+				
+				&peony.ArgType{
+					Name: "path", 
+					Type: reflect.TypeOf((*string)(nil)).Elem(),
+				},
+			}},
+	)
+
+	svr.MethodMapper("/", []string{"GET", "POST", "PUT", "DELETE"}, 
+		(*controllers0.Login).Index, &peony.Action{
+			Name: "Login.Index",
+			
+			Args: []*peony.ArgType{ 
+				
+				&peony.ArgType{
+					Name: "user", 
+					Type: reflect.TypeOf((*[]*controllers0.Mail)(nil)).Elem(),
+				},
+			
+				&peony.ArgType{
+					Name: "m", 
+					Type: reflect.TypeOf((*models0.User)(nil)),
+				},
+			}},
+	)
+
+	svr.MethodMapper("/login/before", []string{"GET", "POST", "PUT", "DELETE"}, 
+		(*controllers0.Login).Before, &peony.Action{
+			Name: "Login.Before",
+			
+			Args: []*peony.ArgType{ 
+				
+				&peony.ArgType{
+					Name: "c", 
+					Type: reflect.TypeOf((*peony.Controller)(nil)),
+				},
+			}},
+	)
 	svr.InterceptMethod((*controllers0.Login).Before, 0, 1)
-	svr.FuncMapper("/test", []string{"WS"}, controllers0.Test, 
-		&peony.Action{Name:"Test", })
-	svr.FuncMapper("/index", []string{"GET","POST","PUT","DELETE"}, controllers0.Index, 
-		&peony.Action{Name:"Index", Args:[]*peony.ArgType{&peony.ArgType{Name:"s", Type:reflect.TypeOf((*controllers1.S)(nil))},
-		&peony.ArgType{Name:"ss", Type:reflect.TypeOf((*string)(nil)).Elem()}}})
-	svr.MethodMapper("/login/login", []string{"GET","POST","PUT","DELETE"}, (*controllers0.Login).Login, 
-		&peony.Action{Name: "Login/Login", Args:[]*peony.ArgType{&peony.ArgType{Name:"user", Type:reflect.TypeOf((*[]*controllers0.Mail)(nil)).Elem()},
-		&peony.ArgType{Name:"m", Type:reflect.TypeOf((*models0.User)(nil))}}})
+
+	svr.FuncMapper("/test", []string{"WS"}, 
+		controllers0.Test, &peony.Action{
+			Name: "Test",
+			},
+	)
+
+	svr.FuncMapper("/index", []string{"GET", "POST", "PUT", "DELETE"}, 
+		controllers0.Index, &peony.Action{
+			Name: "Index",
+			
+			Args: []*peony.ArgType{ 
+				
+				&peony.ArgType{
+					Name: "s", 
+					Type: reflect.TypeOf((*controllers1.S)(nil)),
+				},
+			
+				&peony.ArgType{
+					Name: "ss", 
+					Type: reflect.TypeOf((*string)(nil)).Elem(),
+				},
+			}},
+	)
+
+	svr.MethodMapper("/login/login", []string{"GET", "POST", "PUT", "DELETE"}, 
+		(*controllers0.Login).Login, &peony.Action{
+			Name: "Login.Login",
+			
+			Args: []*peony.ArgType{ 
+				
+				&peony.ArgType{
+					Name: "user", 
+					Type: reflect.TypeOf((*[]*controllers0.Mail)(nil)).Elem(),
+				},
+			
+				&peony.ArgType{
+					Name: "m", 
+					Type: reflect.TypeOf((*models0.User)(nil)),
+				},
+			}},
+	)
 
 
 	go func(){

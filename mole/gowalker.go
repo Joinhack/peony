@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 )
 
 //Generate the source code
@@ -37,25 +38,43 @@ type InterceptCommentCodeGen struct {
 	Priority int
 }
 
+var mapperTemplate = template.Must(template.New("").Parse(`
+	{{.serverName}}.{{.funcOrMethod}}("{{.url}}", []string{"{{.httpMethods}}"}, 
+		{{.action}}, &peony.Action{
+			Name: "{{.info.ActionName}}",
+			{{if .info.Args}}
+			Args: []*peony.ArgType{ 
+				{{range .info.Args}}
+				&peony.ArgType{
+					Name: "{{.Name}}", 
+					Type: {{.TypeExpr $.alias}},
+				},
+			{{end}}}{{end}}},
+	)
+`))
+
 //generate the code for mapper tag
 func (m *MapperCommentCodeGen) Generate(appName, serverName string, alias map[string]string) string {
 	pkgName := alias[m.ImportPath]
 	var code string
 	info := m.ActionInfo
-	argsList := []string{}
-	for _, arg := range m.ActionInfo.Args {
-		argsList = append(argsList, fmt.Sprintf("&peony.ArgType{Name:\"%s\", Type:%s}", arg.Name, arg.TypeExpr(alias)))
-	}
-	var argCode string
-	httpMethods := strings.Join(m.HttpMethods, "\",\"")
-	if len(argsList) > 0 {
-		argCode = fmt.Sprintf("Args:[]*peony.ArgType{%s}", strings.Join(argsList, ",\n\t\t"))
-	}
+	httpMethods := strings.Join(m.HttpMethods, `", "`)
 	url := m.UrlExpr
+	params := map[string]interface{}{
+		"info":        info,
+		"httpMethods": httpMethods,
+		"serverName":  serverName,
+		"alias":       alias,
+		"url":         url,
+	}
 	if info.RecvName == "" {
-		code = fmt.Sprintf("\t%s.FuncMapper(\"%s\", []string{\"%s\"}, %s.%s, \n\t\t&peony.Action{Name:\"%s\", %s})\n", serverName, url, httpMethods, pkgName, info.MethodSpec.Name, info.ActionName, argCode)
+		params["funcOrMethod"] = "FuncMapper"
+		params["action"] = pkgName + "." + info.ActionName
+		code = peony.ExecuteTemplate(mapperTemplate, params)
 	} else {
-		code = fmt.Sprintf("\t%s.MethodMapper(\"%s\", []string{\"%s\"}, (*%s.%s).%s, \n\t\t&peony.Action{Name: \"%s\", %s})\n", serverName, url, httpMethods, pkgName, info.RecvName, info.Name, info.ActionName, argCode)
+		params["funcOrMethod"] = "MethodMapper"
+		params["action"] = fmt.Sprintf("(*%s.%s).%s", pkgName, info.RecvName, info.Name)
+		code = peony.ExecuteTemplate(mapperTemplate, params)
 	}
 	return code
 }
@@ -267,7 +286,7 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 	if actionInfo, ok := spec.(*ActionInfo); ok {
 		if !hasUrlArg {
 			//use default rule
-			url = "/" + strings.ToLower(actionInfo.ActionName)
+			url = "/" + peony.ParseAction(actionInfo.ActionName)
 		}
 		if !ignore && url == "" {
 			return nil, UrlArgumentRequired
@@ -419,7 +438,7 @@ func actionName(funcDecl *ast.FuncDecl) (string, string) {
 			prefix = typ.(*ast.Ident).Name
 		}
 		recvName = prefix
-		prefix += "/"
+		prefix += "."
 	}
 	return recvName, prefix + methodName
 }

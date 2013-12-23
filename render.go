@@ -80,6 +80,10 @@ func (a *autoRender) Apply(c *Controller) {
 	}
 }
 
+func ParseAction(action string) string {
+	return strings.ToLower(strings.Replace(action, ".", "/", 1))
+}
+
 func (b *BinaryRender) Apply(c *Controller) {
 	resp := c.Resp
 	prefix := b.ContentDisposition
@@ -192,7 +196,7 @@ func (t *TemplateRender) Apply(c *Controller) {
 	tmplName := t.TemplateName
 	//if user choose a template, use the choosed, esle use the default rule for find tempate
 	if tmplName == "" {
-		tmplName = strings.ToLower(c.actionName) + ".html"
+		tmplName = ParseAction(c.actionName) + ".html"
 	}
 	template := templateLoader.Lookup(tmplName)
 	if template == nil {
