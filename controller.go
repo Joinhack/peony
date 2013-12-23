@@ -1,14 +1,16 @@
 package peony
 
 import (
+	"code.google.com/p/go.net/websocket"
 	"errors"
 	"fmt"
 	"reflect"
 )
 
 var (
-	NotFunc   = errors.New("action should be a func")
-	NotMethod = errors.New("action should be a method")
+	WebSocketConnType reflect.Type = reflect.TypeOf((*websocket.Conn)(nil))
+	NotFunc                        = errors.New("action should be a func")
+	NotMethod                      = errors.New("action should be a method")
 )
 
 type Controller struct {
@@ -129,7 +131,12 @@ func GetActionInvokeFilter(server *Server) Filter {
 		args := controller.action.Args
 		callArgs := make([]reflect.Value, 0, len(args))
 		for _, arg := range args {
-			argValue := convertors.Convert(controller.params, arg.Name, arg.Type)
+			var argValue reflect.Value
+			if arg.Type == WebSocketConnType {
+				argValue = reflect.ValueOf(controller.Req.WSConn)
+			} else {
+				argValue = convertors.Convert(controller.params, arg.Name, arg.Type)
+			}
 			callArgs = append(callArgs, argValue)
 		}
 		rsSlice := controller.action.Invoke(callArgs)
@@ -138,7 +145,7 @@ func GetActionInvokeFilter(server *Server) Filter {
 			if rsVal.Type().Kind() == reflect.String {
 				controller.render = &TextRender{Text: rsVal.String()}
 				return
-			} else if rsVal.Type().Implements(renderType) {
+			} else if rsVal.Type().Implements(RenderType) {
 				rs := rsVal.Interface()
 				if rs != nil {
 					controller.render = rs.(Render)

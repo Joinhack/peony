@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	ruleRE      *regexp.Regexp
-	HttpMethods = []string{"GET", "POST", "PUT", "DELETE"}
+	ruleRE            *regexp.Regexp
+	HttpMethods       = []string{"GET", "POST", "PUT", "DELETE"}
+	ExtendHttpMethods = append(HttpMethods, "WS")
 )
 
 func init() {

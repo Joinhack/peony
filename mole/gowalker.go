@@ -197,6 +197,8 @@ var (
 )
 
 //create the mapper for comment generator.
+//e.g. @Mapper @Mapper("/index") @Mapper(url="/index")
+//@Mapper(url="/index", methods=["*"]) @Mapper(url="/index", methods=["POST","GET", "PUT"])
 func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, error) {
 	if !strings.HasPrefix(comment, "@Mapper") {
 		return nil, NotMatch
@@ -209,6 +211,7 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 	url := ""
 	methods := peony.HttpMethods
 	ignore := false
+	hasUrlArg := false
 	if len(cfun.Args) > 0 {
 		for idx, arg := range cfun.Args {
 			switch {
@@ -218,6 +221,7 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 					return nil, ArgMustbeString
 				}
 				url = string(*arg.Value.(*CommentStringValue))
+				hasUrlArg = true
 			case arg.Name == "methods":
 				//set methods argument
 				if arg.Value.ValueType() != CommentArrayType {
@@ -235,7 +239,7 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 						break
 					}
 					//is the httpmethods suppport.
-					if !peony.StringSliceContain(peony.HttpMethods, meth) {
+					if !peony.StringSliceContain(peony.ExtendHttpMethods, meth) {
 						return nil, UnknownMethodArgument
 					}
 					//append method
@@ -254,20 +258,16 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 		}
 	}
 	if structInfo, ok := spec.(*StructInfo); ok {
-		//for struct code generate
-		if len(cfun.Args) == 0 {
+		//for struct code generate. use recive name for the prefix
+		if !hasUrlArg {
 			url = "/" + strings.ToLower(structInfo.Name)
 		}
 		return &MapperCommentCodeGen{ignore, nil, url, methods}, nil
 	}
 	if actionInfo, ok := spec.(*ActionInfo); ok {
-		if len(cfun.Args) == 0 {
+		if !hasUrlArg {
 			//use default rule
-			if actionInfo.RecvName == "" {
-				url = "/" + strings.ToLower(actionInfo.ActionName)
-			} else {
-				url = "/" + strings.Replace(strings.ToLower(actionInfo.ActionName), ".", "/", 1)
-			}
+			url = "/" + strings.ToLower(actionInfo.ActionName)
 		}
 		if !ignore && url == "" {
 			return nil, UrlArgumentRequired
@@ -278,6 +278,9 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 }
 
 //create the intercept for comment generator.
+//Intercept code generator.
+//e.g. @Intercept("BEFORE") @Intercept(when="BEFORE")
+//@Intercept("BEFORE", priority=1) @Intercept(when="BEFORE", priority=1)
 func InterceptCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, error) {
 	if actionInfo, ok := spec.(*ActionInfo); ok {
 
@@ -416,7 +419,7 @@ func actionName(funcDecl *ast.FuncDecl) (string, string) {
 			prefix = typ.(*ast.Ident).Name
 		}
 		recvName = prefix
-		prefix += "."
+		prefix += "/"
 	}
 	return recvName, prefix + methodName
 }
@@ -586,7 +589,7 @@ func NewSourceInfo() *SourceInfo {
 	return s
 }
 
-//analzy the inmport path
+//analzye the import path
 func importPathFromPath(src string) string {
 	for _, path := range filepath.SplitList(build.Default.GOPATH) {
 		path = filepath.Join(path, "src")

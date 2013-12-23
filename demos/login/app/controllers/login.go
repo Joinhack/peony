@@ -20,10 +20,10 @@ func FileDown(path string) app.Render {
 	return app.NewFileRender(path)
 }
 
-// @Mapper(url="/\t", methods=["GET"])
+// @Mapper(url="/")
 func (l *Login) Index(user []*Mail, m *model.User) app.Render {
 	println(l.xx)
-	return nil
+	return app.AutoRender("welcome~!")
 }
 
 // @Mapper(ignore=true)
@@ -33,7 +33,7 @@ func (l *Login) Before(c *app.Controller) app.Render {
 	return nil
 }
 
-// @Mapper
+// @Mapper(methods=["WS"])
 func Test() app.Render {
 	return app.NewTextRender("test")
 }

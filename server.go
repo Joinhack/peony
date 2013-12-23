@@ -1,6 +1,7 @@
 package peony
 
 import (
+	"code.google.com/p/go.net/websocket"
 	"errors"
 	"mime/multipart"
 	"net/http"
@@ -35,6 +36,7 @@ type Request struct {
 	*http.Request
 	ContentType string
 	Accept      string
+	WSConn      *websocket.Conn
 }
 
 type Response struct {
@@ -161,15 +163,25 @@ func NewResponse(r http.ResponseWriter) *Response {
 }
 
 func (server *Server) handler(w http.ResponseWriter, r *http.Request) {
-	server.handlerInner(w, r)
+	upgrade := r.Header.Get("Upgrade")
+	if upgrade == "websocket" || upgrade == "Websocket" {
+		websocket.Handler(func(wsconn *websocket.Conn) {
+			req := NewRequest(r)
+			req.Method = "WS"
+			req.WSConn = wsconn
+			server.handlerInner(NewResponse(w), req)
+		}).ServeHTTP(w, r)
+	} else {
+		server.handlerInner(NewResponse(w), NewRequest(r))
+	}
 }
 
-func NewController(w http.ResponseWriter, r *http.Request, tl *TemplateLoader) *Controller {
-	return &Controller{Resp: NewResponse(w), Req: NewRequest(r), templateLoader: tl}
+func NewController(w http.ResponseWriter, r *http.Request, loader *TemplateLoader) *Controller {
+	return &Controller{Resp: NewResponse(w), Req: NewRequest(r), templateLoader: loader}
 }
 
-func (server *Server) handlerInner(w http.ResponseWriter, r *http.Request) {
-	c := NewController(w, r, server.templateLoader)
+func (server *Server) handlerInner(resp *Response, req *Request) {
+	c := &Controller{Resp: resp, Req: req, templateLoader: server.templateLoader}
 	c.Server = server
 	server.filters[0](c, server.filters[1:])
 	if c.render != nil {

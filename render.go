@@ -9,18 +9,15 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
 var (
-	renderType reflect.Type
-	Attachment string = "attachment"
-	Inline     string = "inline"
+	RenderType reflect.Type = reflect.TypeOf((*Render)(nil)).Elem()
+	Attachment string       = "attachment"
+	Inline     string       = "inline"
 )
-
-func init() {
-	renderType = reflect.TypeOf((*Render)(nil)).Elem()
-}
 
 type Render interface {
 	Apply(c *Controller)
@@ -40,6 +37,11 @@ type JsonRender struct {
 type XmlRender struct {
 	Render
 	Xml interface{}
+}
+
+type autoRender struct {
+	Render
+	Params interface{}
 }
 
 type TemplateRender struct {
@@ -65,6 +67,17 @@ type BinaryRender struct {
 
 func NewErrorRender(err error) *ErrorRender {
 	return &ErrorRender{Error: err}
+}
+
+func (a *autoRender) Apply(c *Controller) {
+	switch c.Req.Accept {
+	case "json":
+		NewJsonRender(a.Params).Apply(c)
+	case "xml":
+		NewXmlRender(a.Params).Apply(c)
+	default:
+		NewTemplateRender(a.Params).Apply(c)
+	}
 }
 
 func (b *BinaryRender) Apply(c *Controller) {
@@ -179,7 +192,7 @@ func (t *TemplateRender) Apply(c *Controller) {
 	tmplName := t.TemplateName
 	//if user choose a template, use the choosed, esle use the default rule for find tempate
 	if tmplName == "" {
-		tmplName = c.actionName
+		tmplName = strings.ToLower(c.actionName) + ".html"
 	}
 	template := templateLoader.Lookup(tmplName)
 	if template == nil {
@@ -204,6 +217,10 @@ func NewXmlRender(xml interface{}) *XmlRender {
 
 func NewTextRender(s string) *TextRender {
 	return &TextRender{Text: s}
+}
+
+func AutoRender(param interface{}) Render {
+	return &autoRender{Params: param}
 }
 
 //renderParam for is the parameter for template execute. templateName is for point the template.
