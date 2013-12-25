@@ -34,6 +34,12 @@ type JsonRender struct {
 	Json interface{}
 }
 
+type RedirectRender struct {
+	Render
+	Location interface{} //e.g. Controller.Method (*Controller).Method function
+	Params   []interface{}
+}
+
 type XmlRender struct {
 	Render
 	Xml interface{}
@@ -80,8 +86,57 @@ func (a *autoRender) Apply(c *Controller) {
 	}
 }
 
+func (r *RedirectRender) getRedirctUrl(svr *Server) (string, error) {
+	var url string
+	if loc, ok := r.Location.(string); ok {
+		if len(r.Params) == 0 {
+			url = loc
+		} else {
+			url = fmt.Sprintf(loc, r.Params)
+		}
+		return url, nil
+	}
+
+	locType := reflect.TypeOf(r.Location)
+	actionName := ""
+	if locType.NumIn() > 0 {
+		recvType := locType.In(0)
+		//support Controller.Method as redirect argument.
+		if recvType.Kind() != reflect.Ptr {
+			meth := FindMethod(recvType, reflect.ValueOf(r.Location))
+			if meth != nil {
+				actionName = recvType.Name() + "." + meth.Name
+			}
+		}
+	}
+	var action *Action
+	if actionName != "" {
+		action = svr.FindAction(actionName)
+	} else {
+		action = svr.FindActionByType(locType)
+	}
+	if action == nil {
+		return "", NoSuchAction
+	}
+	//TODO convert param to string
+	params := []string{}
+	var err error
+	err, url = svr.Router.TryBuild(action.Name, params...)
+	return url, err
+}
+
+func (r *RedirectRender) Apply(c *Controller) {
+	url, err := r.getRedirctUrl(c.Server)
+	if err != nil {
+		NewErrorRender(err).Apply(c)
+		return
+	}
+	c.Resp.Header().Set("Location", url)
+	c.Resp.WriteContentTypeCode(http.StatusFound, "")
+}
+
 func ParseAction(action string) string {
-	return strings.ToLower(strings.Replace(action, ".", "/", 1))
+	return strings.Replace(action, ".", "/", 1)
 }
 
 func (b *BinaryRender) Apply(c *Controller) {
@@ -223,8 +278,14 @@ func NewTextRender(s string) *TextRender {
 	return &TextRender{Text: s}
 }
 
-func AutoRender(param interface{}) Render {
-	return &autoRender{Params: param}
+func AutoRender(param ...interface{}) Render {
+	var renderParam interface{}
+	if len(param) == 1 {
+		renderParam = param[0]
+	} else {
+		renderParam = param
+	}
+	return &autoRender{Params: renderParam}
 }
 
 //renderParam for is the parameter for template execute. templateName is for point the template.
@@ -234,4 +295,8 @@ func NewTemplateRender(param interface{}, templateName ...string) *TemplateRende
 		name = templateName[0]
 	}
 	return &TemplateRender{RenderParam: param, TemplateName: name}
+}
+
+func NewRedirectRender(r interface{}, params ...interface{}) *RedirectRender {
+	return &RedirectRender{Location: r, Params: params}
 }

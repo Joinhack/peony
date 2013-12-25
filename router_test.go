@@ -57,6 +57,8 @@ func TestRouter(t *testing.T) {
 	action, params = router.Match("GET", path)
 	_, p = router.Build(action, params)
 	t.Logf("%q, %t\n", action, p == path)
+	_, p = router.TryBuild(action)
+	t.Logf("%q, %s\n", action, p)
 
 	path = "/path/12-9090-123-"
 	action, params = router.Match("GET", path)
@@ -67,4 +69,6 @@ func TestRouter(t *testing.T) {
 	action, params = router.Match("GET", path)
 	_, p = router.Build(action, params)
 	t.Logf("%q, %t\n", action, p == path)
+	_, p = router.TryBuild(action, "10", "20")
+	t.Logf("%q, %s\n", action, p)
 }

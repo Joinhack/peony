@@ -40,7 +40,7 @@ func Test() app.Render {
 
 // @Mapper
 func Index(s *controllers.S, ss string) app.Render {
-	return app.NewTextRender("")
+	return app.AutoRender("haha")
 }
 
 func (l *Login) Login(user []*Mail, m *model.User) app.Render {

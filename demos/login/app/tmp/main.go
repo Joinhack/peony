@@ -60,7 +60,7 @@ func main() {
 			}},
 	)
 
-	svr.MethodMapper("/login/before", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.MethodMapper("/Login/Before", []string{"GET", "POST", "PUT", "DELETE"}, 
 		(*controllers0.Login).Before, &peony.Action{
 			Name: "Login.Before",
 			
@@ -74,13 +74,13 @@ func main() {
 	)
 	svr.InterceptMethod((*controllers0.Login).Before, 0, 1)
 
-	svr.FuncMapper("/test", []string{"WS"}, 
+	svr.FuncMapper("/Test", []string{"WS"}, 
 		controllers0.Test, &peony.Action{
 			Name: "Test",
 			},
 	)
 
-	svr.FuncMapper("/index", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.FuncMapper("/Index", []string{"GET", "POST", "PUT", "DELETE"}, 
 		controllers0.Index, &peony.Action{
 			Name: "Index",
 			

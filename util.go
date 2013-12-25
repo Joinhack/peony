@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"reflect"
 	"strings"
 )
 
@@ -64,4 +65,14 @@ func StringSliceContain(vals []string, val string) bool {
 		}
 	}
 	return false
+}
+
+func FindMethod(recvType reflect.Type, funcVal reflect.Value) *reflect.Method {
+	for i := 0; i < recvType.NumMethod(); i++ {
+		method := recvType.Method(i)
+		if method.Func.Pointer() == funcVal.Pointer() {
+			return &method
+		}
+	}
+	return nil
 }

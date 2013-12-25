@@ -37,6 +37,7 @@ type Rule struct {
 	Action      string   //e.g. Controller.Call
 	Path        string   //e.g. /app /app/<int:name>
 	traces      []*trace
+	numRegTrace int
 	args        map[string]Parser
 	PathRegex   *regexp.Regexp
 }
@@ -63,6 +64,9 @@ type Router struct {
 
 func (r *Rule) appendTrace(isRegex bool, variable string) {
 	r.traces = append(r.traces, &trace{isRegex, variable})
+	if isRegex {
+		r.numRegTrace++
+	}
 }
 
 func (router *Router) complieRule(r *Rule) error {
@@ -120,6 +124,28 @@ func (router *Router) complieRule(r *Rule) error {
 	return nil
 }
 
+var (
+	NoSuchAction          = errors.New("no such action.")
+	CannotBuildWithParams = errors.New("can't build by these params")
+)
+
+func (r *Router) TryBuild(action string, params ...string) (error, string) {
+	rules := r.rulesByAction[action]
+	if rules == nil {
+		return NoSuchAction, ""
+	}
+
+	for _, rule := range rules {
+		if rule.numRegTrace != len(params) {
+			continue
+		}
+		if url := rule.TryBuild(params...); url != "" {
+			return nil, url
+		}
+	}
+	return CannotBuildWithParams, ""
+}
+
 func (r *Rule) canbeBuild(params map[string]string) bool {
 	if r.PathRegex == nil && (params == nil || len(params) == 0) {
 		return true
@@ -133,6 +159,20 @@ func (r *Rule) canbeBuild(params map[string]string) bool {
 		}
 	}
 	return true
+}
+
+func (r *Rule) TryBuild(params ...string) string {
+	rs := make([]string, len(r.traces))
+	idx := 0
+	for _, trace := range r.traces {
+		if trace.isRegex {
+			rs = append(rs, params[idx])
+			idx++
+		} else {
+			rs = append(rs, trace.variable)
+		}
+	}
+	return strings.Join(rs, "")
 }
 
 func (r *Rule) Build(params map[string]string) string {
@@ -237,7 +277,7 @@ func (r *Router) AddRules(rules []*Rule) error {
 func (r *Router) Build(action string, params map[string]string) (error, string) {
 	rules := r.rulesByAction[action]
 	if rules == nil {
-		return errors.New("no such action:" + action), ""
+		return NoSuchAction, ""
 	}
 
 	for _, rule := range rules {
@@ -245,7 +285,7 @@ func (r *Router) Build(action string, params map[string]string) (error, string) 
 			return nil, rule.Build(params)
 		}
 	}
-	return errors.New("can't build by these params"), ""
+	return CannotBuildWithParams, ""
 }
 
 func (r *Router) AddRule(rule *Rule) error {

@@ -153,34 +153,39 @@ func (c *CodeGenCreaters) ProcessStructComments(fileSet *token.FileSet, commentG
 	return nil
 }
 
-func hasMapperCodeGen(codeGens []CodeGen) bool {
-	for _, codeGen := range codeGens {
-		if _, ok := codeGen.(*MapperCommentCodeGen); ok {
-			return true
-		}
-	}
-	return false
-}
-
 func (c *CodeGenCreaters) ProcessActionComments(fileSet *token.FileSet, commentGroup *ast.CommentGroup, actionInfo *ActionInfo, codeGens *[]CodeGen) error {
 	commentCodeGens, err := c.processComments(fileSet, commentGroup, "action", actionInfo)
 	if err != nil {
 		return err
 	}
 	//support for mapper in struct
-	if len(actionInfo.RecvName) != 0 && (!hasMapperCodeGen(commentCodeGens) || len(commentCodeGens) == 0) {
+	if len(actionInfo.RecvName) != 0 {
 		if mapperCodeGen, ok := MapperStructCodeGen[fmt.Sprintf("%s.%s", actionInfo.ImportPath, actionInfo.RecvName)]; ok {
-			codeGen := &MapperCommentCodeGen{}
-			*codeGen = *mapperCodeGen
-			codeGen.ActionInfo = actionInfo
-			if !strings.HasSuffix(codeGen.UrlExpr, "/") {
-				codeGen.UrlExpr += "/"
+			hasMapperCodeGen := false
+			//process inhert urlexpr from struct
+			for _, codeGen := range commentCodeGens {
+				if mapperCG, ok := codeGen.(*MapperCommentCodeGen); ok {
+					if !strings.HasPrefix(mapperCG.UrlExpr, "/") {
+						mapperCG.UrlExpr = mapperCodeGen.UrlExpr + "/" + mapperCG.UrlExpr
+					}
+					hasMapperCodeGen = true
+				}
 			}
-			codeGen.UrlExpr += strings.ToLower(actionInfo.Name)
-			commentCodeGens = append(commentCodeGens, codeGen)
+			if !hasMapperCodeGen || len(commentCodeGens) == 0 {
+				codeGen := &MapperCommentCodeGen{}
+				*codeGen = *mapperCodeGen
+				codeGen.ActionInfo = actionInfo
+				if !strings.HasSuffix(codeGen.UrlExpr, "/") {
+					codeGen.UrlExpr += "/"
+				}
+				codeGen.UrlExpr += strings.ToLower(actionInfo.Name)
+				commentCodeGens = append(commentCodeGens, codeGen)
+			}
 		}
 	}
+
 	*codeGens = append(*codeGens, commentCodeGens...)
+
 	return nil
 }
 
@@ -266,6 +271,19 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 						methods = append(methods, meth)
 					}
 				}
+			case arg.Name == "method":
+				methods = []string{}
+				if arg.Value.ValueType() != CommentStringType {
+					return nil, ArgMustbeString
+				}
+				meth := string(*arg.Value.(*CommentStringValue))
+				//is the httpmethods suppport.
+				if !peony.StringSliceContain(peony.ExtendHttpMethods, meth) {
+					return nil, UnknownMethodArgument
+				}
+				if !peony.StringSliceContain(methods, meth) {
+					methods = append(methods, meth)
+				}
 			case arg.Name == "ignore":
 				if arg.Value.ValueType() != CommentBoolType {
 					return nil, ArgMustbeBool
@@ -286,7 +304,7 @@ func MapperCommentCodeGenCreater(comment string, spec CodeGenSpec) (CodeGen, err
 	if actionInfo, ok := spec.(*ActionInfo); ok {
 		if !hasUrlArg {
 			//use default rule
-			url = "/" + peony.ParseAction(actionInfo.ActionName)
+			url = "/" + strings.ToLower(peony.ParseAction(actionInfo.ActionName))
 		}
 		if !ignore && url == "" {
 			return nil, UrlArgumentRequired

@@ -29,7 +29,7 @@ func getAlais(si *SourceInfo) map[string]string {
 	alias := map[string][]string{}
 	rs := map[string]string{}
 	for _, pkg := range si.Pkgs {
-		if !contains(alias[pkg.Name], pkg.ImportPath) {
+		if len(pkg.CodeGens) > 0 && !contains(alias[pkg.Name], pkg.ImportPath) {
 			alias[pkg.Name] = append(alias[pkg.Name], pkg.ImportPath)
 		}
 		for _, codeGen := range pkg.CodeGens {

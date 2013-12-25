@@ -3,6 +3,7 @@ package mole
 import (
 	"fmt"
 	"github.com/joinhack/peony"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -111,7 +112,12 @@ func (a *Agent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		a.processError(err, w, r)
 		return
 	}
-	a.proxy.ServeHTTP(w, r)
+	switch r.Header.Get("Upgrade") {
+	case "websocket", "Websocket":
+		proxyWebsocket(w, r, a.AppAddr)
+	default:
+		a.proxy.ServeHTTP(w, r)
+	}
 }
 
 func (a *Agent) Run(addr string) {
@@ -131,4 +137,40 @@ func (a *Agent) Run(addr string) {
 	if err != nil {
 		peony.ERROR.Fatalln(err.Error())
 	}
+}
+
+func proxyWebsocket(w http.ResponseWriter, r *http.Request, host string) {
+	d, err := net.Dial("tcp", host)
+	if err != nil {
+		http.Error(w, "Error contacting backend server.", 500)
+		peony.ERROR.Printf("Error dialing websocket backend %s: %v", host, err)
+		return
+	}
+	defer d.Close()
+	hj, ok := w.(http.Hijacker)
+	if !ok {
+		http.Error(w, "Not a hijacker?", 500)
+		return
+	}
+	nc, _, err := hj.Hijack()
+	if err != nil {
+		peony.ERROR.Printf("Hijack error: %v", err)
+		return
+	}
+	defer nc.Close()
+
+	err = r.Write(d)
+	if err != nil {
+		peony.ERROR.Printf("Error copying request to target: %v", err)
+		return
+	}
+
+	errc := make(chan error, 2)
+	cp := func(dst io.Writer, src io.Reader) {
+		_, err := io.Copy(dst, src)
+		errc <- err
+	}
+	go cp(d, nc)
+	go cp(nc, d)
+	<-errc
 }
