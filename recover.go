@@ -20,7 +20,7 @@ func RecoverFilter(c *Controller, filter []Filter) {
 					description = fmt.Sprint(err)
 				}
 				e.Description = description
-				NewErrorRender(e).Apply(c)
+				RenderError(e).Apply(c)
 			} else {
 				c.Resp.Write(stack)
 			}

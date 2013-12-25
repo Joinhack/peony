@@ -14,56 +14,56 @@ import (
 )
 
 var (
-	RenderType reflect.Type = reflect.TypeOf((*Render)(nil)).Elem()
-	Attachment string       = "attachment"
-	Inline     string       = "inline"
+	RendererType reflect.Type = reflect.TypeOf((*Renderer)(nil)).Elem()
+	Attachment   string       = "attachment"
+	Inline       string       = "inline"
 )
 
-type Render interface {
+type Renderer interface {
 	Apply(c *Controller)
 }
 
-type TextRender struct {
-	Render
+type TextRenderer struct {
+	Renderer
 	ContentType string
 	Text        string
 }
 
-type JsonRender struct {
-	Render
+type JsonRenderer struct {
+	Renderer
 	Json interface{}
 }
 
-type RedirectRender struct {
-	Render
+type RedirectRenderer struct {
+	Renderer
 	Location interface{} //e.g. Controller.Method (*Controller).Method function
 	Params   []interface{}
 }
 
-type XmlRender struct {
-	Render
+type XmlRenderer struct {
+	Renderer
 	Xml interface{}
 }
 
-type autoRender struct {
-	Render
+type autoRenderer struct {
+	Renderer
 	Params interface{}
 }
 
-type TemplateRender struct {
-	Render
+type TemplateRenderer struct {
+	Renderer
 	RenderParam  interface{}
 	TemplateName string
 }
 
-type ErrorRender struct {
-	Render
+type ErrorRenderer struct {
+	Renderer
 	Status int
 	Error  error
 }
 
-type BinaryRender struct {
-	Render
+type BinaryRenderer struct {
+	Renderer
 	Reader             io.Reader
 	Name               string
 	ContentDisposition string
@@ -71,22 +71,22 @@ type BinaryRender struct {
 	ModTime            time.Time
 }
 
-func NewErrorRender(err error) *ErrorRender {
-	return &ErrorRender{Error: err}
+func RenderError(err error) *ErrorRenderer {
+	return &ErrorRenderer{Error: err}
 }
 
-func (a *autoRender) Apply(c *Controller) {
+func (a *autoRenderer) Apply(c *Controller) {
 	switch c.Req.Accept {
 	case "json":
-		NewJsonRender(a.Params).Apply(c)
+		RenderJson(a.Params).Apply(c)
 	case "xml":
-		NewXmlRender(a.Params).Apply(c)
+		RenderXml(a.Params).Apply(c)
 	default:
-		NewTemplateRender(a.Params).Apply(c)
+		RenderTemplate(a.Params).Apply(c)
 	}
 }
 
-func (r *RedirectRender) getRedirctUrl(svr *Server) (string, error) {
+func (r *RedirectRenderer) getRedirctUrl(svr *Server) (string, error) {
 	var url string
 	if loc, ok := r.Location.(string); ok {
 		if len(r.Params) == 0 {
@@ -125,10 +125,10 @@ func (r *RedirectRender) getRedirctUrl(svr *Server) (string, error) {
 	return url, err
 }
 
-func (r *RedirectRender) Apply(c *Controller) {
+func (r *RedirectRenderer) Apply(c *Controller) {
 	url, err := r.getRedirctUrl(c.Server)
 	if err != nil {
-		NewErrorRender(err).Apply(c)
+		RenderError(err).Apply(c)
 		return
 	}
 	c.Resp.Header().Set("Location", url)
@@ -139,7 +139,7 @@ func ParseAction(action string) string {
 	return strings.Replace(action, ".", "/", 1)
 }
 
-func (b *BinaryRender) Apply(c *Controller) {
+func (b *BinaryRenderer) Apply(c *Controller) {
 	resp := c.Resp
 	prefix := b.ContentDisposition
 	if b.ContentDisposition == "" {
@@ -160,28 +160,28 @@ func (b *BinaryRender) Apply(c *Controller) {
 	}
 }
 
-func NewFileRender(path string) Render {
+func RenderFile(path string) Renderer {
 	var err error
 	var finfo os.FileInfo
 	var file *os.File
 	if finfo, err = os.Stat(path); err != nil {
 		notFound := &Error{Title: "Not Found", Description: err.Error()}
-		render := NewErrorRender(notFound)
+		render := RenderError(notFound)
 		render.Status = http.StatusNotFound
 		return render
 	}
 	if finfo.IsDir() {
-		render := NewErrorRender(&Error{Title: "Forbidden", Description: "Directory listing not allowed"})
+		render := RenderError(&Error{Title: "Forbidden", Description: "Directory listing not allowed"})
 		render.Status = http.StatusForbidden
 		return render
 	}
 	if file, err = os.Open(path); err != nil {
-		return NewErrorRender(err)
+		return RenderError(err)
 	}
-	return &BinaryRender{ModTime: finfo.ModTime(), Name: finfo.Name(), Reader: file, Len: finfo.Size()}
+	return &BinaryRenderer{ModTime: finfo.ModTime(), Name: finfo.Name(), Reader: file, Len: finfo.Size()}
 }
 
-func (r *ErrorRender) Apply(c *Controller) {
+func (r *ErrorRenderer) Apply(c *Controller) {
 	resp := c.Resp
 	req := c.Req
 	status := r.Status
@@ -212,29 +212,29 @@ func (r *ErrorRender) Apply(c *Controller) {
 	}
 }
 
-func (j *JsonRender) Apply(c *Controller) {
+func (j *JsonRenderer) Apply(c *Controller) {
 	resp := c.Resp
 	rs, err := json.Marshal(j.Json)
 	if err != nil {
-		(&ErrorRender{Error: err}).Apply(c)
+		(&ErrorRenderer{Error: err}).Apply(c)
 		return
 	}
 	resp.WriteContentTypeCode(http.StatusOK, "application/json")
 	resp.Write(rs)
 }
 
-func (r *XmlRender) Apply(c *Controller) {
+func (r *XmlRenderer) Apply(c *Controller) {
 	resp := c.Resp
 	bs, err := xml.Marshal(r.Xml)
 	if err != nil {
-		(&ErrorRender{Error: err}).Apply(c)
+		(&ErrorRenderer{Error: err}).Apply(c)
 		return
 	}
 	resp.WriteContentTypeCode(http.StatusOK, "application/xml")
 	resp.Write(bs)
 }
 
-func (r *TextRender) Apply(c *Controller) {
+func (r *TextRenderer) Apply(c *Controller) {
 	resp := c.Resp
 	contentType := r.ContentType
 	if contentType == "" {
@@ -244,7 +244,7 @@ func (r *TextRender) Apply(c *Controller) {
 	resp.Write([]byte(r.Text))
 }
 
-func (t *TemplateRender) Apply(c *Controller) {
+func (t *TemplateRenderer) Apply(c *Controller) {
 	resp := c.Resp
 	templateLoader := c.templateLoader
 	resp.WriteContentTypeCode(http.StatusOK, "text/html")
@@ -266,37 +266,37 @@ func (t *TemplateRender) Apply(c *Controller) {
 	}
 }
 
-func NewJsonRender(json interface{}) *JsonRender {
-	return &JsonRender{Json: json}
+func RenderJson(json interface{}) *JsonRenderer {
+	return &JsonRenderer{Json: json}
 }
 
-func NewXmlRender(xml interface{}) *XmlRender {
-	return &XmlRender{Xml: xml}
+func RenderXml(xml interface{}) *XmlRenderer {
+	return &XmlRenderer{Xml: xml}
 }
 
-func NewTextRender(s string) *TextRender {
-	return &TextRender{Text: s}
+func RenderText(s string) *TextRenderer {
+	return &TextRenderer{Text: s}
 }
 
-func AutoRender(param ...interface{}) Render {
+func Render(param ...interface{}) Renderer {
 	var renderParam interface{}
 	if len(param) == 1 {
 		renderParam = param[0]
 	} else {
 		renderParam = param
 	}
-	return &autoRender{Params: renderParam}
+	return &autoRenderer{Params: renderParam}
 }
 
 //renderParam for is the parameter for template execute. templateName is for point the template.
-func NewTemplateRender(param interface{}, templateName ...string) *TemplateRender {
+func RenderTemplate(param interface{}, templateName ...string) *TemplateRenderer {
 	name := ""
 	if len(templateName) > 0 {
 		name = templateName[0]
 	}
-	return &TemplateRender{RenderParam: param, TemplateName: name}
+	return &TemplateRenderer{RenderParam: param, TemplateName: name}
 }
 
-func NewRedirectRender(r interface{}, params ...interface{}) *RedirectRender {
-	return &RedirectRender{Location: r, Params: params}
+func Redirect(r interface{}, params ...interface{}) *RedirectRenderer {
+	return &RedirectRenderer{Location: r, Params: params}
 }

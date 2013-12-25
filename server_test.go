@@ -10,31 +10,31 @@ func Index() string {
 	return "hi"
 }
 
-func Json() Render {
-	return NewJsonRender("hi")
+func Json() Renderer {
+	return RenderJson("hi")
 }
 
-func Template() Render {
-	return NewTemplateRender(nil)
+func Template() Renderer {
+	return RenderTemplate(nil)
 }
 
-func Xml() Render {
-	return NewXmlRender("hi")
+func Xml() Renderer {
+	return RenderXml("hi")
 }
 
 func Text(join string) string {
 	return join
 }
 
-func File(path string) Render {
-	return NewFileRender(path)
+func File(path string) Renderer {
+	return RenderFile(path)
 }
 
 type AS int
 
-func (a *AS) T() Render {
+func (a *AS) T() Renderer {
 	*a = 10
-	return NewTextRender("s")
+	return RenderText("s")
 }
 
 func TestServer(t *testing.T) {

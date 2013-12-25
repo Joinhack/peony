@@ -10,13 +10,13 @@ type WebSocket struct {
 }
 
 //@Mapper("/websocket/room")
-func (c WebSocket) Room(user string) Render {
+func (c WebSocket) Room(user string) Renderer {
 
-	return AutoRender(map[string]interface{}{"user": user})
+	return Render(map[string]interface{}{"user": user})
 }
 
 //@Mapper("/websocket/room/socket", method="WS")
-func (c WebSocket) RoomSocket(user string, ws *websocket.Conn) Render {
+func (c WebSocket) RoomSocket(user string, ws *websocket.Conn) {
 	// Join the room.
 	subscription := chatroom.Subscribe()
 	defer subscription.Cancel()
@@ -28,7 +28,7 @@ func (c WebSocket) RoomSocket(user string, ws *websocket.Conn) Render {
 	for _, event := range subscription.Archive {
 		if websocket.JSON.Send(ws, &event) != nil {
 			// They disconnected
-			return nil
+			return
 		}
 	}
 
@@ -53,17 +53,17 @@ func (c WebSocket) RoomSocket(user string, ws *websocket.Conn) Render {
 		case event := <-subscription.New:
 			if websocket.JSON.Send(ws, &event) != nil {
 				// They disconnected.
-				return nil
+				return
 			}
 		case msg, ok := <-newMessages:
 			// If the channel is closed, they disconnected.
 			if !ok {
-				return nil
+				return
 			}
 
 			// Otherwise, say something.
 			chatroom.Say(user, msg)
 		}
 	}
-	return nil
+	return
 }

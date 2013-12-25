@@ -103,7 +103,7 @@ func NewAgent(app *peony.App) (agent *Agent, err error) {
 
 func (a *Agent) processError(err error, w http.ResponseWriter, r *http.Request) {
 	c := peony.NewController(w, r, a.templateLoader)
-	peony.NewErrorRender(err).Apply(c)
+	peony.RenderError(err).Apply(c)
 }
 
 func (a *Agent) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -9,16 +9,16 @@ type Application struct {
 }
 
 //@Mapper("/public/<re(.*):path>")
-func Public(path string) peony.Render {
-	return peony.NewFileRender("/Volumes/joinhack/work/sources/gopath/src/github.com/joinhack/peony/demos/chat/public/" + path)
+func Public(path string) peony.Renderer {
+	return peony.RenderFile("/Volumes/joinhack/work/sources/gopath/src/github.com/joinhack/peony/demos/chat/public/" + path)
 }
 
 //@Mapper("/")
-func (c Application) Index() peony.Render {
-	return peony.AutoRender(map[string]interface{}{})
+func (c Application) Index() peony.Renderer {
+	return peony.Render(map[string]interface{}{})
 }
 
-func (c Application) EnterDemo(user, demo string) peony.Render {
+func (c Application) EnterDemo(user, demo string) peony.Renderer {
 
 	// if c.Validation.HasErrors() {
 	// 	c.Flash.Error("Please choose a nick name and the demonstration type.")
@@ -27,11 +27,11 @@ func (c Application) EnterDemo(user, demo string) peony.Render {
 
 	switch demo {
 	case "refresh":
-		return peony.NewRedirectRender("/refresh?user=%s", user)
+		return peony.Redirect("/refresh?user=%s", user)
 	case "longpolling":
-		return peony.NewRedirectRender("/longpolling/room?user=%s", user)
+		return peony.Redirect("/longpolling/room?user=%s", user)
 	case "websocket":
-		return peony.NewRedirectRender("/websocket/room?user=%s", user)
+		return peony.Redirect("/websocket/room?user=%s", user)
 	}
-	return peony.NewRedirectRender(Application.Index)
+	return peony.Redirect(Application.Index)
 }

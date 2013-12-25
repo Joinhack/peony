@@ -8,7 +8,7 @@ import (
 	peony "github.com/joinhack/peony"
 	controllers0 "github.com/joinhack/peony/demos/login/app/controllers"
 	controllers1 "github.com/joinhack/peony/demos/login/app/controllers/controllers"
-	models0 "github.com/joinhack/peony/demos/login/app/models"
+	model0 "github.com/joinhack/peony/demos/login/app/models"
 )
 
 var (
@@ -55,12 +55,12 @@ func main() {
 			
 				&peony.ArgType{
 					Name: "m", 
-					Type: reflect.TypeOf((*models0.User)(nil)),
+					Type: reflect.TypeOf((*model0.User)(nil)),
 				},
 			}},
 	)
 
-	svr.MethodMapper("/Login/Before", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.MethodMapper("/login/before", []string{"GET", "POST", "PUT", "DELETE"}, 
 		(*controllers0.Login).Before, &peony.Action{
 			Name: "Login.Before",
 			
@@ -74,13 +74,13 @@ func main() {
 	)
 	svr.InterceptMethod((*controllers0.Login).Before, 0, 1)
 
-	svr.FuncMapper("/Test", []string{"WS"}, 
+	svr.FuncMapper("/test", []string{"WS"}, 
 		controllers0.Test, &peony.Action{
 			Name: "Test",
 			},
 	)
 
-	svr.FuncMapper("/Index", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.FuncMapper("/index", []string{"GET", "POST", "PUT", "DELETE"}, 
 		controllers0.Index, &peony.Action{
 			Name: "Index",
 			
@@ -111,7 +111,7 @@ func main() {
 			
 				&peony.ArgType{
 					Name: "m", 
-					Type: reflect.TypeOf((*models0.User)(nil)),
+					Type: reflect.TypeOf((*model0.User)(nil)),
 				},
 			}},
 	)

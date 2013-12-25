@@ -131,7 +131,7 @@ func (n *Notifier) Notify() error {
 func GetNotifyFilter(svr *Server) Filter {
 	return func(c *Controller, filter []Filter) {
 		if err := svr.notifier.Notify(); err != nil {
-			NewErrorRender(err).Apply(c)
+			RenderError(err).Apply(c)
 			return
 		}
 		filter[0](c, filter[1:])

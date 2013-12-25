@@ -16,33 +16,33 @@ type Mail struct {
 }
 
 // @Mapper("/static/<string:path>")
-func FileDown(path string) app.Render {
-	return app.NewFileRender(path)
+func FileDown(path string) app.Renderer {
+	return app.RenderFile(path)
 }
 
 // @Mapper(url="/")
-func (l *Login) Index(user []*Mail, m *model.User) app.Render {
+func (l *Login) Index(user []*Mail, m *model.User) app.Renderer {
 	println(l.xx)
-	return app.AutoRender("welcome~!")
+	return app.Render("welcome~!")
 }
 
 // @Mapper(ignore=true)
 //@Intercept("BEFORE", priority=1)
-func (l *Login) Before(c *app.Controller) app.Render {
+func (l *Login) Before(c *app.Controller) app.Renderer {
 	l.xx = "1000"
 	return nil
 }
 
 // @Mapper(methods=["WS"])
-func Test() app.Render {
-	return app.NewTextRender("test")
+func Test() app.Renderer {
+	return app.RenderText("test")
 }
 
 // @Mapper
-func Index(s *controllers.S, ss string) app.Render {
-	return app.AutoRender("haha")
+func Index(s *controllers.S, ss string) app.Renderer {
+	return app.Render("haha")
 }
 
-func (l *Login) Login(user []*Mail, m *model.User) app.Render {
-	return app.NewTextRender("success")
+func (l *Login) Login(user []*Mail, m *model.User) app.Renderer {
+	return app.RenderText("success")
 }

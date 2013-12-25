@@ -54,8 +54,8 @@ func (i *Interceptors) Invoke(c *Controller, when int) {
 		if len(rsSlice) > 0 {
 			rsVal := rsSlice[0]
 			rs := rsVal.Interface()
-			if rs != nil && rsVal.Type().Implements(RenderType) {
-				c.render = rsSlice[0].Interface().(Render)
+			if rs != nil && rsVal.Type().Implements(RendererType) {
+				c.render = rsSlice[0].Interface().(Renderer)
 			}
 			return
 		}

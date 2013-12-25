@@ -21,7 +21,7 @@ type Controller struct {
 	actionName     string
 	action         *Action
 	params         *Params
-	render         Render
+	render         Renderer
 	templateLoader *TemplateLoader
 }
 
@@ -130,7 +130,7 @@ func (c *Controller) NotFound(msg string, args ...interface{}) {
 	if len(args) > 0 {
 		text = fmt.Sprintf(msg, args)
 	}
-	render := NewErrorRender(&Error{Title: "Not Found", Description: text})
+	render := RenderError(&Error{Title: "Not Found", Description: text})
 	render.Status = 404
 	c.render = render
 }
@@ -153,12 +153,12 @@ func GetActionInvokeFilter(server *Server) Filter {
 		if len(rsSlice) > 0 {
 			rsVal := rsSlice[0]
 			if rsVal.Type().Kind() == reflect.String {
-				controller.render = &TextRender{Text: rsVal.String()}
+				controller.render = RenderText(rsVal.String())
 				return
-			} else if rsVal.Type().Implements(RenderType) {
+			} else if rsVal.Type().Implements(RendererType) {
 				rs := rsVal.Interface()
 				if rs != nil {
-					controller.render = rs.(Render)
+					controller.render = rs.(Renderer)
 				}
 			}
 		}
