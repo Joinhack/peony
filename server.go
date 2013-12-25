@@ -120,7 +120,7 @@ func (p *Params) mergeValues() {
 		values = p.Form
 	}
 	if values == nil {
-		values := make(url.Values, l)
+		values = make(url.Values, l)
 		for k, v := range p.Url {
 			values[k] = append(values[k], v...)
 		}
