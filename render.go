@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -36,8 +38,9 @@ type JsonRenderer struct {
 
 type RedirectRenderer struct {
 	Renderer
-	Location interface{} //e.g. Controller.Method (*Controller).Method function
-	Params   []interface{}
+	Url    string
+	action interface{} //e.g. Controller.Method (*Controller).Method function
+	param  interface{}
 }
 
 type XmlRenderer struct {
@@ -87,23 +90,16 @@ func (a *autoRenderer) Apply(c *Controller) {
 }
 
 func (r *RedirectRenderer) getRedirctUrl(svr *Server) (string, error) {
-	var url string
-	if loc, ok := r.Location.(string); ok {
-		if len(r.Params) == 0 {
-			url = loc
-		} else {
-			url = fmt.Sprintf(loc, r.Params)
-		}
-		return url, nil
+	if r.Url != "" {
+		return r.Url, nil
 	}
-
-	locType := reflect.TypeOf(r.Location)
+	locType := reflect.TypeOf(r.action)
 	actionName := ""
 	if locType.NumIn() > 0 {
 		recvType := locType.In(0)
 		//support Controller.Method as redirect argument.
 		if recvType.Kind() != reflect.Ptr {
-			meth := FindMethod(recvType, reflect.ValueOf(r.Location))
+			meth := FindMethod(recvType, reflect.ValueOf(r.action))
 			if meth != nil {
 				actionName = recvType.Name() + "." + meth.Name
 			}
@@ -118,11 +114,31 @@ func (r *RedirectRenderer) getRedirctUrl(svr *Server) (string, error) {
 	if action == nil {
 		return "", NoSuchAction
 	}
-	//TODO convert param to string
-	params := []string{}
+
 	var err error
-	err, url = svr.Router.TryBuild(action.Name, params...)
-	return url, err
+	var rsurl string
+	var buildParams map[string]string
+	if params, ok := r.param.(map[string]interface{}); ok {
+		buildParams = make(map[string]string, len(params))
+		for k, v := range params {
+			svr.convertors.ReverseConvert(buildParams, k, v)
+		}
+	}
+	if params, ok := r.param.(map[string]string); ok {
+		buildParams = params
+	}
+	err, rsurl = svr.Router.Build(action.Name, buildParams)
+	if err != nil {
+		return "", err
+	}
+	queryValues := make(url.Values)
+	for k, v := range buildParams {
+		queryValues.Set(k, v)
+	}
+	if len(queryValues) > 0 {
+		rsurl += "?" + queryValues.Encode()
+	}
+	return rsurl, nil
 }
 
 func (r *RedirectRenderer) Apply(c *Controller) {
@@ -266,15 +282,15 @@ func (t *TemplateRenderer) Apply(c *Controller) {
 	}
 }
 
-func RenderJson(json interface{}) *JsonRenderer {
+func RenderJson(json interface{}) Renderer {
 	return &JsonRenderer{Json: json}
 }
 
-func RenderXml(xml interface{}) *XmlRenderer {
+func RenderXml(xml interface{}) Renderer {
 	return &XmlRenderer{Xml: xml}
 }
 
-func RenderText(s string) *TextRenderer {
+func RenderText(s string) Renderer {
 	return &TextRenderer{Text: s}
 }
 
@@ -289,7 +305,7 @@ func Render(param ...interface{}) Renderer {
 }
 
 //renderParam for is the parameter for template execute. templateName is for point the template.
-func RenderTemplate(param interface{}, templateName ...string) *TemplateRenderer {
+func RenderTemplate(param interface{}, templateName ...string) Renderer {
 	name := ""
 	if len(templateName) > 0 {
 		name = templateName[0]
@@ -297,6 +313,43 @@ func RenderTemplate(param interface{}, templateName ...string) *TemplateRenderer
 	return &TemplateRenderer{RenderParam: param, TemplateName: name}
 }
 
-func Redirect(r interface{}, params ...interface{}) *RedirectRenderer {
-	return &RedirectRenderer{Location: r, Params: params}
+var descript = `Redirect parameter must be (function, map[string]string or map[string]interface{}) or ("/%s/%i", "index", 1)`
+
+func Redirect(r interface{}, param ...interface{}) Renderer {
+	if loc, ok := r.(string); ok {
+		var url string
+		if len(param) == 0 {
+			url = loc
+		} else {
+			url = fmt.Sprintf(loc, param)
+		}
+		return &RedirectRenderer{Url: url}
+	}
+	var p interface{}
+
+	if reflect.TypeOf(r).Kind() != reflect.Func || len(param) > 1 {
+		goto ERR
+	}
+
+	if len(param) == 1 {
+		p = param[0]
+		switch p.(type) {
+		case map[string]string, map[string]interface{}:
+		default:
+			goto ERR
+		}
+	}
+
+	return &RedirectRenderer{action: r, param: param}
+ERR:
+	_, f, l, _ := runtime.Caller(1)
+	lines, _ := ReadLines(f)
+
+	return RenderError(&Error{
+		Title:       "Parameter error",
+		Description: descript,
+		Path:        f,
+		Line:        l,
+		SourceLines: lines,
+	})
 }

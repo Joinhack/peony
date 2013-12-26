@@ -12,7 +12,7 @@ type Refresh struct {
 //@Mapper("/refresh")
 func (c Refresh) Index(user string) Renderer {
 	chatroom.Join(user)
-	return Redirect(Refresh.Room, user)
+	return Redirect(Refresh.Room, map[string]string{"user": user})
 }
 
 //@Mapper(method="GET")
@@ -31,7 +31,7 @@ func (c Refresh) Room(user string) Renderer {
 //@Mapper("room",method="POST")
 func (c Refresh) Say(user, message string) Renderer {
 	chatroom.Say(user, message)
-	return Redirect(Refresh.Room, user)
+	return Redirect(Refresh.Room, map[string]string{"user": user})
 }
 
 //@Mapper("room/leave")

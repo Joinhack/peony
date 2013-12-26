@@ -11,6 +11,7 @@ var (
 	WebSocketConnType = reflect.TypeOf((*websocket.Conn)(nil))
 	RequestType       = reflect.TypeOf((*Request)(nil))
 	ResponseType      = reflect.TypeOf((*Response)(nil))
+	SessionType       = reflect.TypeOf((*Session)(nil))
 	ControllerType    = reflect.TypeOf((*Controller)(nil))
 	NotFunc           = errors.New("action should be a func")
 	NotMethod         = errors.New("action should be a method")
@@ -152,6 +153,8 @@ func GetActionInvokeFilter(server *Server) Filter {
 				argValue = reflect.ValueOf(controller.Req)
 			case ResponseType:
 				argValue = reflect.ValueOf(controller.Resp)
+			case SessionType:
+				argValue = reflect.ValueOf(controller.Session)
 			default:
 				argValue = convertors.Convert(controller.params, arg.Name, arg.Type)
 			}
