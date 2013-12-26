@@ -8,9 +8,12 @@ import (
 )
 
 var (
-	WebSocketConnType reflect.Type = reflect.TypeOf((*websocket.Conn)(nil))
-	NotFunc                        = errors.New("action should be a func")
-	NotMethod                      = errors.New("action should be a method")
+	WebSocketConnType = reflect.TypeOf((*websocket.Conn)(nil))
+	RequestType       = reflect.TypeOf((*Request)(nil))
+	ResponseType      = reflect.TypeOf((*Response)(nil))
+	ControllerType    = reflect.TypeOf((*Controller)(nil))
+	NotFunc           = errors.New("action should be a func")
+	NotMethod         = errors.New("action should be a method")
 )
 
 type Controller struct {
@@ -142,9 +145,14 @@ func GetActionInvokeFilter(server *Server) Filter {
 		callArgs := make([]reflect.Value, 0, len(args))
 		for _, arg := range args {
 			var argValue reflect.Value
-			if arg.Type == WebSocketConnType {
+			switch arg.Type {
+			case WebSocketConnType:
 				argValue = reflect.ValueOf(controller.Req.WSConn)
-			} else {
+			case RequestType:
+				argValue = reflect.ValueOf(controller.Req)
+			case ResponseType:
+				argValue = reflect.ValueOf(controller.Resp)
+			default:
 				argValue = convertors.Convert(controller.params, arg.Name, arg.Type)
 			}
 			callArgs = append(callArgs, argValue)
