@@ -100,6 +100,19 @@ func ReaderConvert(p *Params, n string, typ reflect.Type) reflect.Value {
 	return reflect.ValueOf(file)
 }
 
+func ByteSliceConvert(p *Params, n string, typ reflect.Type) reflect.Value {
+	file := getMultipartFile(p, n)
+	if file == nil {
+		return reflect.Zero(typ)
+	}
+	bs, err := ioutil.ReadAll(file)
+	if err != nil {
+		WARN.Println("read all multipart file  error,", err)
+		return reflect.Zero(typ)
+	}
+	return reflect.ValueOf(bs)
+}
+
 func FileConvert(p *Params, n string, typ reflect.Type) reflect.Value {
 	file := getMultipartFile(p, n)
 	if file == nil {
@@ -226,6 +239,7 @@ func NewConvertors() *Convertors {
 	c.TypeConvertors[reflect.TypeOf((io.Reader)(nil))] = &Convertor{ReaderConvert, nil}
 	c.TypeConvertors[reflect.TypeOf((io.ReadWriter)(nil))] = &Convertor{ReaderConvert, nil}
 	c.TypeConvertors[reflect.TypeOf((*os.File)(nil))] = &Convertor{FileConvert, nil}
+	c.TypeConvertors[reflect.TypeOf([]byte)] = &Convertor{ByteSliceConvert, nil}
 	return c
 }
 
