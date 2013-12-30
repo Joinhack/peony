@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 )
@@ -46,10 +47,11 @@ type Response struct {
 
 type Params struct {
 	url.Values
-	Router url.Values //e.g. /xx/<int:name>/ param for router.
-	Url    url.Values
-	Form   url.Values
-	Files  map[string][]*multipart.FileHeader
+	Router   url.Values //e.g. /xx/<int:name>/ param for router.
+	Url      url.Values
+	Form     url.Values
+	Files    map[string][]*multipart.FileHeader
+	tmpFiles []*os.File
 }
 
 func ResolveContentType(req *http.Request) string {
@@ -137,6 +139,11 @@ func (p *Params) mergeValues() {
 func ParamsFilter(c *Controller, filter []Filter) {
 	ParseParems(c.params, c.Req)
 	filter[0](c, filter[1:])
+	for _, tmp := range c.params.tmpFiles {
+		if err := os.Remove(tmp.Name()); err != nil {
+			WARN.Println("remove temp file error,", err)
+		}
+	}
 }
 
 func (r *Response) WriteContentTypeCode(code int, contentType string) {

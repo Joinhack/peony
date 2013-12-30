@@ -2,6 +2,10 @@ package peony
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
+	"mime/multipart"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -74,6 +78,54 @@ func nextKey(key string) string {
 		return key
 	}
 	return key[:fieldLen]
+}
+
+func getMultipartFile(p *Params, n string) multipart.File {
+	for _, fileH := range p.Files[n] {
+		file, err := fileH.Open()
+		if err != nil {
+			WARN.Println("open file header error,", err)
+			return nil
+		}
+		return file
+	}
+	return nil
+}
+
+func ReaderConvert(p *Params, n string, typ reflect.Type) reflect.Value {
+	file := getMultipartFile(p, n)
+	if file == nil {
+		return reflect.Zero(typ)
+	}
+	return reflect.ValueOf(file)
+}
+
+func FileConvert(p *Params, n string, typ reflect.Type) reflect.Value {
+	file := getMultipartFile(p, n)
+	if file == nil {
+		return reflect.Zero(typ)
+	}
+	if osFile, ok := file.(*os.File); ok {
+		return reflect.ValueOf(osFile)
+	}
+	//store temp file
+	osFile, err := ioutil.TempFile("", "peony-upload-file")
+	if err != nil {
+		WARN.Println("create temp file error,", err)
+		return reflect.Zero(typ)
+	}
+	p.tmpFiles = append(p.tmpFiles, osFile)
+	_, err = io.Copy(osFile, file)
+	if err != nil {
+		WARN.Println("save data to temp file error,", err)
+		return reflect.Zero(typ)
+	}
+	_, err = osFile.Seek(0, 0)
+	if err != nil {
+		WARN.Println("seek to begin of temp file error,", err)
+		return reflect.Zero(typ)
+	}
+	return reflect.ValueOf(osFile)
 }
 
 //covert struct
@@ -170,6 +222,10 @@ func NewConvertors() *Convertors {
 			c.ReverseConvert(p, name, reflect.ValueOf(v).Elem().Interface())
 		},
 	}
+
+	c.TypeConvertors[reflect.TypeOf((io.Reader)(nil))] = &Convertor{ReaderConvert, nil}
+	c.TypeConvertors[reflect.TypeOf((io.ReadWriter)(nil))] = &Convertor{ReaderConvert, nil}
+	c.TypeConvertors[reflect.TypeOf((*os.File)(nil))] = &Convertor{FileConvert, nil}
 	return c
 }
 
