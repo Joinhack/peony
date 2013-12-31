@@ -1,6 +1,8 @@
 package peony
 
 import (
+	"io/ioutil"
+	"net/http"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -54,8 +56,17 @@ func TestServer(t *testing.T) {
 	svr.FuncMapper("/xml", HttpMethods, Xml, &Action{Name: "xml"})
 	svr.FuncMapper("/<int:join>", HttpMethods, Text, &Action{Name: "xxeemw", Args: []*ArgType{&ArgType{Name: "join", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
 	svr.FuncMapper("/static/<string:path>", HttpMethods, File, &Action{Name: "file", Args: []*ArgType{&ArgType{Name: "path", Type: reflect.TypeOf((*string)(nil)).Elem()}}})
-	err = svr.Run()
+	err = svr.Listen()
 	if err != nil {
 		t.Fatal(err)
 	}
+	go func() { svr.Run() }()
+	res, _ := http.Get("http://127.0.0.1:8080/json")
+	bs, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	t.Log(string(bs))
+	svr.Stop()
 }

@@ -4,6 +4,7 @@ import (
 	"code.google.com/p/go.net/websocket"
 	"errors"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -31,6 +32,7 @@ type Server struct {
 	App            *App
 	SessionManager SessionManager
 	Addr           string
+	listener       net.Listener
 }
 
 type Request struct {
@@ -253,7 +255,33 @@ func (s *Server) Init() {
 	}
 }
 
-func (server *Server) Run() error {
-	server.Server = &http.Server{Addr: server.Addr, Handler: http.HandlerFunc(server.handler)}
-	return server.Server.ListenAndServe()
+func (svr *Server) Listen() error {
+	addr := svr.Addr
+	if addr == "" {
+		addr = ":http"
+	}
+	l, e := net.Listen("tcp", addr)
+	if e != nil {
+		return e
+	}
+	svr.listener = l
+	return nil
+}
+
+func (svr *Server) Stop() {
+	if svr.listener != nil {
+		svr.listener.Close()
+		svr.listener = nil
+	}
+}
+
+func (svr *Server) Run() error {
+	svr.Server = &http.Server{Addr: svr.Addr, Handler: http.HandlerFunc(svr.handler)}
+	if svr.listener == nil {
+		err := svr.Listen()
+		if err != nil {
+			return nil
+		}
+	}
+	return svr.Server.Serve(svr.listener)
 }
