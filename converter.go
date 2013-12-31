@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"os"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -141,6 +142,80 @@ func FileConvert(p *Params, n string, typ reflect.Type) reflect.Value {
 	return reflect.ValueOf(osFile)
 }
 
+type item struct {
+	index int
+	value reflect.Value
+}
+type ItemByIndex []*item
+
+func (a ItemByIndex) Len() int {
+	return len(a)
+}
+func (a ItemByIndex) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+func (a ItemByIndex) Less(i, j int) bool {
+	return a[i].index < a[j].index
+}
+
+func GetSliceConvert(c *Convertors) func(*Params, string, reflect.Type) reflect.Value {
+	return func(p *Params, name string, typ reflect.Type) reflect.Value {
+		var values ItemByIndex
+		var maxIdx = 0
+		var noindex = 0
+		processItem := func(key string, vals []string) {
+			var idx int
+			var err error
+			if !strings.HasPrefix(key, name+"[") {
+				return
+			}
+			lIdx, rIdx := len(name), strings.IndexByte(key[len(name):], ']')+len(name)
+			if rIdx == -1 {
+				//not have ] char in key
+				return
+			}
+			//process e.g. name[]
+			if lIdx == rIdx-1 {
+				noindex++
+				goto END
+			}
+
+			idx, err = strconv.Atoi(key[lIdx+1 : rIdx])
+			if err != nil {
+				return
+			}
+			if idx > maxIdx {
+				maxIdx = idx
+			}
+		END:
+			value := c.Convert(p, key[:rIdx+1], typ.Elem())
+			values = append(values, &item{idx, value})
+		}
+		for k, vals := range p.Values {
+			processItem(k, vals)
+		}
+		//if array len small than 10000, keep index
+		if maxIdx < 10000 {
+			slice := reflect.MakeSlice(typ, maxIdx+1, maxIdx+noindex+1)
+			for _, val := range values {
+				if val.index > -1 {
+					slice.Index(val.index).Set(val.value)
+				} else {
+					slice = reflect.Append(slice, val.value)
+				}
+			}
+			return slice
+		}
+
+		sort.Sort(values)
+		slice := reflect.MakeSlice(typ, 0, len(values))
+		for _, val := range values {
+			slice = reflect.Append(slice, val.value)
+		}
+		return slice
+	}
+}
+
 //covert struct
 func GetStructConvert(c *Convertors) Convert {
 	return func(p *Params, n string, typ reflect.Type) reflect.Value {
@@ -171,6 +246,15 @@ func GetStructConvert(c *Convertors) Convert {
 			}
 		}
 		return result
+	}
+}
+
+func GetSliceReverseConvert(c *Convertors) func(p map[string]string, name string, v interface{}) {
+	return func(p map[string]string, name string, v interface{}) {
+		slice := reflect.ValueOf(v)
+		for i := 0; i < slice.Len(); i++ {
+			c.ReverseConvert(p, fmt.Sprintf("%s[%d]", name, i), slice.Index(i).Interface())
+		}
 	}
 }
 
@@ -222,6 +306,8 @@ func NewConvertors() *Convertors {
 
 	c.KindConvertors[reflect.String] = ValueConvertor(StringConvert, StringReverseConvert)
 
+	c.KindConvertors[reflect.Slice] = &Convertor{GetSliceConvert(c), GetSliceReverseConvert(c)}
+
 	c.KindConvertors[reflect.Struct] = &Convertor{
 		GetStructConvert(c),
 		GetStructReverseConvert(c),
@@ -239,7 +325,8 @@ func NewConvertors() *Convertors {
 	c.TypeConvertors[reflect.TypeOf((io.Reader)(nil))] = &Convertor{ReaderConvert, nil}
 	c.TypeConvertors[reflect.TypeOf((io.ReadWriter)(nil))] = &Convertor{ReaderConvert, nil}
 	c.TypeConvertors[reflect.TypeOf((*os.File)(nil))] = &Convertor{FileConvert, nil}
-	c.TypeConvertors[reflect.TypeOf([]byte)] = &Convertor{ByteSliceConvert, nil}
+	c.TypeConvertors[reflect.TypeOf((*[]byte)(nil)).Elem()] = &Convertor{ByteSliceConvert, nil}
+
 	return c
 }
 
@@ -261,6 +348,6 @@ func (c *Convertors) ReverseConvert(p map[string]string, name string, val interf
 		converter = c.KindConvertors[typ.Kind()]
 	}
 	if converter != nil {
-		converter.ReverseConvert(p, name, typ)
+		converter.ReverseConvert(p, name, val)
 	}
 }
