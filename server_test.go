@@ -43,7 +43,7 @@ func TestServer(t *testing.T) {
 	var err error
 	app := NewApp(".", ".")
 	app.ViewPath, err = filepath.Abs(".")
-	app.BindAddr = ":8080"
+	app.BindAddr = GetRandomListenAddr()
 	app.DevMode = true
 	svr := app.NewServer()
 	svr.Init()
@@ -61,7 +61,7 @@ func TestServer(t *testing.T) {
 		t.Fatal(err)
 	}
 	go func() { svr.Run() }()
-	res, _ := http.Get("http://127.0.0.1:8080/json")
+	res, _ := http.Get("http://127.0.0.1" + app.BindAddr + "/json")
 	bs, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		t.Fatal(err)

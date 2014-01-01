@@ -3,6 +3,7 @@ package peony
 import (
 	"code.google.com/p/go.net/websocket"
 	"errors"
+	"fmt"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -33,6 +34,16 @@ type Server struct {
 	SessionManager SessionManager
 	Addr           string
 	listener       net.Listener
+}
+
+func GetRandomListenAddr() string {
+	ipcon, err := net.Listen("tcp", ":0")
+	if err != nil {
+		ERROR.Fatalln("getListenPort error:", err)
+	}
+	ipcon.Close()
+	p := ipcon.Addr().(*net.TCPAddr).Port
+	return fmt.Sprintf(":%d", p)
 }
 
 type Request struct {

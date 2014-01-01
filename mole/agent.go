@@ -1,7 +1,6 @@
 package mole
 
 import (
-	"fmt"
 	"github.com/joinhack/peony"
 	"io"
 	"net"
@@ -65,19 +64,9 @@ func (a *Agent) IgnoreFile(f string) bool {
 	return true
 }
 
-func getListenAddr() string {
-	ipcon, err := net.Listen("tcp", ":0")
-	if err != nil {
-		peony.ERROR.Fatalln("getListenPort error:", err)
-	}
-	ipcon.Close()
-	p := ipcon.Addr().(*net.TCPAddr).Port
-	return fmt.Sprintf(":%d", p)
-}
-
 func NewAgent(app *peony.App) (agent *Agent, err error) {
 	agent = &Agent{app: app}
-	appAddr := getListenAddr()
+	appAddr := peony.GetRandomListenAddr()
 	targetSvrUrl := &url.URL{Scheme: "http", Host: appAddr}
 	agent.proxy = httputil.NewSingleHostReverseProxy(targetSvrUrl)
 	agent.notifier = peony.NewNotifier()
