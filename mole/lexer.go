@@ -6,12 +6,13 @@ import (
 
 type CommentLexer struct {
 	yyLexer
-	Function     *CommentFunc
-	Comment      string
-	PrevPos      int
-	Pos          int
-	currentState int
-	Err          string
+	Function        *CommentFunc
+	Comment         string
+	PrevPos         int
+	Pos             int
+	stringStartChar int
+	currentState    int
+	Err             string
 }
 
 const quotes = int('"')
@@ -47,19 +48,19 @@ func (c *CommentLexer) Lex(lval *yySymType) int {
 	for c.Pos < length {
 		chr := int(c.Comment[c.Pos])
 		switch {
-		case chr == quotes:
+		case c.currentState == 0 && (chr == quotes || chr == '`'):
 			//string start
-			if c.currentState == 0 {
-				c.PrevPos = c.Pos
-				c.currentState = str_const
-				strbuf = make([]byte, 0, length-c.Pos)
-			} else if c.currentState == str_const {
-				//string end
-				c.currentState = 0
-				lval.s = string(strbuf)
-				c.Pos++
-				return str_const
-			}
+			c.PrevPos = c.Pos
+			c.currentState = str_const
+			c.stringStartChar = chr
+			strbuf = make([]byte, 0, length-c.Pos)
+		case c.currentState == str_const && (chr == quotes || chr == '`') && c.stringStartChar == chr:
+			//string end
+			c.currentState = 0
+			c.stringStartChar = 0
+			lval.s = string(strbuf)
+			c.Pos++
+			return str_const
 		case ((chr >= 'a' && chr <= 'z') || (chr >= 'A' && chr <= 'Z')) && c.currentState == 0:
 			//tok_name start
 			c.currentState = tok_name
@@ -127,24 +128,26 @@ func (c *CommentLexer) Lex(lval *yySymType) int {
 		case c.currentState == str_const:
 			//collect all
 			if chr == '\\' && c.Pos != length-1 {
-				c.Pos++
-				switch nextChr := c.Comment[c.Pos]; nextChr {
-				case 'n':
-					strbuf = append(strbuf, '\n')
-				case 't':
-					strbuf = append(strbuf, '\t')
-				case 'b':
-					strbuf = append(strbuf, '\b')
-				case 'r':
-					strbuf = append(strbuf, '\r')
-				case '"':
-					strbuf = append(strbuf, '"')
-				case 'f':
-					strbuf = append(strbuf, '\f')
-				default:
-					return -1
+				if c.stringStartChar == quotes {
+					c.Pos++
+					switch nextChr := c.Comment[c.Pos]; nextChr {
+					case 'n':
+						strbuf = append(strbuf, '\n')
+					case 't':
+						strbuf = append(strbuf, '\t')
+					case 'b':
+						strbuf = append(strbuf, '\b')
+					case 'r':
+						strbuf = append(strbuf, '\r')
+					case '"':
+						strbuf = append(strbuf, '"')
+					case 'f':
+						strbuf = append(strbuf, '\f')
+					default:
+						return -1
+					}
+					break
 				}
-				break
 			}
 			strbuf = append(strbuf, byte(chr))
 		//when c.currentTok==0 ignore follow char

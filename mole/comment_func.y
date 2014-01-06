@@ -2,7 +2,6 @@
 package mole
 
 import(
-	//"fmt"
 	"strconv"
 )
 

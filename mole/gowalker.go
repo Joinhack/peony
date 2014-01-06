@@ -39,7 +39,7 @@ type InterceptCommentCodeGen struct {
 }
 
 var mapperTemplate = template.Must(template.New("").Parse(`
-	{{.serverName}}.{{.funcOrMethod}}("{{.url}}", []string{"{{.httpMethods}}"}, 
+	{{.serverName}}.{{.funcOrMethod}}({{.q}}{{.url}}{{.q}}, []string{"{{.httpMethods}}"}, 
 		{{.action}}, &peony.Action{
 			Name: "{{.info.ActionName}}",
 			{{if .info.Args}}
@@ -66,6 +66,7 @@ func (m *MapperCommentCodeGen) Generate(appName, serverName string, alias map[st
 		"serverName":  serverName,
 		"alias":       alias,
 		"url":         url,
+		"q":           "`",
 	}
 	if info.RecvName == "" {
 		params["funcOrMethod"] = "FuncMapper"
