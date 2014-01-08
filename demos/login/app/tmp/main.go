@@ -29,7 +29,7 @@ func main() {
 	svr := app.NewServer()
 	svr.Init()
 
-	svr.FuncMapper("/static/<string:path>", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.FuncMapper(`/static/<re(.*):path>`, []string{"GET", "POST", "PUT", "DELETE"}, 
 		controllers0.FileDown, &peony.Action{
 			Name: "FileDown",
 			
@@ -42,7 +42,7 @@ func main() {
 			}},
 	)
 
-	svr.MethodMapper("/", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.MethodMapper(`/`, []string{"GET", "POST", "PUT", "DELETE"}, 
 		(*controllers0.Login).Index, &peony.Action{
 			Name: "Login.Index",
 			
@@ -60,7 +60,7 @@ func main() {
 			}},
 	)
 
-	svr.MethodMapper("/login/before", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.MethodMapper(`/login/before`, []string{"GET", "POST", "PUT", "DELETE"}, 
 		(*controllers0.Login).Before, &peony.Action{
 			Name: "Login.Before",
 			
@@ -74,13 +74,13 @@ func main() {
 	)
 	svr.InterceptMethod((*controllers0.Login).Before, 0, 1)
 
-	svr.FuncMapper("/test", []string{"WS"}, 
+	svr.FuncMapper(`/test`, []string{"WS"}, 
 		controllers0.Test, &peony.Action{
 			Name: "Test",
 			},
 	)
 
-	svr.FuncMapper("/index", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.FuncMapper(`/index`, []string{"GET", "POST", "PUT", "DELETE"}, 
 		controllers0.Index, &peony.Action{
 			Name: "Index",
 			
@@ -98,7 +98,7 @@ func main() {
 			}},
 	)
 
-	svr.MethodMapper("/login/login", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.MethodMapper(`/login/login`, []string{"GET", "POST", "PUT", "DELETE"}, 
 		(*controllers0.Login).Login, &peony.Action{
 			Name: "Login.Login",
 			

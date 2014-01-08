@@ -214,6 +214,8 @@ func main() {
 	svr.Init()
 {{range $idx, $codeGen := $.codeGens }}{{$codeGen.Generate "app" "svr" $.importPaths}}{{end}}
 
+	svr.Router.Refresh()
+
 	go func(){
 		time.Sleep(1*time.Second)
 		fmt.Println("Server is running, listening on", app.BindAddr)

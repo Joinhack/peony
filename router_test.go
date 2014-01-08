@@ -37,16 +37,19 @@ func TestRule(t *testing.T) {
 func TestRouter(t *testing.T) {
 	router := NewRouter()
 
-	r := &Rule{Path: "/path/12<string:p1>-<int:p2>", Action: "aa.ss", HttpMethods: HttpMethods}
+	r := &Rule{Path: "/path/12<string:p1>-<int:p2>", Action: "action.method1", HttpMethods: HttpMethods}
 	router.AddRule(r)
-	r = &Rule{Path: "/path/12<string:p1>-<int:p2>-", Action: "e.ssmm", HttpMethods: HttpMethods}
+	r = &Rule{Path: "/path/12<string:p1>-<int:p2>-", Action: "action.method2", HttpMethods: HttpMethods}
 	router.AddRule(r)
-	r = &Rule{Path: "/path/13<re(\\d{1,5}):p3>-<int:p2>--", Action: "e.ssmm", HttpMethods: HttpMethods}
+	r = &Rule{Path: "/path/13<re(\\d{1,5}):p3>-<int:p2>--", Action: "action.method3", HttpMethods: HttpMethods}
+	router.AddRule(r)
+
+	r = &Rule{Path: "/path/15<p3>-<int:p2>--", Action: "action.method4", HttpMethods: HttpMethods}
 	router.AddRule(r)
 	r = &Rule{Path: "/path", Action: "static", HttpMethods: HttpMethods}
 	router.AddRule(r)
 
-	router.Update()
+	router.Refresh()
 
 	path := "/path/12-9090-123"
 	action, params := router.Match("GET", path)
@@ -63,7 +66,7 @@ func TestRouter(t *testing.T) {
 	_, p = router.Build(action, params)
 	t.Logf("%q, %t\n", action, p == path)
 
-	path = "/path/13909-123--"
+	path = "/path/15909-123--"
 	action, params = router.Match("GET", path)
 	_, p = router.Build(action, params)
 	t.Logf("%q, %t\n", action, p == path)

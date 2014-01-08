@@ -158,7 +158,7 @@ func (r *Rule) Match(httpmethod string, path string) (string, map[string]string)
 	if !StringSliceContain(r.HttpMethods, httpmethod) {
 		return "", nil
 	}
-	if len(r.args) == 0 {
+	if r.numRegTrace == 0 {
 		if r.Path == path {
 			return r.Action, nil
 		} else {
@@ -204,7 +204,7 @@ func (r *Router) Match(httpmethod string, path string) (string, map[string]strin
 	return "", nil
 }
 
-func (r *Router) Update() {
+func (r *Router) Refresh() {
 	sort.Sort(r)
 }
 
