@@ -4,16 +4,6 @@ import (
 	"testing"
 )
 
-func TestRE(t *testing.T) {
-	re := ruleRE
-	arg := re.FindAllStringSubmatch("aaas", -1)
-	t.Logf("%q\n", re.SubexpNames())
-	t.Logf("%q\n", arg)
-	arg = re.FindAllStringSubmatch("asdad<aw(sse):a><w>", -1)
-	t.Logf("%q\n", re.SubexpNames())
-	t.Logf("%q\n", arg)
-}
-
 func TestRule(t *testing.T) {
 	router := NewRouter()
 	r := &Rule{Path: "/path/12<string:oo>-<int:m>"}
@@ -53,21 +43,25 @@ func TestRouter(t *testing.T) {
 
 	path := "/path/12-9090-123"
 	action, params := router.Match("GET", path)
+	t.Log(params)
 	_, p := router.Build(action, params)
 	t.Logf("%q, %t \n", action, p == path)
 
 	path = "/path"
 	action, params = router.Match("GET", path)
+	t.Log(params)
 	_, p = router.Build(action, params)
 	t.Logf("%q, %t\n", action, p == path)
 
 	path = "/path/12-9090-123-"
 	action, params = router.Match("GET", path)
+	t.Log(params)
 	_, p = router.Build(action, params)
 	t.Logf("%q, %t\n", action, p == path)
 
 	path = "/path/15909-123--"
 	action, params = router.Match("GET", path)
+	t.Log(params)
 	_, p = router.Build(action, params)
-	t.Logf("%q, %t\n", action, p == path)
+	t.Logf("%q, %t, %q\n", action, p == path)
 }

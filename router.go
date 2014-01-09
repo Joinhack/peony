@@ -6,11 +6,13 @@ import (
 	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
 var (
 	ruleRE            *regexp.Regexp
+	argRE             *regexp.Regexp
 	HttpMethods       = []string{"GET", "POST", "PUT", "DELETE"}
 	ExtendHttpMethods = append(HttpMethods, "WS")
 )
@@ -24,6 +26,18 @@ func init() {
 		`)?`,
 		"([a-zA-Z_][a-zA-Z0-9_]*)", //paramName
 		`>`,
+	}, ""))
+
+	argRE = regexp.MustCompile(strings.Join([]string{
+		`((?P<name>\w+)\s*=\s*)?`,
+		`(?P<value>`,
+		`true|false|`, //bool
+		`\d+.\d+|`,    //float
+		`\d+.|`,       //float
+		`\d+|`,        //int
+		`\w+|`,
+		`(?P<stringval>\"[^\"]*?")`,
+		`)\s*,?`,
 	}, ""))
 }
 
@@ -42,18 +56,62 @@ type Rule struct {
 	PathRegex   *regexp.Regexp
 }
 
-type Parser func(string) string
+type Parser func(string) (error, string)
 
-func IntParser(arg string) string {
-	return "\\d+"
+func arg2map(arg string) map[string]string {
+	m := map[string]string{}
+	matched := argRE.FindAllStringSubmatch(arg, -1)
+	for _, match := range matched {
+		if match[4] != "" {
+			m[match[2]] = match[4]
+		} else {
+			m[match[2]] = match[3]
+		}
+	}
+	return m
 }
 
-func StringParser(arg string) string {
-	return "[^/]+"
+func IntParser(arg string) (error, string) {
+	return nil, "\\d+"
 }
 
-func REParser(arg string) string {
-	return arg
+func FloatParser(arg string) (error, string) {
+	return nil, `\d+.\d+`
+}
+
+//e.g. string(10) string(len=10) string(maxlen=10) string(minlen=10)
+//string(minlen=10, maxlen=20)
+func StringParser(arg string) (err error, expr string) {
+	if strings.Index(arg, "=") != -1 {
+		var maxlen, minlen string
+		var ok bool
+		argmap := arg2map(arg)
+		if maxlen, ok = argmap["maxlen"]; !ok {
+			maxlen = ""
+		}
+		if minlen, ok = argmap["minlen"]; !ok {
+			minlen = ""
+		}
+		if l, ok := argmap["len"]; ok {
+			expr = fmt.Sprintf("[^/]{%s}", l)
+			return
+		}
+		expr = fmt.Sprintf("[^/]{%s, %s}", minlen, maxlen)
+		return
+	} else if len(arg) > 0 {
+		var l int
+		if l, err = strconv.Atoi(arg); err != nil {
+			return
+		}
+		expr = fmt.Sprintf("[^/]{%d}", l)
+		return
+	}
+	expr = "[^/]+"
+	return
+}
+
+func REParser(arg string) (error, string) {
+	return nil, arg
 }
 
 type Router struct {
@@ -106,7 +164,12 @@ func (router *Router) complieRule(r *Rule) error {
 					return errors.New("can't compile, unknown parser:" + parser)
 				}
 				r.args[variable] = parse
-				reg = append(reg, fmt.Sprintf("(?P<%s>%s)", variable, parse(args)))
+				var parsedExpr string
+				var err error
+				if err, parsedExpr = parse(args); err != nil {
+					panic(fmt.Sprintf("please check expr: %s, detail error: %s", r.Path, err))
+				}
+				reg = append(reg, fmt.Sprintf("(?P<%s>%s)", variable, parsedExpr))
 			}
 		}
 		//last suffix not mutched add to reg slice and collection to trace
@@ -182,6 +245,7 @@ func (r *Rule) Match(httpmethod string, path string) (string, map[string]string)
 func bindDefaultConverter(parsers map[string]Parser) {
 	parsers["string"] = StringParser
 	parsers["int"] = IntParser
+	parsers["float"] = FloatParser
 	parsers["re"] = REParser
 }
 
