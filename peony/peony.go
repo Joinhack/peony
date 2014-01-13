@@ -2,15 +2,17 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"text/template"
 )
 
 var tmpl = `Usage: peony command [arguments]
 The commands are:
-{{range .}}
-	{{.Desc }}
-{{end}}
+	{{range .}}{{.Desc }}
+	{{end}}
 `
 
 type Command struct {
@@ -27,12 +29,54 @@ func registCommand(c *Command) {
 
 func init() {
 	registCommand(runcmd)
+	registCommand(newcmd)
+}
+
+func eprintf(f string, opts ...interface{}) {
+	fmt.Fprintf(os.Stderr, f, opts...)
+	os.Exit(1)
 }
 
 func usage(c int) {
 	var tpl = template.Must(template.New("").Parse(tmpl))
 	tpl.Execute(os.Stderr, Commands)
 	os.Exit(c)
+}
+
+func copyDir(src, dest string) error {
+
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		suffix := path[len(src):]
+		destPath := filepath.Join(dest, suffix)
+		if info.IsDir() {
+			if _, err := os.Stat(destPath); os.IsNotExist(err) {
+				if err := os.Mkdir(destPath, info.Mode()); err != nil {
+					return err
+				}
+
+			}
+			return nil
+		}
+		return copyFile(path, destPath)
+	})
+}
+
+func copyFile(src, dest string) (err error) {
+	var destFile, srcFile *os.File
+	destFile, err = os.Create(dest)
+	if err != nil {
+		return
+	}
+	defer destFile.Close()
+	srcFile, err = os.Open(src)
+	if err != nil {
+		return
+	}
+	_, err = io.Copy(destFile, srcFile)
+	return
 }
 
 func main() {

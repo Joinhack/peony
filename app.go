@@ -7,7 +7,10 @@ import (
 	"path/filepath"
 )
 
-var PEONYPATH string
+var (
+	PEONYPATH        string
+	PEONY_IMPORTPATH = "github.com/joinhack/peony"
+)
 
 type App struct {
 	SourcePath string
@@ -43,7 +46,7 @@ func init() {
 	WARN = log.New(os.Stdout, "WARN ", log.Ldate|log.Ltime|log.Lshortfile)
 	INFO = log.New(os.Stdout, "INFO ", log.Ldate|log.Ltime|log.Lshortfile)
 	ERROR = log.New(os.Stderr, "ERROR ", log.Ldate|log.Ltime|log.Lshortfile)
-	importPath := "github.com/joinhack/peony"
+	importPath := PEONY_IMPORTPATH
 	PEONYPATH = filepath.Join(SearchSrcRoot(importPath), importPath)
 }
 
