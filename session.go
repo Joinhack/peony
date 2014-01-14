@@ -2,14 +2,16 @@ package peony
 
 import (
 	"bytes"
-	"encoding/base32"
+	"encoding/base64"
 	"encoding/gob"
 	"github.com/streadway/simpleuuid"
 	"net/http"
 	"time"
 )
 
-var encoding *base32.Encoding
+var (
+	encoding *base64.Encoding
+)
 
 type Session struct {
 	Attribute map[string]interface{}
@@ -103,9 +105,9 @@ func init() {
 		gob.Register((*Session)(nil))
 		sec := s.App.Security
 		if len(sec) == 0 {
-			sec = "1234567890.BCDESX%/abcdefghi-kmn"
+			sec = defaultSecKey
 		}
-		encoding = base32.NewEncoding(sec)
+		encoding = base64.NewEncoding(sec)
 	})
 }
 

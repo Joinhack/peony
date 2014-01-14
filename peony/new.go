@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/joinhack/peony"
 	"go/build"
 	"os"
@@ -49,4 +50,5 @@ func newapp(args []string) {
 	if err := copyDir(tmplatesPath, appPath); err != nil {
 		eprintf("copy dir error, %s\n", err.Error())
 	}
+	fmt.Println("app already is ready, please execute command: peony run", importPath)
 }

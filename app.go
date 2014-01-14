@@ -3,6 +3,7 @@ package peony
 import (
 	"go/build"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 )
@@ -10,7 +11,21 @@ import (
 var (
 	PEONYPATH        string
 	PEONY_IMPORTPATH = "github.com/joinhack/peony"
+	// from base64 encodeUrl
+	defaultSecKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 )
+
+func GenSecKey() string {
+	val := make([]byte, 64)
+	copy(val, defaultSecKey)
+	for i := 0; i < 64; i++ {
+		r := rand.Intn(64)
+		tmp := val[r]
+		val[r] = val[i]
+		val[i] = tmp
+	}
+	return string(val)
+}
 
 type App struct {
 	SourcePath string
