@@ -1,13 +1,16 @@
 app.name={{.AppName}}
 app.secret={{.SecKey}}
+app.addr=:9000
 
 log.trace.prefix = "TRACE "
 log.info.prefix  = "INFO  "
 log.warn.prefix  = "WARN  "
 log.error.prefix = "ERROR "
 
+#all static path uri prefix
 static.uri  =  /static
-static.path =  {{.importPath}}/static
+#it's a relative path in app 
+static.path =  static
 
 [dev]
 log.trace.output = off

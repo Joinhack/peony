@@ -44,6 +44,7 @@ type App struct {
 	BindAddr   string
 	Security   string
 	DevMode    bool
+	Trunk      bool
 	Config     Config
 	StaticInfo *StaticInfo
 }
@@ -117,7 +118,8 @@ func (a *App) LoadConfig() {
 	INFO = a.getLogger(section, "info", "stdout")
 	ERROR = a.getLogger(section, "error", "stderr")
 	a.Security = a.Config.StringDefault(section, "app.secret", defaultSecKey)
-	a.BindAddr = a.Config.StringDefault(section, "app.addr", defaultSecKey)
+	a.BindAddr = a.Config.StringDefault(section, "app.addr", ":9000")
+	a.Trunk = a.Config.BoolDefault(section, "http.trunk", true)
 	staticInfo := &StaticInfo{}
 	ok = false
 	staticInfo.UriPrefix, ok = a.Config.String(section, "static.uri")

@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/joinhack/peony"
 	"go/build"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"text/template"
 )
 
 var newShortDesc = `new ImportPath(peony project)`
@@ -13,6 +15,31 @@ var newcmd = &Command{
 	Name:    "new",
 	Execute: newapp,
 	Desc:    newShortDesc,
+}
+
+func genConfig(appPath string, data map[string]string) error {
+	var src, dest *os.File
+	var fileContent []byte
+	var err error
+	var tmpl *template.Template
+	name := filepath.Join(appPath, "conf", "app.cnf.template")
+
+	if src, err = os.Open(name); err != nil {
+		return err
+	}
+	defer src.Close()
+	name = filepath.Join(appPath, "conf", "app.cnf")
+	if dest, err = os.OpenFile(name, os.O_CREATE|os.O_WRONLY, 0666); err != nil {
+		return nil
+	}
+	defer dest.Close()
+	if fileContent, err = ioutil.ReadAll(src); err != nil {
+		return err
+	}
+	if tmpl, err = template.New("").Parse(string(fileContent)); err != nil {
+		return err
+	}
+	return tmpl.Execute(dest, data)
 }
 
 func newapp(args []string) {
@@ -49,6 +76,15 @@ func newapp(args []string) {
 	}
 	if err := copyDir(tmplatesPath, appPath); err != nil {
 		eprintf("copy dir error, %s\n", err.Error())
+	}
+	appName := filepath.Base(filepath.FromSlash(importPath))
+	param := map[string]string{
+		"AppName":    appName,
+		"ImportPath": importPath,
+		"SecKey":     peony.GenSecKey(),
+	}
+	if err := genConfig(appPath, param); err != nil {
+		eprintf("generator configure error, %s\n", err.Error())
 	}
 	fmt.Println("app already is ready, please execute command: peony run", importPath)
 }

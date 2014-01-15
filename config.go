@@ -126,6 +126,15 @@ func (c Config) Bool(secname, key string) (rs, ok bool) {
 	return
 }
 
+func (c Config) BoolDefault(secname, key string, b bool) bool {
+	var val bool
+	var ok bool
+	if val, ok = c.Bool(secname, key); ok {
+		return val
+	}
+	return b
+}
+
 func (c Config) IntDefault(secname, key string, i int64) int64 {
 	var val int64
 	var ok bool
