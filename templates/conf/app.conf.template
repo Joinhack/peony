@@ -1,0 +1,22 @@
+app.name={{.AppName}}
+app.secret={{.SecKey}}
+
+log.trace.prefix = "TRACE "
+log.info.prefix  = "INFO  "
+log.warn.prefix  = "WARN  "
+log.error.prefix = "ERROR "
+
+static.uri  =  /static
+static.path =  {{.importPath}}/static
+
+[dev]
+log.trace.output = off
+log.info.output  = stderr
+log.warn.output  = stderr
+log.error.output = stderr
+
+[prod]
+log.trace.output = off
+log.info.output  = $(app.name).log
+log.warn.output  = $(app.name).log
+log.error.output = $(app.name).log

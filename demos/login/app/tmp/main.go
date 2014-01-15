@@ -29,19 +29,6 @@ func main() {
 	svr := app.NewServer()
 	svr.Init()
 
-	svr.FuncMapper(`/static/<re(.*):path>`, []string{"GET", "POST", "PUT", "DELETE"}, 
-		controllers0.FileDown, &peony.Action{
-			Name: "FileDown",
-			
-			Args: []*peony.ArgType{ 
-				
-				&peony.ArgType{
-					Name: "path", 
-					Type: reflect.TypeOf((*string)(nil)).Elem(),
-				},
-			}},
-	)
-
 	svr.MethodMapper(`/`, []string{"GET", "POST", "PUT", "DELETE"}, 
 		(*controllers0.Login).Index, &peony.Action{
 			Name: "Login.Index",
@@ -116,6 +103,8 @@ func main() {
 			}},
 	)
 
+
+	svr.Router.Refresh()
 
 	go func(){
 		time.Sleep(1*time.Second)

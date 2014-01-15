@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -333,10 +334,23 @@ func (r *Router) AddRule(rule *Rule) error {
 	return nil
 }
 
+func GetStaticFilter(svr *Server) Filter {
+	return func(controller *Controller, filter []Filter) {
+		urlpath := controller.Req.URL.Path
+		staticInfo := svr.App.StaticInfo
+		if staticInfo != nil && strings.HasPrefix(urlpath, staticInfo.UriPrefix) {
+			controller.render = RenderFile(path.Join(staticInfo.Path, urlpath[len(staticInfo.UriPrefix):]))
+			return
+		}
+		filter[0](controller, filter[1:])
+	}
+}
+
 func GetRouterFilter(svr *Server) Filter {
 	return func(controller *Controller, filter []Filter) {
 		router := svr.Router
-		actionName, routerParams := router.Match(controller.Req.Method, controller.Req.URL.Path)
+		urlpath := controller.Req.URL.Path
+		actionName, routerParams := router.Match(controller.Req.Method, urlpath)
 		if actionName == "" {
 			controller.NotFound("No match rule found")
 			return

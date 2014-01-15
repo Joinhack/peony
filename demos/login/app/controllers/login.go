@@ -15,11 +15,6 @@ type Login struct {
 type Mail struct {
 }
 
-// @Mapper(`/static/<re(.*):path>`)
-func FileDown(path string) app.Renderer {
-	return app.RenderFile(path)
-}
-
 // @Mapper(url="/")
 func (l *Login) Index(user []*Mail, m *model.User) app.Renderer {
 	println(l.xx)

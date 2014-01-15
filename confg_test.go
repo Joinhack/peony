@@ -46,12 +46,13 @@ key4
 
 func TestConfig3(t *testing.T) {
 	content := `
+	aa=19
 	[s1]
 	key1=1
 	#comment
-	key2 = 2.2
+	key2 = " 111"
 	key3 = 10.2
-	key3 = n
+	key3 = -$(key2)
 	`
 	lines := strings.Split(content, "\n")
 	conf := Config{}
@@ -62,5 +63,6 @@ func TestConfig3(t *testing.T) {
 	t.Log(conf.Float("s1", "key2"))
 	t.Log(conf.Int("s1", "key1"))
 	t.Log(conf.Float("s1", "key3"))
-	t.Log(conf.Bool("s1", "key3"))
+	t.Log(conf.String("s1", "key3"))
+	t.Log(conf.String("s1", "aa"))
 }
