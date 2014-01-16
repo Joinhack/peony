@@ -212,8 +212,8 @@ func (server *Server) handlerInner(resp *Response, req *Request) {
 func (s *Server) BindDefaultFilters() {
 	s.filters = []Filter{
 		RecoverFilter,
-		GetStaticFilter(s),
 		GetNotifyFilter(s),
+		GetStaticFilter(s),
 		GetRouterFilter(s),
 		GetSessionFilter(s),
 		ParamsFilter,

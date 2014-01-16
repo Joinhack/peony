@@ -85,7 +85,6 @@ func (t *TemplateLoader) BindServerTemplateFunc(svr *Server) {
 }
 
 func (t *TemplateLoader) load() error {
-
 	for _, base := range t.basePath {
 		if t.template == nil {
 			t.template = tmpl.New("basename")

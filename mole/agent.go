@@ -157,7 +157,7 @@ func proxyWebsocket(w http.ResponseWriter, r *http.Request, host string) {
 	errchan := make(chan error, 2)
 	cp := func(dst io.Writer, src io.Reader) {
 		_, err := io.Copy(dst, src)
-		errc <- err
+		errchan <- err
 	}
 	go cp(d, nc)
 	go cp(nc, d)

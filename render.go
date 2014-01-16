@@ -209,7 +209,7 @@ func (r *ErrorRenderer) Apply(c *Controller) {
 	if tpl == nil {
 		resp.WriteContentTypeCode(status, "text/"+req.Accept)
 		resp.Write([]byte(r.Error.Error()))
-		WARN.Println("can't find template", tplName)
+		WARN.Println("can't find template", tplName, c.Server.App.BindAddr)
 		return
 	}
 	resp.WriteContentTypeCode(status, "text/html")
