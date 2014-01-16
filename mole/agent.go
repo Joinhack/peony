@@ -37,10 +37,10 @@ func (a *Agent) Refresh() error {
 	if a.appCmd != nil {
 		a.appCmd.Kill()
 	}
-	a.appCmd = NewAppCmd(a.app, a.appBinPath, a.AppAddr)
 	if err := Build(a.app); err != nil {
 		return err
 	}
+	a.appCmd = NewAppCmd(a.app, a.appBinPath, a.AppAddr)
 	err := a.appCmd.Start()
 	if err == nil {
 		a.forceRefresh = false

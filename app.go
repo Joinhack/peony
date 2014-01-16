@@ -118,7 +118,7 @@ func (a *App) LoadConfig() {
 	INFO = a.getLogger(section, "info", "stdout")
 	ERROR = a.getLogger(section, "error", "stderr")
 	a.Security = a.Config.StringDefault(section, "app.secret", defaultSecKey)
-	a.BindAddr = a.Config.StringDefault(section, "app.addr", ":9000")
+	a.BindAddr = a.Config.StringDefault(section, "app.addr", ":8080")
 	a.Trunk = a.Config.BoolDefault(section, "http.trunk", true)
 	staticInfo := &StaticInfo{}
 	ok = false

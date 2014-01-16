@@ -30,6 +30,7 @@ func registCommand(c *Command) {
 func init() {
 	registCommand(runcmd)
 	registCommand(newcmd)
+	registCommand(buildcmd)
 }
 
 func eprintf(f string, opts ...interface{}) {

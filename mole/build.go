@@ -156,16 +156,18 @@ func Build(app *peony.App) error {
 func genSource(dir, filename, tpl string, args map[string]interface{}) {
 	code := peony.ExecuteTemplate(template.Must(template.New("").Parse(tpl)), args)
 	finfo, err := os.Stat(dir)
-	if err != nil && !os.IsExist(err) {
-		err = os.Mkdir(dir, 0777)
-		if err != nil {
-			log.Fatalln("create dir error:", dir)
-			return
+	if err != nil {
+		if os.IsNotExist(err) {
+			err = os.Mkdir(dir, 0777)
+			if err != nil {
+				log.Fatalln("create dir error:", dir)
+				return
+			}
+		} else {
+			log.Fatalln("stat error:", err)
 		}
-	}
-	if !finfo.IsDir() {
+	} else if !finfo.IsDir() {
 		log.Fatalln("Not dir, shoul be a dir.")
-		return
 	}
 	filepath := path.Join(dir, filename)
 	os.Remove(filepath)
@@ -174,13 +176,11 @@ func genSource(dir, filename, tpl string, args map[string]interface{}) {
 
 	if err != nil {
 		log.Fatalln("Open file error:", err)
-		return
 	}
 	defer file.Close()
 	_, err = file.WriteString(code)
 	if err != nil {
 		log.Fatalln("Write source eror:", err)
-		return
 	}
 
 }
@@ -199,7 +199,7 @@ var (
 	_ = reflect.Ptr
 	runMode    *string = flag.String("runMode", "", "Run mode.")
 	bindAddr   *string = flag.String("bindAddr", ":8080", "By default, read from app.conf")
-	importPath *string = flag.String("importPath", "", "Go Import Path for the app.")
+	importPath *string = flag.String("importPath", "", "Go ImportPath for the app.")
 	srcPath    *string = flag.String("srcPath", "", "Path to the source root.")
 	devMode    *bool    = flag.Bool("devMode", false, "Run mode")
 )
