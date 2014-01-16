@@ -213,6 +213,7 @@ func (s *Server) BindDefaultFilters() {
 	s.filters = []Filter{
 		RecoverFilter,
 		GetNotifyFilter(s),
+		//static filter must be location after notify filter, the static used the templateloader should inited in notify.
 		GetStaticFilter(s),
 		GetRouterFilter(s),
 		GetSessionFilter(s),
