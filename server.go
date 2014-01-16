@@ -280,14 +280,14 @@ func (svr *Server) Listen() error {
 	return nil
 }
 
-func (svr *Server) Stop() {
+func (svr *Server) CloseListener() {
 	if svr.listener != nil {
 		svr.listener.Close()
 		svr.listener = nil
 	}
 }
 
-func (svr *Server) Run() error {
+func (svr *Server) Run() <-chan error {
 	svr.Server = &http.Server{Addr: svr.Addr, Handler: http.HandlerFunc(svr.handler)}
 	if svr.listener == nil {
 		err := svr.Listen()
@@ -295,5 +295,9 @@ func (svr *Server) Run() error {
 			return nil
 		}
 	}
-	return svr.Server.Serve(svr.listener)
+	waitChan := make(chan error, 1)
+	go func() {
+		waitChan <- svr.Server.Serve(svr.listener)
+	}()
+	return waitChan
 }

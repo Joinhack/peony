@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func Index() string {
@@ -60,7 +61,15 @@ func TestServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	go func() { svr.Run() }()
+	done := make(chan int, 1)
+	go func() {
+		select {
+		case <-svr.Run():
+		case <-done:
+		case <-time.After(30 * time.Second):
+		}
+		svr.CloseListener()
+	}()
 	res, _ := http.Get("http://127.0.0.1" + app.BindAddr + "/json")
 	bs, err := ioutil.ReadAll(res.Body)
 	if err != nil {
@@ -68,5 +77,6 @@ func TestServer(t *testing.T) {
 	}
 	res.Body.Close()
 	t.Log(string(bs))
-	svr.Stop()
+	done <- 1
+	return
 }

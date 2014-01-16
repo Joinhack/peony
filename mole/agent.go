@@ -154,12 +154,12 @@ func proxyWebsocket(w http.ResponseWriter, r *http.Request, host string) {
 		return
 	}
 
-	errc := make(chan error, 2)
+	errchan := make(chan error, 2)
 	cp := func(dst io.Writer, src io.Reader) {
 		_, err := io.Copy(dst, src)
 		errc <- err
 	}
 	go cp(d, nc)
 	go cp(nc, d)
-	<-errc
+	<-errchan
 }

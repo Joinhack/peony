@@ -221,7 +221,7 @@ func main() {
 		time.Sleep(1*time.Second)
 		fmt.Println("Server is running, listening on", app.BindAddr)
 	}()
-	if err := svr.Run(); err != nil {
+	if err := <- svr.Run(); err != nil {
 		panic(err)
 	}
 }
