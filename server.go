@@ -150,9 +150,9 @@ func (p *Params) mergeValues() {
 }
 
 func ParamsFilter(c *Controller, filter []Filter) {
-	ParseParems(c.params, c.Req)
+	ParseParems(c.Params, c.Req)
 	filter[0](c, filter[1:])
-	for _, tmp := range c.params.tmpFiles {
+	for _, tmp := range c.Params.tmpFiles {
 		if err := os.Remove(tmp.Name()); err != nil {
 			WARN.Println("remove temp file error,", err)
 		}

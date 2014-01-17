@@ -24,7 +24,7 @@ type Controller struct {
 	Server         *Server
 	actionName     string
 	action         *Action
-	params         *Params
+	Params         *Params
 	render         Renderer
 	templateLoader *TemplateLoader
 }
@@ -156,7 +156,7 @@ func GetActionInvokeFilter(server *Server) Filter {
 			case SessionType:
 				argValue = reflect.ValueOf(controller.Session)
 			default:
-				argValue = convertors.Convert(controller.params, arg.Name, arg.Type)
+				argValue = convertors.Convert(controller.Params, arg.Name, arg.Type)
 			}
 			callArgs = append(callArgs, argValue)
 		}

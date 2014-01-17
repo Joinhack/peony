@@ -356,10 +356,10 @@ func GetRouterFilter(svr *Server) Filter {
 			return
 		}
 		controller.actionName = actionName
-		controller.params = &Params{}
-		controller.params.Router = url.Values{}
+		controller.Params = &Params{}
+		controller.Params.Router = url.Values{}
 		for k, v := range routerParams {
-			controller.params.Router[k] = append(controller.params.Router[k], []string{v}...)
+			controller.Params.Router[k] = append(controller.Params.Router[k], []string{v}...)
 		}
 
 		// bind actionMethod to controller
