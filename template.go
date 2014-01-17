@@ -17,11 +17,12 @@ var (
 )
 
 type TemplateLoader struct {
-	template     *tmpl.Template //
-	basePath     []string
-	FuncMap      tmpl.FuncMap
-	extendParams map[string]interface{}
-	forceNotify  bool //force notify when the first time
+	template       *tmpl.Template //
+	basePath       []string
+	FuncMap        tmpl.FuncMap
+	extendParams   map[string]interface{}
+	loadedTemplate map[string]string //key is template name, value is path
+	forceNotify    bool              //force notify when the first time
 }
 
 func (t *TemplateLoader) IgnoreDir(file os.FileInfo) bool {
@@ -42,7 +43,7 @@ func (t *TemplateLoader) IgnoreFile(file string) bool {
 }
 
 func (t *TemplateLoader) Refresh() error {
-	t.template = nil
+	t.reset()
 	return t.load()
 }
 
@@ -86,11 +87,15 @@ func (t *TemplateLoader) BindServerTemplateFunc(svr *Server) {
 	}
 }
 
+//reset template loader, clean template and loadedtemplate
+func (t *TemplateLoader) reset() {
+	t.template = tmpl.New("basename")
+	t.loadedTemplate = map[string]string{}
+}
+
 func (t *TemplateLoader) load() error {
 	for _, base := range t.basePath {
-		if t.template == nil {
-			t.template = tmpl.New("basename")
-		}
+
 		template := t.template
 		err := filepath.Walk(base, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -113,6 +118,11 @@ func (t *TemplateLoader) load() error {
 				return err
 			}
 			tmplName := templateName(path[len(base)+1:])
+			//template already loaded
+			if _, ok := t.loadedTemplate[tmplName]; ok {
+				return nil
+			}
+			t.loadedTemplate[tmplName] = path
 			_, err = template.New(tmplName).Funcs(t.FuncMap).Parse(string(data))
 			if err != nil {
 				ERROR.Println("template parse error:", err)

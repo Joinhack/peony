@@ -27,7 +27,8 @@ func genConfig(appPath string, data map[string]string) error {
 	if src, err = os.Open(name); err != nil {
 		return err
 	}
-	defer src.Close()
+	tmpfile := name
+	defer func() { src.Close(); os.Remove(tmpfile) }()
 	name = filepath.Join(appPath, "conf", "app.cnf")
 	if dest, err = os.OpenFile(name, os.O_CREATE|os.O_WRONLY, 0666); err != nil {
 		return nil
@@ -56,11 +57,11 @@ func newapp(args []string) {
 	}
 
 	if filepath.IsAbs(importPath) {
-		eprintf("importPath[%s] looks like the file path.\n", importPath)
+		eprintf("importpath[%s] looks like the file path.\n", importPath)
 	}
 
 	if _, err := build.Import(importPath, "", build.FindOnly); err == nil {
-		eprintf("importPath[%s] already exist.\n", importPath)
+		eprintf("importpath[%s] already exist.\n", importPath)
 	}
 
 	if _, err := build.Import(peony.PEONY_IMPORTPATH, "", build.FindOnly); err != nil {
@@ -68,6 +69,7 @@ func newapp(args []string) {
 	}
 
 	tmplatesPath := filepath.Join(peony.PEONYPATH, "templates")
+	errorsPath := filepath.Join(peony.PEONYPATH, "views", "errors")
 
 	srcPath := filepath.Join(filepath.SplitList(gopath)[0], "src")
 	appPath := filepath.Join(srcPath, filepath.FromSlash(importPath))
@@ -75,6 +77,9 @@ func newapp(args []string) {
 		eprintf("mdir app dir error, %s\n", err.Error())
 	}
 	if err := copyDir(tmplatesPath, appPath); err != nil {
+		eprintf("copy dir error, %s\n", err.Error())
+	}
+	if err := copyDir(errorsPath, filepath.Join(appPath, "app", "views", "errors")); err != nil {
 		eprintf("copy dir error, %s\n", err.Error())
 	}
 	appName := filepath.Base(filepath.FromSlash(importPath))
