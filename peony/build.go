@@ -8,7 +8,7 @@ import (
 var buildcmd = &Command{
 	Name:    "build",
 	Execute: buildCommand,
-	Desc:    `build ImportPath(peony project)`,
+	Desc:    `build importpath(peony project), create binary file in $GOPATH/bin`,
 }
 
 func buildCommand(args []string) {

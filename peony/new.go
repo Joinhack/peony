@@ -10,7 +10,7 @@ import (
 	"text/template"
 )
 
-var newShortDesc = `new ImportPath(peony project)`
+var newShortDesc = `new importpath(peony project), create a peony project`
 var newcmd = &Command{
 	Name:    "new",
 	Execute: newapp,

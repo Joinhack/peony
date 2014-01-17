@@ -8,7 +8,7 @@ import (
 var runcmd = &Command{
 	Name:    "run",
 	Execute: run,
-	Desc:    `run ImportPath(peony project) [addr](default :8000)`,
+	Desc:    `run importpath(peony project) [addr](default :8000)`,
 }
 
 func run(args []string) {

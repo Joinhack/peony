@@ -33,10 +33,12 @@ func (t *TemplateLoader) IgnoreDir(file os.FileInfo) bool {
 
 //when the suffix is .html notify the change
 func (t *TemplateLoader) IgnoreFile(file string) bool {
-	if !strings.HasSuffix(filepath.Base(file), ".html") {
-		return true
+	switch filepath.Ext(file) {
+	case "html", "json", "xml":
+	default:
+		return false
 	}
-	return false
+	return true
 }
 
 func (t *TemplateLoader) Refresh() error {
