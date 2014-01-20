@@ -11,9 +11,10 @@ import (
 )
 
 var (
+	_ = reflect.Ptr
 	runMode    *string = flag.String("runMode", "", "Run mode.")
 	bindAddr   *string = flag.String("bindAddr", ":8080", "By default, read from app.conf")
-	importPath *string = flag.String("importPath", "", "Go Import Path for the app.")
+	importPath *string = flag.String("importPath", "", "Go ImportPath for the app.")
 	srcPath    *string = flag.String("srcPath", "", "Path to the source root.")
 	devMode    *bool    = flag.Bool("devMode", false, "Run mode")
 )
@@ -28,26 +29,13 @@ func main() {
 	svr := app.NewServer()
 	svr.Init()
 
-	svr.FuncMapper("/public/<re(.*):path>", []string{"GET", "POST", "PUT", "DELETE"}, 
-		controllers0.Public, &peony.Action{
-			Name: "Public",
-			
-			Args: []*peony.ArgType{ 
-				
-				&peony.ArgType{
-					Name: "path", 
-					Type: reflect.TypeOf((*string)(nil)).Elem(),
-				},
-			}},
-	)
-
-	svr.MethodMapper("/", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.MethodMapper(`/`, []string{"GET", "POST", "PUT", "DELETE"}, 
 		(*controllers0.Application).Index, &peony.Action{
 			Name: "Application.Index",
 			},
 	)
 
-	svr.MethodMapper("/application/enterdemo", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.MethodMapper(`/application/enterdemo`, []string{"GET", "POST", "PUT", "DELETE"}, 
 		(*controllers0.Application).EnterDemo, &peony.Action{
 			Name: "Application.EnterDemo",
 			
@@ -65,7 +53,7 @@ func main() {
 			}},
 	)
 
-	svr.MethodMapper("/longpolling/room", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.MethodMapper(`/longpolling/room`, []string{"GET", "POST", "PUT", "DELETE"}, 
 		(*controllers0.LongPolling).Room, &peony.Action{
 			Name: "LongPolling.Room",
 			
@@ -78,7 +66,7 @@ func main() {
 			}},
 	)
 
-	svr.MethodMapper("/longpolling/room/messages", []string{"POST"}, 
+	svr.MethodMapper(`/longpolling/room/messages`, []string{"POST"}, 
 		(*controllers0.LongPolling).Say, &peony.Action{
 			Name: "LongPolling.Say",
 			
@@ -96,7 +84,7 @@ func main() {
 			}},
 	)
 
-	svr.MethodMapper("/longpolling/room/messages", []string{"GET"}, 
+	svr.MethodMapper(`/longpolling/room/messages`, []string{"GET"}, 
 		(*controllers0.LongPolling).WaitMessages, &peony.Action{
 			Name: "LongPolling.WaitMessages",
 			
@@ -109,7 +97,7 @@ func main() {
 			}},
 	)
 
-	svr.MethodMapper("/longpolling/room/leave", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.MethodMapper(`/longpolling/room/leave`, []string{"GET", "POST", "PUT", "DELETE"}, 
 		(*controllers0.LongPolling).Leave, &peony.Action{
 			Name: "LongPolling.Leave",
 			
@@ -122,7 +110,7 @@ func main() {
 			}},
 	)
 
-	svr.MethodMapper("/refresh", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.MethodMapper(`/refresh`, []string{"GET", "POST", "PUT", "DELETE"}, 
 		(*controllers0.Refresh).Index, &peony.Action{
 			Name: "Refresh.Index",
 			
@@ -135,7 +123,7 @@ func main() {
 			}},
 	)
 
-	svr.MethodMapper("/refresh/room", []string{"GET"}, 
+	svr.MethodMapper(`/refresh/room`, []string{"GET"}, 
 		(*controllers0.Refresh).Room, &peony.Action{
 			Name: "Refresh.Room",
 			
@@ -148,7 +136,7 @@ func main() {
 			}},
 	)
 
-	svr.MethodMapper("/refresh/room", []string{"POST"}, 
+	svr.MethodMapper(`/refresh/room`, []string{"POST"}, 
 		(*controllers0.Refresh).Say, &peony.Action{
 			Name: "Refresh.Say",
 			
@@ -166,7 +154,7 @@ func main() {
 			}},
 	)
 
-	svr.MethodMapper("/refresh/room/leave", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.MethodMapper(`/refresh/room/leave`, []string{"GET", "POST", "PUT", "DELETE"}, 
 		(*controllers0.Refresh).Leave, &peony.Action{
 			Name: "Refresh.Leave",
 			
@@ -179,7 +167,7 @@ func main() {
 			}},
 	)
 
-	svr.MethodMapper("/websocket/room", []string{"GET", "POST", "PUT", "DELETE"}, 
+	svr.MethodMapper(`/websocket/room`, []string{"GET", "POST", "PUT", "DELETE"}, 
 		(*controllers0.WebSocket).Room, &peony.Action{
 			Name: "WebSocket.Room",
 			
@@ -192,7 +180,7 @@ func main() {
 			}},
 	)
 
-	svr.MethodMapper("/websocket/room/socket", []string{"WS"}, 
+	svr.MethodMapper(`/websocket/room/socket`, []string{"WS"}, 
 		(*controllers0.WebSocket).RoomSocket, &peony.Action{
 			Name: "WebSocket.RoomSocket",
 			
@@ -211,11 +199,13 @@ func main() {
 	)
 
 
+	svr.Router.Refresh()
+
 	go func(){
 		time.Sleep(1*time.Second)
 		fmt.Println("Server is running, listening on", app.BindAddr)
 	}()
-	if err := svr.Run(); err != nil {
+	if err := <- svr.Run(); err != nil {
 		panic(err)
 	}
 }

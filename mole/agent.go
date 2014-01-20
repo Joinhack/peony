@@ -1,6 +1,7 @@
 package mole
 
 import (
+	"fmt"
 	"github.com/joinhack/peony"
 	"io"
 	"net"
@@ -18,7 +19,7 @@ type Agent struct {
 	app            *peony.App
 	appCmd         *AppCmd
 	appBinPath     string
-	AppAddr        string
+	AppPort        int
 	templateLoader *peony.TemplateLoader
 	notifier       *peony.Notifier
 	forceRefresh   bool
@@ -40,7 +41,7 @@ func (a *Agent) Refresh() error {
 	if err := Build(a.app); err != nil {
 		return err
 	}
-	a.appCmd = NewAppCmd(a.app, a.appBinPath, a.AppAddr)
+	a.appCmd = NewAppCmd(a.app, a.appBinPath, fmt.Sprintf(":%d", a.AppPort))
 	err := a.appCmd.Start()
 	if err == nil {
 		a.forceRefresh = false
@@ -66,8 +67,8 @@ func (a *Agent) IgnoreFile(f string) bool {
 
 func NewAgent(app *peony.App) (agent *Agent, err error) {
 	agent = &Agent{app: app}
-	appAddr := peony.GetRandomListenAddr()
-	targetSvrUrl := &url.URL{Scheme: "http", Host: appAddr}
+	port := peony.GetRandomListenPort()
+	targetSvrUrl := &url.URL{Scheme: "http", Host: fmt.Sprintf("127.0.0.1:%d", port)}
 	agent.proxy = httputil.NewSingleHostReverseProxy(targetSvrUrl)
 	agent.notifier = peony.NewNotifier()
 	agent.forceRefresh = true
@@ -76,7 +77,7 @@ func NewAgent(app *peony.App) (agent *Agent, err error) {
 	if err != nil {
 		return
 	}
-	agent.AppAddr = appAddr
+	agent.AppPort = port
 	agent.appBinPath = binPath
 	//watch template. template should first watched by notifier
 	agent.templateLoader = peony.NewTemplateLoader([]string{
@@ -103,7 +104,7 @@ func (a *Agent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.Header.Get("Upgrade") {
 	case "websocket", "Websocket":
-		proxyWebsocket(w, r, a.AppAddr)
+		proxyWebsocket(w, r, a.AppPort)
 	default:
 		a.proxy.ServeHTTP(w, r)
 	}
@@ -128,7 +129,8 @@ func (a *Agent) Run(addr string) {
 	}
 }
 
-func proxyWebsocket(w http.ResponseWriter, r *http.Request, host string) {
+func proxyWebsocket(w http.ResponseWriter, r *http.Request, port int) {
+	host := fmt.Sprintf("127.0.0.1:%d", port)
 	d, err := net.Dial("tcp", host)
 	if err != nil {
 		http.Error(w, "Error contacting backend server.", 500)

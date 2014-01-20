@@ -8,11 +8,6 @@ import (
 type Application struct {
 }
 
-//@Mapper("/public/<re(.*):path>")
-func Public(path string) peony.Renderer {
-	return peony.RenderFile("/Volumes/joinhack/work/sources/gopath/src/github.com/joinhack/peony/demos/chat/public/" + path)
-}
-
 //@Mapper("/")
 func (c Application) Index() peony.Renderer {
 	return peony.Render(map[string]interface{}{})

@@ -49,13 +49,16 @@ func getAlais(si *SourceInfo) map[string]string {
 //find go execute file path
 func findGO() (p string, err error) {
 	var fstat os.FileInfo
-	p = path.Join(build.Default.GOROOT, "bin", "go")
-	fstat, err = os.Stat(p)
-	if err != nil {
-		return
+	gobin := "go"
+	if runtime.GOOS == "windows" {
+		gobin = "go.exe"
 	}
-	if m := fstat.Mode(); !fstat.IsDir() && m&0x0111 != 0 {
-		return
+	p = path.Join(build.Default.GOROOT, "bin", gobin)
+	fstat, err = os.Stat(p)
+	if err == nil {
+		if m := fstat.Mode(); !fstat.IsDir() && m&0x0111 != 0 {
+			return
+		}
 	}
 	p, err = exec.LookPath("go")
 	return

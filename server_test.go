@@ -1,6 +1,7 @@
 package peony
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -44,7 +45,7 @@ func TestServer(t *testing.T) {
 	var err error
 	app := NewApp(".", ".")
 	app.ViewPath, err = filepath.Abs(".")
-	app.BindAddr = GetRandomListenAddr()
+	app.BindAddr = fmt.Sprintf(":%d", GetRandomListenPort())
 	app.DevMode = true
 	svr := app.NewServer()
 	svr.Init()
