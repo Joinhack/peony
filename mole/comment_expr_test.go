@@ -11,11 +11,11 @@ func TestCommentFunc1(t *testing.T) {
 	if i := yyParse(cl); i == 1 {
 		panic(cl.Err)
 	}
-	t.Logf("%d", *cl.Function.Args[2].Value.(*CommentIntValue))
-	t.Logf("%f", *cl.Function.Args[3].Value.(*CommentFloatValue))
-	t.Logf("%d", *cl.Function.Args[4].Value.(*CommentIntValue))
-	t.Logf("%q", *cl.Function.Args[5].Value.(*CommentBoolValue))
-	t.Logf("%q", cl.Function)
+	t.Logf("%d", *cl.Expr.Args[2].Value.(*CommentIntValue))
+	t.Logf("%f", *cl.Expr.Args[3].Value.(*CommentFloatValue))
+	t.Logf("%d", *cl.Expr.Args[4].Value.(*CommentIntValue))
+	t.Logf("%q", *cl.Expr.Args[5].Value.(*CommentBoolValue))
+	t.Logf("%q", cl.Expr)
 }
 
 func TestCommentFunc2(t *testing.T) {
@@ -25,7 +25,7 @@ func TestCommentFunc2(t *testing.T) {
 	if i := yyParse(cl); i == 1 {
 		panic(cl.Err)
 	}
-	t.Logf("%q", cl.Function)
+	t.Logf("%q", cl.Expr)
 }
 
 func TestCommentFunc3(t *testing.T) {
@@ -34,5 +34,5 @@ func TestCommentFunc3(t *testing.T) {
 	if i := yyParse(cl); i == 1 {
 		panic(cl.Err)
 	}
-	t.Logf("%q", cl.Function)
+	t.Logf("%q", cl.Expr)
 }

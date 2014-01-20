@@ -1,11 +1,10 @@
 
-//line comment_func.y:2
+//line comment_expr.y:2
 package mole
 import __yyfmt__ "fmt"
-//line comment_func.y:2
+//line comment_expr.y:2
 		
 import(
-	//"fmt"
 	"strconv"
 )
 
@@ -19,7 +18,7 @@ const (
 	CommentArrayType
 )
 
-type CommentFunc struct {
+type CommentExpr struct {
 	Name string
 	Args []*CommentArg
 }
@@ -65,10 +64,10 @@ type CommentArg struct {
 }
 
 
-//line comment_func.y:66
+//line comment_expr.y:65
 type yySymType struct {
 	yys int
-	function *CommentFunc
+	expr *CommentExpr
 	argument *CommentArg
 	args []*CommentArg
 	iconst int64
@@ -99,7 +98,7 @@ const yyEofCode = 1
 const yyErrCode = 2
 const yyMaxDepth = 200
 
-//line comment_func.y:192
+//line comment_expr.y:191
 
 
 
@@ -413,46 +412,46 @@ yydefault:
 	switch yynt {
 
 	case 1:
-		//line comment_func.y:91
+		//line comment_expr.y:90
 		{
-		yylex.(*CommentLexer).Function = yyS[yypt-0].function
+		yylex.(*CommentLexer).Expr = yyS[yypt-0].expr
 	}
 	case 2:
-		//line comment_func.y:95
+		//line comment_expr.y:94
 		{
-		function := &CommentFunc{}
-		function.Name = yyS[yypt-3].s
-		function.Args = yyS[yypt-1].args
-		yyVAL.function = function
+		expr := &CommentExpr{}
+		expr.Name = yyS[yypt-3].s
+		expr.Args = yyS[yypt-1].args
+		yyVAL.expr = expr
 	}
 	case 3:
-		//line comment_func.y:101
+		//line comment_expr.y:100
 		{
-		function := &CommentFunc{}
-		function.Name = yyS[yypt-2].s
-		function.Args = []*CommentArg{}
-		yyVAL.function = function
+		expr := &CommentExpr{}
+		expr.Name = yyS[yypt-2].s
+		expr.Args = []*CommentArg{}
+		yyVAL.expr = expr
 	}
 	case 4:
-		//line comment_func.y:107
+		//line comment_expr.y:106
 		{
-		function := &CommentFunc{}
-		function.Name = yyS[yypt-0].s
-		function.Args = []*CommentArg{}
-		yyVAL.function = function
+		expr := &CommentExpr{}
+		expr.Name = yyS[yypt-0].s
+		expr.Args = []*CommentArg{}
+		yyVAL.expr = expr
 	}
 	case 5:
-		//line comment_func.y:114
+		//line comment_expr.y:113
 		{
 		yyVAL.args = append(yyS[yypt-2].args, yyS[yypt-0].argument)
 	}
 	case 6:
-		//line comment_func.y:117
+		//line comment_expr.y:116
 		{
 		yyVAL.args = []*CommentArg{yyS[yypt-0].argument}
 	}
 	case 7:
-		//line comment_func.y:121
+		//line comment_expr.y:120
 		{
 		arg := &CommentArg{}
 		arg.Name = yyS[yypt-2].s
@@ -460,92 +459,92 @@ yydefault:
 		yyVAL.argument = arg
 	}
 	case 8:
-		//line comment_func.y:127
+		//line comment_expr.y:126
 		{
 		arg := &CommentArg{}
 		arg.Value = yyS[yypt-0].value
 		yyVAL.argument = arg
 	}
 	case 9:
-		//line comment_func.y:133
+		//line comment_expr.y:132
 		{
 		yyVAL.values = yyS[yypt-1].values
 	}
 	case 10:
-		//line comment_func.y:135
+		//line comment_expr.y:134
 		{
 		yyVAL.values = &CommentArrayValue{}
 	}
 	case 11:
-		//line comment_func.y:139
+		//line comment_expr.y:138
 		{
 		vals := append(*yyS[yypt-2].values, yyS[yypt-0].value)
 		yyVAL.values = &vals
 	}
 	case 12:
-		//line comment_func.y:143
+		//line comment_expr.y:142
 		{
 		yyVAL.values = &CommentArrayValue{yyS[yypt-0].value}
 	}
 	case 13:
-		//line comment_func.y:147
+		//line comment_expr.y:146
 		{
 		value := CommentStringValue(yyS[yypt-0].s)
 		yyVAL.value = &value
 	}
 	case 14:
-		//line comment_func.y:152
+		//line comment_expr.y:151
 		{
 		yyVAL.s = yyS[yypt-0].s
 	}
 	case 15:
-		//line comment_func.y:155
+		//line comment_expr.y:154
 		{
 		yyVAL.s = "-" + yyS[yypt-0].s
 	}
 	case 16:
-		//line comment_func.y:160
+		//line comment_expr.y:159
 		{
 		yyVAL.s = "-" + yyS[yypt-2].s + yyS[yypt-0].s
 	}
 	case 17:
-		//line comment_func.y:163
+		//line comment_expr.y:162
 		{
 		yyVAL.s = yyS[yypt-2].s + "." + yyS[yypt-0].s
 	}
 	case 18:
-		//line comment_func.y:167
+		//line comment_expr.y:166
 		{
 		yyVAL.value = yyS[yypt-0].value
 	}
 	case 19:
-		//line comment_func.y:170
+		//line comment_expr.y:169
 		{
 		f, _ := strconv.ParseFloat(yyS[yypt-0].s, 64)
 		value := CommentFloatValue(f)
 		yyVAL.value = &value
 	}
 	case 20:
-		//line comment_func.y:175
+		//line comment_expr.y:174
 		{
 		value := CommentIntValue(yyS[yypt-0].iconst)
 		yyVAL.value = &value
 	}
 	case 21:
-		//line comment_func.y:179
+		//line comment_expr.y:178
 		{
 		value := CommentBoolValue(yyS[yypt-0].b)
 		yyVAL.value = &value	
 	}
 	case 22:
-		//line comment_func.y:183
+		//line comment_expr.y:182
 		{
 		i, _ := strconv.Atoi(yyS[yypt-0].s)
 		value := CommentIntValue(i)
 		yyVAL.value = &value
 	}
 	case 23:
-		//line comment_func.y:188
+		//line comment_expr.y:187
 		{
 		yyVAL.value = yyS[yypt-0].values
 	}

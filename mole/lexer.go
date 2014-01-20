@@ -6,7 +6,7 @@ import (
 
 type CommentLexer struct {
 	yyLexer
-	Function        *CommentFunc
+	Expr            *CommentExpr
 	Comment         string
 	PrevPos         int
 	Pos             int
@@ -17,13 +17,13 @@ type CommentLexer struct {
 
 const quotes = int('"')
 
-func (c *CommentLexer) Parse(comment string) (*CommentFunc, error) {
+func (c *CommentLexer) Parse(comment string) (*CommentExpr, error) {
 	c.Comment = comment
 	rs := yyParse(c)
 	if rs != 0 {
 		return nil, errors.New(c.Err)
 	}
-	return c.Function, nil
+	return c.Expr, nil
 }
 
 func (c *CommentLexer) Bool(s string) (bool, bool) {

@@ -83,7 +83,14 @@ func (t *TemplateLoader) BindServerTemplateFunc(svr *Server) {
 		return svr.App.DevMode
 	}
 	if svr.App.DevMode {
-		t.extendParams["Rules"] = func() []*Rule { return svr.rules }
+		t.extendParams["GetRules"] = func() []*Rule { return svr.rules }
+		t.extendParams["GetStaticInfo"] = func() map[string]string {
+			statics := map[string]string{}
+			if svr.App.StaticInfo != nil {
+				statics[svr.App.StaticInfo.UriPrefix] = svr.App.StaticInfo.Path
+			}
+			return statics
+		}
 	}
 }
 

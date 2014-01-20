@@ -15,7 +15,7 @@ const (
 	CommentArrayType
 )
 
-type CommentFunc struct {
+type CommentExpr struct {
 	Name string
 	Args []*CommentArg
 }
@@ -63,7 +63,7 @@ type CommentArg struct {
 %}
 
 %union {
-	function *CommentFunc
+	expr *CommentExpr
 	argument *CommentArg
 	args []*CommentArg
 	iconst int64
@@ -82,32 +82,32 @@ type CommentArg struct {
 %type<values> VALUES ELEMENTS
 %type<args> ARGS_ELEMENTS
 %type<argument> ARGUMENT
-%type<function> FUNCTION
-%type<function> RESULT
+%type<expr> EXPR
+%type<expr> RESULT
 %left '-'
 %%
 
-RESULT: FUNCTION {
-	yylex.(*CommentLexer).Function = $1
+RESULT: EXPR {
+	yylex.(*CommentLexer).Expr = $1
 }
 
-FUNCTION: '@' tok_name '(' ARGS_ELEMENTS ')' {
-	function := &CommentFunc{}
-	function.Name = $2
-	function.Args = $4
-	$$ = function
+EXPR: '@' tok_name '(' ARGS_ELEMENTS ')' {
+	expr := &CommentExpr{}
+	expr.Name = $2
+	expr.Args = $4
+	$$ = expr
 } 
 | '@' tok_name '('  ')' {
-	function := &CommentFunc{}
-	function.Name = $2
-	function.Args = []*CommentArg{}
-	$$ = function
+	expr := &CommentExpr{}
+	expr.Name = $2
+	expr.Args = []*CommentArg{}
+	$$ = expr
 }
 | '@' tok_name {
-	function := &CommentFunc{}
-	function.Name = $2
-	function.Args = []*CommentArg{}
-	$$ = function
+	expr := &CommentExpr{}
+	expr.Name = $2
+	expr.Args = []*CommentArg{}
+	$$ = expr
 }
 
 ARGS_ELEMENTS: ARGS_ELEMENTS ',' ARGUMENT {

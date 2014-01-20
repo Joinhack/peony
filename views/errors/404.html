@@ -70,11 +70,24 @@
 	<h2>These rules have been registed:</h2>
 	<ol>
 {{with ExtParams}}
-{{with call .Rules}}
+{{with call .GetRules}}
 {{range .}}
 <li><ul><li class='url' title="{{.Path}}">{{.Path}}</li><li title="{{.HttpMethods}}" class='httpmethods'>{{.HttpMethods}}</li><li title="{{.Action}}">{{.Action}}</li></ul></li>
 {{end}}
 {{end}}
+{{end}}
+	</ol>
+
+<h2>The Static Resource have been configured:</h2>
+	<ol>
+{{with ExtParams}}
+{{with call .GetStaticInfo}}
+{{range $k,$v := .}}
+<li>
+<ul><li class='url' title="{{$k}}">{{$k}}</li><li title="{{$v}}" >{{$v}}</li></ul>
+</li>
+{{end}}
+{{end}}	
 {{end}}
 	</ol>
 </div>
