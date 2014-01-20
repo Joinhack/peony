@@ -256,7 +256,7 @@ func (s *Server) Init() {
 	s.ActionContainer = NewActionContainer()
 	s.convertors = NewConvertors()
 	s.Interceptors = NewInterceptors()
-	//the user views is priority, used for render error, follower template loader error.
+	//the peony project's views is priority, used for render error, follower template loader error.
 	s.templateLoader = NewTemplateLoader([]string{s.App.ViewPath, path.Join(PEONYPATH, "views")})
 	s.templateLoader.BindServerTemplateFunc(s)
 	s.notifier = NewNotifier()
