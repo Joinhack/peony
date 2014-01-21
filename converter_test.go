@@ -34,6 +34,7 @@ func TestKindCoverter(t *testing.T) {
 	p.Values["m[2]"] = []string{"3"}
 	p.Values["m[5]"] = []string{"3"}
 	p.Values["m[100]"] = []string{"100"}
+
 	t.Log(c.Convert(&p, "10", reflect.TypeOf((*int)(nil)).Elem()).Int() == 10)
 	t.Log(c.Convert(&p, "10", reflect.TypeOf((*int)(nil))).Elem().Int() == 10)
 	t.Log(c.Convert(&p, "1001a", reflect.TypeOf((*int32)(nil)).Elem()).Int() == 0)

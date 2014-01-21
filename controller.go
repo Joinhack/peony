@@ -4,6 +4,7 @@ import (
 	"code.google.com/p/go.net/websocket"
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 )
 
@@ -15,6 +16,7 @@ var (
 	ControllerType    = reflect.TypeOf((*Controller)(nil))
 	NotFunc           = errors.New("action should be a func")
 	NotMethod         = errors.New("action should be a method")
+	ValueMustbePtr    = errors.New("value must be should be ptr")
 )
 
 type Controller struct {
@@ -39,6 +41,18 @@ type Action struct {
 	targetType reflect.Type  //if is method action, targetType is recv type. e.g. (*X).DO *X is  the targetType
 	targetPtr  reflect.Value // the ptr value for targetType, always is a ptr value
 	Args       []*ArgType
+}
+
+//Get Param Value
+func (c *Controller) GetParam(name string, val interface{}) error {
+	valType := reflect.TypeOf(val)
+	if valType.Kind() != reflect.Ptr {
+		return ValueMustbePtr
+	}
+	value := reflect.ValueOf(val)
+	paramValue := c.Server.convertors.Convert(c.Params, name, valType)
+	value.Elem().Set(paramValue.Elem())
+	return nil
 }
 
 func (a *Action) Invoke(args []reflect.Value) []reflect.Value {
