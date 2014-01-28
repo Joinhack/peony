@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/joinhack/peony"
+	_ "github.com/joinhack/peony/session/simple_session"
 )
 
 // @Mapper

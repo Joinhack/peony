@@ -4,7 +4,6 @@ import (
 	"code.google.com/p/go.net/websocket"
 	"errors"
 	"fmt"
-	"os"
 	"reflect"
 )
 

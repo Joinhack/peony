@@ -134,6 +134,7 @@ func Build(app *peony.App) error {
 	alias := getAlais(si)
 	//rename peony
 	alias["github.com/joinhack/peony"] = "peony"
+
 	args := map[string]interface{}{
 		"importPaths": alias,
 		"codeGens":    codeGens,

@@ -286,6 +286,10 @@ func (svr *Server) CloseListener() {
 	}
 }
 
+func (svr *Server) RegisterSessionManager(sm SessionManager) {
+	svr.SessionManager = sm
+}
+
 func (svr *Server) Run() <-chan error {
 	svr.Server = &http.Server{Addr: svr.Addr, Handler: http.HandlerFunc(svr.handler)}
 	if svr.listener == nil {
