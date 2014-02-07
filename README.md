@@ -6,8 +6,8 @@ Features
 ==================================
 * RESTful support
 * MVC architecture
-* Comment for router configure
-* Comment for interceptor
+* Comment for router (like annotation in java)
+* Comment for interceptor (like annotation in java)
 * Static path support
 * Session support
 
