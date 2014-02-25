@@ -82,7 +82,7 @@ func (a *AppCmd) waitChan() <-chan bool {
 }
 
 func (a *AppCmd) Kill() {
-	if a.Cmd != nil && a.Process != nil && (a.ProcessState == nil || !a.ProcessState.Exited()) {
+	if a.Cmd != nil && a.Process != nil && (a.ProcessState == nil || a.ProcessState.Exited()) {
 		if err := a.Process.Kill(); err != nil {
 			peony.ERROR.Println("kill app error:", err)
 		}
