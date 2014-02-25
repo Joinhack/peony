@@ -39,6 +39,7 @@ func (a *Agent) Refresh() error {
 		a.appCmd.Kill()
 	}
 	if err := Build(a.app); err != nil {
+		a.forceRefresh = true
 		return err
 	}
 	a.appCmd = NewAppCmd(a.app, a.appBinPath, fmt.Sprintf(":%d", a.AppPort))
