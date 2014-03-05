@@ -78,6 +78,16 @@ func RenderError(err error) *ErrorRenderer {
 	return &ErrorRenderer{Error: err}
 }
 
+func NotFound(msg string, args ...interface{}) *ErrorRenderer {
+	text := msg
+	if len(args) > 0 {
+		text = fmt.Sprintf(msg, args)
+	}
+	render := RenderError(&Error{Title: "Not Found", Description: text})
+	render.Status = 404
+	return render
+}
+
 func (a *autoRenderer) Apply(c *Controller) {
 	switch c.Req.Accept {
 	case "json":

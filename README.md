@@ -15,5 +15,5 @@ Install
 ==================================
 1. Set the GOPATH 
 2. Install the peony. $ go get github.com/joinhack/peony/peony
-3. Run peony project. $ peony run github.com/joinhack/peony/demos/chat
+3. Run peony demo project. $ peony run github.com/joinhack/peony/demos/chat
 

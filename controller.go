@@ -3,7 +3,6 @@ package peony
 import (
 	"code.google.com/p/go.net/websocket"
 	"errors"
-	"fmt"
 	"reflect"
 )
 
@@ -143,13 +142,8 @@ func (a *ActionContainer) RegisterMethodAction(method interface{}, action *Actio
 }
 
 func (c *Controller) NotFound(msg string, args ...interface{}) {
-	text := msg
-	if len(args) > 0 {
-		text = fmt.Sprintf(msg, args)
-	}
-	render := RenderError(&Error{Title: "Not Found", Description: text})
-	render.Status = 404
-	c.render = render
+
+	c.render = NotFound(msg, args...)
 }
 
 func GetActionInvokeFilter(server *Server) Filter {
