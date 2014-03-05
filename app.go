@@ -85,9 +85,9 @@ func NewApp(sourcePath, importPath string) *App {
 	return app
 }
 
-func (a *App) getLogger(model, name, defaultout string) *log.Logger {
-	prefix := a.Config.StringDefault(model, "log."+name+".prefix", strings.ToUpper(name)+" ")
-	out := a.Config.StringDefault(model, "log."+name+".out", defaultout)
+func (a *App) getLogger(name, defaultout string) *log.Logger {
+	prefix := a.GetStringConfig("log."+name+".prefix", strings.ToUpper(name)+" ")
+	out := a.GetStringConfig("log."+name+".out", defaultout)
 	var writer io.Writer
 	switch out {
 	case "stderr":
@@ -116,29 +116,31 @@ func (a *App) GetFloatConfig(key string, f float64) float64 {
 	return a.Config.FloatDefault(a.section, key, f)
 }
 
+func (a *App) GetBoolConfig(key string, b bool) bool {
+	return a.Config.BoolDefault(a.section, key, b)
+}
+
 func (a *App) GetIntConfig(key string, f int64) int64 {
 	return a.Config.IntDefault(a.section, key, f)
 }
 
 func (a *App) LoadConfig() {
 	var ok = false
-	var section string
 	a.Config = Config{}
 	a.Config.ReadFile(filepath.Join(a.BasePath, "conf", "app.cnf"))
-	section = a.section
 
-	TRACE = a.getLogger(section, "warn", "nil")
-	WARN = a.getLogger(section, "warn", "stdout")
-	INFO = a.getLogger(section, "info", "stdout")
-	ERROR = a.getLogger(section, "error", "stderr")
-	a.Security = a.Config.StringDefault(section, "app.secret", defaultSecKey)
-	a.BindAddr = a.Config.StringDefault(section, "app.addr", ":8080")
-	a.Trunk = a.Config.BoolDefault(section, "http.trunk", true)
+	TRACE = a.getLogger("warn", "nil")
+	WARN = a.getLogger("warn", "stdout")
+	INFO = a.getLogger("info", "stdout")
+	ERROR = a.getLogger("error", "stderr")
+	a.Security = a.GetStringConfig("app.secret", defaultSecKey)
+	a.BindAddr = a.GetStringConfig("app.addr", ":8080")
+	a.Trunk = a.GetBoolConfig("http.trunk", true)
 	staticInfo := &StaticInfo{}
 	ok = false
-	staticInfo.UriPrefix, ok = a.Config.String(section, "static.uri")
+	staticInfo.UriPrefix, ok = a.Config.String(a.section, "static.uri")
 	if ok {
-		staticInfo.Path, ok = a.Config.String(section, "static.path")
+		staticInfo.Path, ok = a.Config.String(a.section, "static.path")
 		if !path.IsAbs(staticInfo.Path) {
 			staticInfo.Path = path.Join(a.BasePath, staticInfo.Path)
 		}
