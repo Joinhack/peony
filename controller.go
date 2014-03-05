@@ -12,6 +12,7 @@ var (
 	ResponseType      = reflect.TypeOf((*Response)(nil))
 	SessionType       = reflect.TypeOf((*Session)(nil))
 	ControllerType    = reflect.TypeOf((*Controller)(nil))
+	AppType           = reflect.TypeOf((*App)(nil))
 	NotFunc           = errors.New("action should be a func")
 	NotMethod         = errors.New("action should be a method")
 	ValueMustbePtr    = errors.New("value must be should be ptr")
@@ -162,6 +163,8 @@ func GetActionInvokeFilter(server *Server) Filter {
 				argValue = reflect.ValueOf(controller.Resp)
 			case SessionType:
 				argValue = reflect.ValueOf(controller.Session)
+			case AppType:
+				argValue = reflect.ValueOf(controller.Server.App)
 			default:
 				argValue = convertors.Convert(controller.Params, arg.Name, arg.Type)
 			}

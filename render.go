@@ -81,7 +81,7 @@ func RenderError(err error) *ErrorRenderer {
 func NotFound(msg string, args ...interface{}) *ErrorRenderer {
 	text := msg
 	if len(args) > 0 {
-		text = fmt.Sprintf(msg, args)
+		text = fmt.Sprintf(msg, args...)
 	}
 	render := RenderError(&Error{Title: "Not Found", Description: text})
 	render.Status = 404

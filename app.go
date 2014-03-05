@@ -46,6 +46,7 @@ type App struct {
 	DevMode    bool
 	Trunk      bool
 	Config     Config
+	section    string
 	StaticInfo *StaticInfo
 }
 
@@ -75,6 +76,11 @@ func NewApp(sourcePath, importPath string) *App {
 	app.AppPath = filepath.Join(app.BasePath, "app")
 	app.CodePaths = []string{app.AppPath}
 	app.ViewPath = filepath.Join(app.AppPath, "views")
+	if app.DevMode {
+		app.section = "dev"
+	} else {
+		app.section = "prod"
+	}
 	app.LoadConfig()
 	return app
 }
@@ -102,16 +108,24 @@ func (a *App) getLogger(model, name, defaultout string) *log.Logger {
 	return log.New(writer, prefix, log.Ldate|log.Ltime|log.Lshortfile)
 }
 
+func (a *App) GetStringConfig(key, s string) string {
+	return a.Config.StringDefault(a.section, key, s)
+}
+
+func (a *App) GetFloatConfig(key string, f float64) float64 {
+	return a.Config.FloatDefault(a.section, key, f)
+}
+
+func (a *App) GetIntConfig(key string, f int64) int64 {
+	return a.Config.IntDefault(a.section, key, f)
+}
+
 func (a *App) LoadConfig() {
 	var ok = false
 	var section string
 	a.Config = Config{}
 	a.Config.ReadFile(filepath.Join(a.BasePath, "conf", "app.cnf"))
-	if a.DevMode {
-		section = "dev"
-	} else {
-		section = "prod"
-	}
+	section = a.section
 
 	TRACE = a.getLogger(section, "warn", "nil")
 	WARN = a.getLogger(section, "warn", "stdout")
