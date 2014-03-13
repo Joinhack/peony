@@ -257,6 +257,8 @@ func (s *Server) Init() {
 	//the peony project's views is priority, used for render error, follower template loader error.
 	if s.App.DevMode {
 		s.templateLoader = NewTemplateLoader([]string{s.App.ViewPath, path.Join(GetPeonyPath(), "views")})
+	} else {
+		s.templateLoader = NewTemplateLoader([]string{s.App.ViewPath})
 	}
 	s.templateLoader.BindServerTemplateFunc(s)
 	s.notifier = NewNotifier()
