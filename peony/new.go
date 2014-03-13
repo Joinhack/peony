@@ -47,7 +47,7 @@ func newapp(args []string) {
 	if len(args) == 0 {
 		eprintf(newShortDesc)
 	}
-	filepath.Join(peony.PEONYPATH, "templates")
+	filepath.Join(peony.GetPeonyPath(), "templates")
 	importPath := args[0]
 
 	gopath := build.Default.GOPATH
@@ -68,8 +68,8 @@ func newapp(args []string) {
 		eprintf("peony source is required.\n")
 	}
 
-	tmplatesPath := filepath.Join(peony.PEONYPATH, "templates")
-	errorsPath := filepath.Join(peony.PEONYPATH, "views", "errors")
+	tmplatesPath := filepath.Join(peony.GetPeonyPath(), "templates")
+	errorsPath := filepath.Join(peony.GetPeonyPath(), "views", "errors")
 
 	srcPath := filepath.Join(filepath.SplitList(gopath)[0], "src")
 	appPath := filepath.Join(srcPath, filepath.FromSlash(importPath))

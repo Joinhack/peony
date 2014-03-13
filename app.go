@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	PEONYPATH        string
+	peonyPath        = ""
 	PEONY_IMPORTPATH = "github.com/joinhack/peony"
 	// from base64 encodeUrl
 	defaultSecKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
@@ -50,6 +50,14 @@ type App struct {
 	StaticInfo *StaticInfo
 }
 
+func GetPeonyPath() string {
+	if peonyPath == "" {
+		importPath := PEONY_IMPORTPATH
+		peonyPath = filepath.Join(SearchSrcRoot(importPath), importPath)
+	}
+	return peonyPath
+}
+
 func SearchSrcRoot(imp string) string {
 	pkg, err := build.Import(imp, "", build.FindOnly)
 	if err != nil {
@@ -64,11 +72,6 @@ var (
 	INFO  *log.Logger = log.New(os.Stdout, "INFO ", log.Ldate|log.Ltime|log.Lshortfile)
 	ERROR *log.Logger = log.New(os.Stderr, "ERROR ", log.Ldate|log.Ltime|log.Lshortfile)
 )
-
-func init() {
-	importPath := PEONY_IMPORTPATH
-	PEONYPATH = filepath.Join(SearchSrcRoot(importPath), importPath)
-}
 
 func NewApp(sourcePath, importPath string) *App {
 	app := &App{SourcePath: sourcePath, ImportPath: importPath}

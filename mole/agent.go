@@ -82,7 +82,7 @@ func NewAgent(app *peony.App) (agent *Agent, err error) {
 	agent.appBinPath = binPath
 	//watch template. template should first watched by notifier
 	agent.templateLoader = peony.NewTemplateLoader([]string{
-		path.Join(path.Join(peony.PEONYPATH, "views")),
+		path.Join(path.Join(peony.GetPeonyPath(), "views")),
 	})
 	agent.templateLoader.FuncMap["IsDevMode"] = func() bool { return true }
 	if err := agent.templateLoader.Refresh(); err != nil {
