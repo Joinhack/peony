@@ -75,7 +75,7 @@ func init() {
 			}
 			hub.AddOutgoing(i, v)
 		}
-		go func hub.ListenAndServe()
+		go hub.ListenAndServe()
 		//
 	})
 }
