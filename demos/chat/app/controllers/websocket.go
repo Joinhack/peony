@@ -7,6 +7,8 @@ import (
 	"github.com/joinhack/peony"
 	"github.com/joinhack/pmsg"
 	"runtime"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -41,7 +43,40 @@ type Msg struct {
 var hub *pmsg.MsgHub
 
 func init() {
-	hub = pmsg.NewMsgHub(1, 1024*1024, ":9999")
+	peony.OnServerInit(func(s *peony.Server) {
+		clusterCfg := s.App.GetStringConfig("cluster", "")
+		whoami := s.App.GetStringConfig("whoami", "")
+		if clusterCfg == "" || whoami == "" {
+			panic("please set cluster")
+		}
+		clusterMap := map[string]string{}
+		clusters := strings.Split(clusterCfg, ",")
+		for _, v := range clusters {
+			kv := strings.Split(v, "->")
+			if len(kv) != 2 {
+				continue
+			}
+			if kv[0] == whoami {
+				if i, err := strconv.Atoi(whoami); err != nil {
+					panic(err)
+				} else {
+					hub = pmsg.NewMsgHub(i, 1024*1024, kv[1])
+				}
+
+			} else {
+				clusterMap[kv[0]] = kv[1]
+			}
+		}
+		for k, v := range clusterMap {
+			var i int
+			var err error
+			if i, err = strconv.Atoi(k); err != nil {
+				panic(err)
+			}
+			hub.AddOutgoing(i, v)
+		}
+		//
+	})
 }
 
 //@Mapper("/socket", method="WS")
