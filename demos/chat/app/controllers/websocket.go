@@ -27,7 +27,7 @@ HeapAlloc %d, HeapSys %d, HeapInuse %d
 `, runtime.NumGoroutine(),
 				memstats.Alloc, memstats.Sys, memstats.TotalAlloc,
 				memstats.HeapAlloc, memstats.HeapSys, memstats.HeapInuse)
-			time.Sleep(30 * time.Second)
+			time.Sleep(5 * time.Second)
 		}
 	}()
 }
@@ -97,14 +97,22 @@ func (c WebSocket) ChatSocket(ws *websocket.Conn) {
 	websocket.JSON.Send(ws, ok)
 	ws.SetReadDeadline(time.Now().Add(1 * time.Hour))
 	id := msg.From
-	client := &pmsg.ClientConn{Conn: ws, Id: uint64(id), Type: 1}
-	if err := hub.AddClient(client); err != nil {
-		websocket.JSON.Send(ws, fail)
-		return
-	}
+
+	client := pmsg.NewSimpleClientConn(ws, uint64(id), 1)
 	defer func() {
+		if err := recover(); err != nil {
+			peony.ERROR.Println(err)
+		}
+		client.CloseWchan()
 		hub.RemoveClient(client)
 	}()
+
+	if err := hub.AddClient(client); err != nil {
+		websocket.JSON.Send(ws, fail)
+		peony.ERROR.Println(err)
+		return
+	}
+
 	for {
 		if err := websocket.JSON.Receive(ws, &msg); err != nil {
 			peony.ERROR.Println(err)
