@@ -80,6 +80,21 @@ func init() {
 	})
 }
 
+//@Mapper("/echo", method="WS")
+func (c WebSocket) Echo(ws *websocket.Conn) {
+	var bs [1024]byte
+	for {
+		if n, err := ws.Read(bs[:]); err != nil {
+			peony.ERROR.Println(err)
+			return
+		} else {
+			println(bs[:n])
+			ws.Write(bs[:n])
+		}
+
+	}
+}
+
 //@Mapper("/socket", method="WS")
 func (c WebSocket) ChatSocket(ws *websocket.Conn) {
 	ws.SetReadDeadline(time.Now().Add(30 * time.Second))
