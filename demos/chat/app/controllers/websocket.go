@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -27,17 +28,9 @@ HeapAlloc %d, HeapSys %d, HeapInuse %d
 `, runtime.NumGoroutine(),
 				memstats.Alloc, memstats.Sys, memstats.TotalAlloc,
 				memstats.HeapAlloc, memstats.HeapSys, memstats.HeapInuse)
-			time.Sleep(5 * time.Second)
+			time.Sleep(30 * time.Second)
 		}
 	}()
-}
-
-type Msg struct {
-	Code    int //0 success, -1 error
-	Type    int //0 Login, 1 reply, 2 msg
-	From    int64
-	To      int64
-	Content string
 }
 
 var hub *pmsg.MsgHub
@@ -51,6 +44,12 @@ func init() {
 		}
 		clusterMap := map[string]string{}
 		clusters := strings.Split(clusterCfg, ",")
+		//hook log
+		pmsg.ERROR = peony.ERROR
+		pmsg.WARN = peony.WARN
+		pmsg.INFO = peony.INFO
+		pmsg.TRACE = peony.TRACE
+
 		for _, v := range clusters {
 			kv := strings.Split(v, "->")
 			if len(kv) != 2 {
@@ -81,54 +80,60 @@ func init() {
 }
 
 //@Mapper("/echo", method="WS")
-func (c WebSocket) Echo(ws *websocket.Conn) {
+func (c *WebSocket) Echo(ws *websocket.Conn) {
 	var bs [1024]byte
 	for {
 		if n, err := ws.Read(bs[:]); err != nil {
 			peony.ERROR.Println(err)
 			return
 		} else {
-			println(bs[:n])
+			peony.INFO.Println("recv info:", string(bs[:n]))
 			ws.Write(bs[:n])
 		}
-
 	}
 }
 
-//@Mapper("/socket", method="WS")
-func (c WebSocket) ChatSocket(ws *websocket.Conn) {
-	ws.SetReadDeadline(time.Now().Add(30 * time.Second))
-	var msg Msg
-	if err := websocket.JSON.Receive(ws, &msg); err != nil {
+//@Mapper("/chat", method="WS")
+func (c *WebSocket) ChatSocket(ws *websocket.Conn) {
+	ws.SetReadDeadline(time.Now().Add(3 * time.Second))
+	var register RegisterMsg
+	var err error
+	if err = websocket.JSON.Receive(ws, &register); err != nil {
 		peony.ERROR.Println(err)
 		return
 	}
-	if msg.Type != 0 {
+
+	if register.Type != 0 || register.Id == 0 {
+		ws.Write(LoginAlterJsonBytes)
 		peony.ERROR.Println("please login first")
 		return
 	}
-	var ok = &Msg{Code: 0, From: msg.From, To: msg.From, Type: 1}
-	var fail = &Msg{Code: -1, From: msg.From, To: msg.From, Type: 1}
-	websocket.JSON.Send(ws, ok)
-	ws.SetReadDeadline(time.Now().Add(1 * time.Hour))
-	id := msg.From
+	if register.DevType != 0x1 && register.DevType != 0x2 {
+		ws.Write(UnknownDevicesJsonBytes)
+		peony.ERROR.Println("unknown devices")
+		return
+	}
 
-	client := pmsg.NewSimpleClientConn(ws, uint64(id), 1)
+	if _, err = ws.Write(OkJsonBytes); err != nil {
+		peony.ERROR.Println(err)
+		return
+	}
+
+	mutex := &sync.Mutex{}
+
+	client := NewChatClient(ws, register.Id, register.DevType, mutex)
+	go client.SendMsgLoop()
 	defer func() {
 		if err := recover(); err != nil {
 			peony.ERROR.Println(err)
 		}
-		client.CloseWchan()
+		close(client.wchan)
 		hub.RemoveClient(client)
 	}()
-
-	if err := hub.AddClient(client); err != nil {
-		websocket.JSON.Send(ws, fail)
-		peony.ERROR.Println(err)
-		return
-	}
-
+	hub.AddClient(client)
+	var msg Msg
 	for {
+		ws.SetReadDeadline(time.Now().Add(30 * time.Second))
 		if err := websocket.JSON.Receive(ws, &msg); err != nil {
 			peony.ERROR.Println(err)
 			return
@@ -136,7 +141,7 @@ func (c WebSocket) ChatSocket(ws *websocket.Conn) {
 		bs, err := json.Marshal(&msg)
 		if err != nil {
 			peony.ERROR.Println(err)
-			websocket.JSON.Send(ws, fail)
+			ws.Write(ErrorJsonFormatJsonBytes)
 			return
 		}
 		rmsg := &pmsg.DeliverMsg{To: uint64(msg.To), Carry: bs}
