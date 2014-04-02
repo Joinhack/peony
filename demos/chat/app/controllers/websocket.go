@@ -125,7 +125,7 @@ func (c *WebSocket) ChatSocket(ws *websocket.Conn) {
 		return
 	}
 
-	if register.Type != 0 || register.Id == 0 {
+	if register.Type != LoginMsgType || register.Id == 0 {
 		ws.Write(LoginAlterJsonBytes)
 		ERROR.Println("please login first")
 		return

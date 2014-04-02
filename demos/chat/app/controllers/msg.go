@@ -7,20 +7,23 @@ import (
 )
 
 var (
-	OkJsonBytes, _             = json.Marshal(map[string]interface{}{"type": 0, "code": 0})
-	LoginAlterJsonBytes, _     = json.Marshal(map[string]interface{}{"type": 0, "code": -1, "msg": "please login"})
-	UnknownDevicesJsonBytes, _ = json.Marshal(map[string]interface{}{"type": 0, "code": -1, "msg": "unknown devices"})
+	OkJsonBytes, _             = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": 0})
+	LoginAlterJsonBytes, _     = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "please login"})
+	UnknownDevicesJsonBytes, _ = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "unknown devices"})
 
-	ErrorJsonFormatJsonBytes, _ = json.Marshal(map[string]interface{}{"type": 0, "code": -1, "msg": "json format error"})
+	ErrorJsonFormatJsonBytes, _ = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "json format error"})
 
-	JsonFormatErrorJsonBytes, _      = json.Marshal(map[string]interface{}{"type": 0, "code": -1, "msg": "format json error"})
-	ErrorMsgIdJsonFormatJsonBytes, _ = json.Marshal(map[string]interface{}{"type": 0, "code": -1, "msg": "error msg id"})
+	JsonFormatErrorJsonBytes, _      = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "format json error"})
+	ErrorMsgIdJsonFormatJsonBytes, _ = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "error msg id"})
 
-	KickoffJsonBytes, _ = json.Marshal(map[string]interface{}{"type": 0, "code": -1, "msg": "You are kick off."})
+	KickoffJsonBytes, _ = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "You are kick off."})
 )
 
 const (
-	RedirectMsgType = 255
+	SysReplyMsgType = 255
+	LoginMsgType    = 254
+	RedirectMsgType = 253
+	ReplyMsgType    = 252
 )
 
 type RegisterMsg struct {
@@ -61,9 +64,9 @@ func (msg *RedirectMsg) Bytes() []byte {
 }
 
 type ReplyMsg struct {
-	Type  byte   `json:"type"`
-	NewId string `json:"newId"`
-	MsgId string `json:"msgId"`
+	Type     byte   `json:"type"`
+	NewMsgId string `json:"newMsgId"`
+	MsgId    string `json:"msgId"`
 }
 
 func (msg *ReplyMsg) Body() []byte {
@@ -81,9 +84,9 @@ func (msg *ReplyMsg) Bytes() []byte {
 
 func NewReplyMsg(id uint64, msgid string) *ReplyMsg {
 	return &ReplyMsg{
-		Type:  0,
-		NewId: NewMsgId(id),
-		MsgId: msgid,
+		Type:     ReplyMsgType,
+		NewMsgId: NewMsgId(id),
+		MsgId:    msgid,
 	}
 }
 
