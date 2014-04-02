@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"github.com/joinhack/peony"
 	"github.com/joinhack/pmsg"
+	"log"
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -33,7 +33,31 @@ HeapAlloc %d, HeapSys %d, HeapInuse %d
 	}()
 }
 
-var hub *pmsg.MsgHub
+var (
+	hub *pmsg.MsgHub
+
+	TRACE *log.Logger
+
+	ERROR *log.Logger
+
+	INFO *log.Logger
+
+	WARN *log.Logger
+
+	hubAddrs = map[int]string{}
+)
+
+func hookLog() {
+	pmsg.ERROR = peony.ERROR
+	pmsg.WARN = peony.WARN
+	pmsg.INFO = peony.INFO
+	pmsg.TRACE = peony.TRACE
+
+	ERROR = peony.ERROR
+	WARN = peony.WARN
+	INFO = peony.INFO
+	TRACE = peony.TRACE
+}
 
 func init() {
 	peony.OnServerInit(func(s *peony.Server) {
@@ -45,10 +69,7 @@ func init() {
 		clusterMap := map[string]string{}
 		clusters := strings.Split(clusterCfg, ",")
 		//hook log
-		pmsg.ERROR = peony.ERROR
-		pmsg.WARN = peony.WARN
-		pmsg.INFO = peony.INFO
-		pmsg.TRACE = peony.TRACE
+		hookLog()
 
 		for _, v := range clusters {
 			kv := strings.Split(v, "->")
@@ -73,6 +94,7 @@ func init() {
 				panic(err)
 			}
 			hub.AddOutgoing(i, v)
+			hubAddrs[i] = v
 		}
 		go hub.ListenAndServe()
 		//
@@ -99,48 +121,61 @@ func (c *WebSocket) ChatSocket(ws *websocket.Conn) {
 	var register RegisterMsg
 	var err error
 	if err = websocket.JSON.Receive(ws, &register); err != nil {
-		peony.ERROR.Println(err)
+		ERROR.Println(err)
 		return
 	}
 
 	if register.Type != 0 || register.Id == 0 {
 		ws.Write(LoginAlterJsonBytes)
-		peony.ERROR.Println("please login first")
+		ERROR.Println("please login first")
 		return
 	}
 	if register.DevType != 0x1 && register.DevType != 0x2 {
 		ws.Write(UnknownDevicesJsonBytes)
-		peony.ERROR.Println("unknown devices")
+		ERROR.Println("unknown devices")
 		return
 	}
 
 	if _, err = ws.Write(OkJsonBytes); err != nil {
-		peony.ERROR.Println(err)
+		ERROR.Println(err)
 		return
 	}
 
-	mutex := &sync.Mutex{}
-
-	client := NewChatClient(ws, register.Id, register.DevType, mutex)
+	client := NewChatClient(ws, register.Id, register.DevType)
+	if err = hub.AddClient(client); err != nil {
+		ERROR.Println(err)
+		if redirect, ok := err.(*pmsg.RedirectError); ok {
+			client.Redirect(redirect.HubId)
+		}
+		return
+	}
 	go client.SendMsgLoop()
 	defer func() {
 		if err := recover(); err != nil {
-			peony.ERROR.Println(err)
+			ERROR.Println(err)
 		}
 		close(client.wchan)
 		hub.RemoveClient(client)
 	}()
-	hub.AddClient(client)
+
 	var msg Msg
 	for {
 		ws.SetReadDeadline(time.Now().Add(30 * time.Second))
 		if err := websocket.JSON.Receive(ws, &msg); err != nil {
-			peony.ERROR.Println(err)
+			ERROR.Println(err)
 			return
 		}
+		if msg.MsgId == "" {
+			ws.Write(ErrorMsgIdJsonFormatJsonBytes)
+			return
+		}
+		msg.From = client.clientId
+		reply := NewReplyMsg(client.clientId, msg.MsgId)
+		client.SendMsg(reply)
+
 		bs, err := json.Marshal(&msg)
 		if err != nil {
-			peony.ERROR.Println(err)
+			ERROR.Println(err)
 			ws.Write(ErrorJsonFormatJsonBytes)
 			return
 		}
