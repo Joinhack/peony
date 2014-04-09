@@ -63,14 +63,16 @@ func init() {
 	peony.OnServerInit(func(s *peony.Server) {
 		clusterCfg := s.App.GetStringConfig("cluster", "")
 		whoami := s.App.GetStringConfig("whoami", "")
-		if clusterCfg == "" || whoami == "" {
+		offlineRange := s.App.GetStringConfig("offlineRange", "")
+		offlineStorePath := s.App.GetStringConfig("offlineStorePath", "")
+		if clusterCfg == "" || whoami == "" || offlineRange == "" {
 			panic("please set cluster")
 		}
 		clusterMap := map[string]string{}
 		clusters := strings.Split(clusterCfg, ",")
 		//hook log
 		hookLog()
-
+		cfg := &pmsg.MsgHubConfig{}
 		for _, v := range clusters {
 			kv := strings.Split(v, "->")
 			if len(kv) != 2 {
@@ -80,13 +82,31 @@ func init() {
 				if i, err := strconv.Atoi(whoami); err != nil {
 					panic(err)
 				} else {
-					hub = pmsg.NewMsgHub(i, 1024*1024, kv[1])
+					cfg.Id = i
+					cfg.MaxRange = 1024 * 1024
+					cfg.ServAddr = kv[1]
+
 				}
 
 			} else {
 				clusterMap[kv[0]] = kv[1]
 			}
 		}
+		rangeStr := strings.Split(offlineRange, "-")
+		if i, err := strconv.Atoi(rangeStr[0]); err != nil {
+			panic(err)
+		} else {
+			cfg.OfflineRangeStart = uint64(i)
+		}
+
+		if i, err := strconv.Atoi(rangeStr[1]); err != nil {
+			panic(err)
+		} else {
+			cfg.OfflineRangeEnd = uint64(i)
+		}
+		cfg.OfflinePath = offlineStorePath
+
+		hub = pmsg.NewMsgHub(cfg)
 		for k, v := range clusterMap {
 			var i int
 			var err error
@@ -117,7 +137,7 @@ func (c *WebSocket) Echo(ws *websocket.Conn) {
 
 //@Mapper("/chat", method="WS")
 func (c *WebSocket) ChatSocket(ws *websocket.Conn) {
-	ws.SetReadDeadline(time.Now().Add(3 * time.Second))
+	//ws.SetReadDeadline(time.Now().Add(3 * time.Second))
 	var register RegisterMsg
 	var err error
 	if err = websocket.JSON.Receive(ws, &register); err != nil {
@@ -160,7 +180,7 @@ func (c *WebSocket) ChatSocket(ws *websocket.Conn) {
 
 	var msg Msg
 	for {
-		ws.SetReadDeadline(time.Now().Add(30 * time.Second))
+		//ws.SetReadDeadline(time.Now().Add(30 * time.Second))
 		if err := websocket.JSON.Receive(ws, &msg); err != nil {
 			ERROR.Println(err)
 			return
