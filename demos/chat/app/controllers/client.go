@@ -67,6 +67,11 @@ func (conn *ChatClient) SendMsgLoop() {
 		if err := recover(); err != nil {
 			ERROR.Println(err)
 		}
+		conn.Conn.Close()
+		if conn.wchan != nil {
+			close(conn.wchan)
+			conn.wchan = nil
+		}
 	}()
 
 	for {
@@ -79,7 +84,6 @@ func (conn *ChatClient) SendMsgLoop() {
 			if _, err = conn.Write(msg.Body()); err != nil {
 				ERROR.Println(err)
 				//the receive task will exit.
-				conn.Conn.Close()
 				return
 			}
 		}

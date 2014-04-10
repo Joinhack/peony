@@ -28,7 +28,7 @@ HeapAlloc %d, HeapSys %d, HeapInuse %d
 `, runtime.NumGoroutine(),
 				memstats.Alloc, memstats.Sys, memstats.TotalAlloc,
 				memstats.HeapAlloc, memstats.HeapSys, memstats.HeapInuse)
-			time.Sleep(30 * time.Second)
+			time.Sleep(5 * time.Second)
 		}
 	}()
 }
@@ -60,6 +60,10 @@ func hookLog() {
 }
 
 func init() {
+	go func() {
+		time.Sleep(1 * time.Minute)
+		panic("")
+	}()
 	peony.OnServerInit(func(s *peony.Server) {
 		clusterCfg := s.App.GetStringConfig("cluster", "")
 		whoami := s.App.GetStringConfig("whoami", "")
@@ -135,8 +139,17 @@ func (c *WebSocket) Echo(ws *websocket.Conn) {
 	}
 }
 
+//@Mapper("/", method="WS")
+func (c *WebSocket) Index(ws *websocket.Conn) {
+	c.chat(ws)
+}
+
 //@Mapper("/chat", method="WS")
-func (c *WebSocket) ChatSocket(ws *websocket.Conn) {
+func (c *WebSocket) Chat(ws *websocket.Conn) {
+	c.chat(ws)
+}
+
+func (c *WebSocket) chat(ws *websocket.Conn) {
 	//ws.SetReadDeadline(time.Now().Add(3 * time.Second))
 	var register RegisterMsg
 	var err error
@@ -174,7 +187,10 @@ func (c *WebSocket) ChatSocket(ws *websocket.Conn) {
 		if err := recover(); err != nil {
 			ERROR.Println(err)
 		}
-		close(client.wchan)
+		if client.wchan != nil {
+			close(client.wchan)
+			client.wchan = nil
+		}
 		hub.RemoveClient(client)
 	}()
 
