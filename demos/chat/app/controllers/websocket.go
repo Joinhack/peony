@@ -28,7 +28,7 @@ HeapAlloc %d, HeapSys %d, HeapInuse %d
 `, runtime.NumGoroutine(),
 				memstats.Alloc, memstats.Sys, memstats.TotalAlloc,
 				memstats.HeapAlloc, memstats.HeapSys, memstats.HeapInuse)
-			time.Sleep(5 * time.Second)
+			time.Sleep(30 * time.Second)
 		}
 	}()
 }
@@ -60,10 +60,6 @@ func hookLog() {
 }
 
 func init() {
-	go func() {
-		time.Sleep(1 * time.Minute)
-		panic("")
-	}()
 	peony.OnServerInit(func(s *peony.Server) {
 		clusterCfg := s.App.GetStringConfig("cluster", "")
 		whoami := s.App.GetStringConfig("whoami", "")
