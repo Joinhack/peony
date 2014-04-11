@@ -14,7 +14,7 @@ static.path =  public
 
 cluster = 1->127.0.0.1:9997,2->127.0.0.1:9998
 whoami = 2
-offlineRange = 1-20000
+offlineRange = 1-50000
 offlineStorePath = /tmp
 
 [dev]

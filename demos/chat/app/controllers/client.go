@@ -59,6 +59,14 @@ func (conn *ChatClient) SendMsg(msg pmsg.Msg) {
 	conn.wchan <- msg
 }
 
+func (conn *ChatClient) CloseChannel() {
+	defer func() {
+		if err := recover(); err != nil {
+		}
+	}()
+	close(conn.wchan)
+}
+
 func (conn *ChatClient) SendMsgLoop() {
 	var msg pmsg.Msg
 	var ok bool
@@ -67,11 +75,8 @@ func (conn *ChatClient) SendMsgLoop() {
 		if err := recover(); err != nil {
 			ERROR.Println(err)
 		}
+		conn.CloseChannel()
 		conn.Conn.Close()
-		if conn.wchan != nil {
-			close(conn.wchan)
-			conn.wchan = nil
-		}
 	}()
 
 	for {

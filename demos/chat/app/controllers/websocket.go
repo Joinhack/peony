@@ -183,10 +183,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 		if err := recover(); err != nil {
 			ERROR.Println(err)
 		}
-		if client.wchan != nil {
-			close(client.wchan)
-			client.wchan = nil
-		}
+		client.CloseChannel()
 		hub.RemoveClient(client)
 	}()
 
