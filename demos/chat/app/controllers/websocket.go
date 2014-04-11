@@ -105,7 +105,6 @@ func init() {
 			cfg.OfflineRangeEnd = uint64(i)
 		}
 		cfg.OfflinePath = offlineStorePath
-
 		hub = pmsg.NewMsgHub(cfg)
 		for k, v := range clusterMap {
 			var i int
@@ -137,6 +136,9 @@ func (c *WebSocket) Echo(ws *websocket.Conn) {
 
 //@Mapper("/", method="WS")
 func (c *WebSocket) Index(ws *websocket.Conn) {
+	bs := make([]byte, 1024)
+	ws.Read(bs)
+	println(string(bs))
 	c.chat(ws)
 }
 

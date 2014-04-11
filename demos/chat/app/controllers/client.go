@@ -61,8 +61,7 @@ func (conn *ChatClient) SendMsg(msg pmsg.Msg) {
 
 func (conn *ChatClient) CloseChannel() {
 	defer func() {
-		if err := recover(); err != nil {
-		}
+		recover()
 	}()
 	close(conn.wchan)
 }
