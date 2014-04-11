@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"code.google.com/p/go.net/websocket"
 	"github.com/joinhack/pmsg"
+	"io"
 	"net"
 )
 
@@ -86,7 +88,12 @@ func (conn *ChatClient) SendMsgLoop() {
 				return
 			}
 			if _, err = conn.Write(msg.Body()); err != nil {
-				ERROR.Println(err)
+				if err == io.EOF {
+					ws := conn.Conn.(*websocket.Conn)
+					INFO.Println(ws.Request().RemoteAddr, "closed")
+				} else {
+					ERROR.Println(err)
+				}
 				//the receive task will exit.
 				return
 			}

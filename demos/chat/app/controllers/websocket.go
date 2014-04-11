@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/joinhack/peony"
 	"github.com/joinhack/pmsg"
+	"io"
 	"log"
 	"runtime"
 	"strconv"
@@ -136,9 +137,6 @@ func (c *WebSocket) Echo(ws *websocket.Conn) {
 
 //@Mapper("/", method="WS")
 func (c *WebSocket) Index(ws *websocket.Conn) {
-	bs := make([]byte, 1024)
-	ws.Read(bs)
-	println(string(bs))
 	c.chat(ws)
 }
 
@@ -193,7 +191,11 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 	for {
 		//ws.SetReadDeadline(time.Now().Add(30 * time.Second))
 		if err := websocket.JSON.Receive(ws, &msg); err != nil {
-			ERROR.Println(err)
+			if err == io.EOF {
+				INFO.Println(ws.Request().RemoteAddr, "closed")
+			} else {
+				ERROR.Println(err)
+			}
 			return
 		}
 		if msg.MsgId == "" {
