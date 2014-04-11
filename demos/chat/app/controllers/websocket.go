@@ -212,7 +212,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			ws.Write(ErrorJsonFormatJsonBytes)
 			return
 		}
-		rmsg := &pmsg.DeliverMsg{To: uint64(msg.To), Carry: bs}
+		rmsg := &pmsg.DeliverMsg{To: uint64(msg.To), Carry: bs, MsgType: pmsg.RouteMsgType}
 		hub.Dispatch(rmsg)
 	}
 }
