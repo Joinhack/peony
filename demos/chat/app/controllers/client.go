@@ -76,7 +76,6 @@ func (conn *ChatClient) SendMsgLoop() {
 		if err := recover(); err != nil {
 			ERROR.Println(err)
 		}
-		conn.CloseChannel()
 		conn.Conn.Close()
 	}()
 
@@ -88,6 +87,7 @@ func (conn *ChatClient) SendMsgLoop() {
 				return
 			}
 			if _, err = conn.Write(msg.Body()); err != nil {
+				conn.CloseChannel()
 				if err == io.EOF {
 					ws := conn.Conn.(*websocket.Conn)
 					INFO.Println(ws.Request().RemoteAddr, "closed")
