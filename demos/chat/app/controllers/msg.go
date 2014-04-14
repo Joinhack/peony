@@ -23,6 +23,9 @@ const (
 	LoginMsgType    = 254
 	RedirectMsgType = 253
 	ReplyMsgType    = 252
+	TextMsgType     = 1
+	ImageMsgType    = 2
+	FileMsgType     = 3
 )
 
 type RegisterMsg struct {

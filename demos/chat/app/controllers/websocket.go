@@ -208,7 +208,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 		}
 		msg.From = client.clientId
 		now := time.Now()
-		msg.Time = now.Unix()
+		msg.Time = now.UnixNano() / 1000
 		reply := NewReplySuccessMsg(client.clientId, msg.MsgId, msg.Time)
 		client.SendMsg(reply)
 
