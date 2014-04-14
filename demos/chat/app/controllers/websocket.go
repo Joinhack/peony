@@ -203,7 +203,9 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			return
 		}
 		msg.From = client.clientId
-		reply := NewReplyMsg(client.clientId, msg.MsgId)
+		now := time.Now()
+		msg.Time = now.Unix()
+		reply := NewReplyMsg(client.clientId, msg.MsgId, msg.Time)
 		client.SendMsg(reply)
 
 		bs, err := json.Marshal(&msg)

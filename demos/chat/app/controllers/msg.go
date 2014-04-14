@@ -3,7 +3,6 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 )
 
 var (
@@ -30,15 +29,22 @@ type RegisterMsg struct {
 	Id      uint64 `json:"id"`
 	DevType byte   `json:"devType"`
 	Type    byte   `json:"type"`
+	Time    int64  `json:"time"`
 }
 
 type Msg struct {
-	MsgId   string `json:"msgId"`
-	From    uint64 `json:"from"`
-	To      uint64 `json:"to"`
-	Type    byte   `json:"type"`
-	Content string `json:"content"`
-	Gid     uint64 `json:"gid"`
+	MsgId      string `json:"msgId"`
+	From       uint64 `json:"from"`
+	To         uint64 `json:"to"`
+	Type       byte   `json:"type"`
+	Time       int64  `json:"time"`
+	Option     int    `json:"option"`
+	SourceType int    `json:"sourceType"`
+	Content    string `json:"content,omitempty"`
+	SmallSrc   string `json:"smallSrc,omitempty"`
+	BigSrc     string `json:"bigSrc,omitempty"`
+	Url        string `json:"url,omitempty"`
+	Name       string `json:"name,omitempty"`
 }
 
 type RedirectMsg struct {
@@ -82,14 +88,14 @@ func (msg *ReplyMsg) Bytes() []byte {
 	return msg.Body()
 }
 
-func NewReplyMsg(id uint64, msgid string) *ReplyMsg {
+func NewReplyMsg(id uint64, msgid string, t int64) *ReplyMsg {
 	return &ReplyMsg{
 		Type:     ReplyMsgType,
-		NewMsgId: NewMsgId(id),
+		NewMsgId: NewMsgId(id, t),
 		MsgId:    msgid,
 	}
 }
 
-func NewMsgId(id uint64) string {
-	return fmt.Sprintf("%d:%d", time.Now().Unix(), id)
+func NewMsgId(id uint64, t int64) string {
+	return fmt.Sprintf("%d:%d", t, id)
 }
