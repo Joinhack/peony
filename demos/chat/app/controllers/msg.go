@@ -71,7 +71,10 @@ func (msg *RedirectMsg) Bytes() []byte {
 
 type ReplyMsg struct {
 	Type     byte   `json:"type"`
-	NewMsgId string `json:"newMsgId"`
+	NewMsgId string `json:"newMsgId,omitempty"`
+	Time     int64  `json:"time,omitempty"`
+	Code     int    `json:"code"`
+	Msg      string `json:"msg, omitempty"`
 	MsgId    string `json:"msgId"`
 }
 
@@ -88,11 +91,21 @@ func (msg *ReplyMsg) Bytes() []byte {
 	return msg.Body()
 }
 
-func NewReplyMsg(id uint64, msgid string, t int64) *ReplyMsg {
+func NewReplySuccessMsg(id uint64, msgid string, t int64) *ReplyMsg {
 	return &ReplyMsg{
 		Type:     ReplyMsgType,
 		NewMsgId: NewMsgId(id, t),
+		Time:     t,
 		MsgId:    msgid,
+	}
+}
+
+func NewReplyFailMsg(id uint64, msgid string, msg string) *ReplyMsg {
+	return &ReplyMsg{
+		Type:  ReplyMsgType,
+		Code:  -1,
+		MsgId: msgid,
+		Msg:   msg,
 	}
 }
 

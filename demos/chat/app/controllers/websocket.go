@@ -189,7 +189,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 
 	var msg Msg
 	for {
-		//ws.SetReadDeadline(time.Now().Add(30 * time.Second))
+		ws.SetReadDeadline(time.Now().Add(60 * time.Second))
 		if err := websocket.JSON.Receive(ws, &msg); err != nil {
 			if err == io.EOF {
 				INFO.Println(ws.Request().RemoteAddr, "closed")
@@ -198,6 +198,10 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			}
 			return
 		}
+		if msg.Type == 0 {
+			//ping, don't reply
+			continue
+		}
 		if msg.MsgId == "" {
 			ws.Write(ErrorMsgIdJsonFormatJsonBytes)
 			return
@@ -205,7 +209,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 		msg.From = client.clientId
 		now := time.Now()
 		msg.Time = now.Unix()
-		reply := NewReplyMsg(client.clientId, msg.MsgId, msg.Time)
+		reply := NewReplySuccessMsg(client.clientId, msg.MsgId, msg.Time)
 		client.SendMsg(reply)
 
 		bs, err := json.Marshal(&msg)
