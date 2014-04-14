@@ -41,8 +41,8 @@ type Msg struct {
 	Option     int    `json:"option"`
 	SourceType int    `json:"sourceType"`
 	Content    string `json:"content,omitempty"`
-	SmallSrc   string `json:"smallSrc,omitempty"`
-	BigSrc     string `json:"bigSrc,omitempty"`
+	SmallSrc   string `json:"smallsrc,omitempty"`
+	BigSrc     string `json:"bigsrc,omitempty"`
 	Url        string `json:"url,omitempty"`
 	Name       string `json:"name,omitempty"`
 }
