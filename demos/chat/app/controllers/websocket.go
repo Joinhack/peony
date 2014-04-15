@@ -189,7 +189,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 
 	var msg Msg
 	for {
-		ws.SetReadDeadline(time.Now().Add(60 * time.Second))
+		ws.SetReadDeadline(time.Now().Add(90 * time.Second))
 		if err := websocket.JSON.Receive(ws, &msg); err != nil {
 			if err == io.EOF {
 				INFO.Println(ws.Request().RemoteAddr, "closed")
@@ -210,6 +210,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 		now := time.Now()
 		msg.Time = now.UnixNano() / 1000000
 		reply := NewReplySuccessMsg(client.clientId, msg.MsgId, msg.Time)
+		msg.MsgId = reply.NewMsgId
 		client.SendMsg(reply)
 
 		bs, err := json.Marshal(&msg)

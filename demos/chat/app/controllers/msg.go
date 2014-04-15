@@ -47,6 +47,8 @@ type Msg struct {
 	SmallSrc   string `json:"smallsrc,omitempty"`
 	BigSrc     string `json:"bigsrc,omitempty"`
 	Url        string `json:"url,omitempty"`
+	Lat        string `json:"lat,omitempty"`
+	Long       string `json:"long,omitempty"`
 	Name       string `json:"name,omitempty"`
 }
 
