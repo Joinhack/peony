@@ -206,12 +206,15 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			ws.Write(ErrorMsgIdJsonFormatJsonBytes)
 			return
 		}
-		msg.From = client.clientId
-		now := time.Now()
-		msg.Time = now.UnixNano() / 1000000
-		reply := NewReplySuccessMsg(client.clientId, msg.MsgId, msg.Time)
-		msg.MsgId = reply.NewMsgId
-		client.SendMsg(reply)
+		if msg.Type != ReadedMsgType {
+			msg.From = client.clientId
+			now := time.Now()
+			msg.Time = now.UnixNano() / 1000000
+
+			reply := NewReplySuccessMsg(client.clientId, msg.MsgId, msg.Time)
+			msg.MsgId = reply.NewMsgId
+			client.SendMsg(reply)
+		}
 
 		bs, err := json.Marshal(&msg)
 		if err != nil {
