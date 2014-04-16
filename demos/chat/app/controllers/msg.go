@@ -10,6 +10,8 @@ var (
 	LoginAlterJsonBytes, _     = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "please login"})
 	UnknownDevicesJsonBytes, _ = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "unknown devices"})
 
+	UnknownMsgTypeJsonBytes, _ = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "unknown message type"})
+
 	ErrorJsonFormatJsonBytes, _ = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "json format error"})
 
 	JsonFormatErrorJsonBytes, _      = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "format json error"})
@@ -31,6 +33,8 @@ const (
 	StickMsgType    = 5
 	ReadedMsgType   = 6
 	LocationMsgType = 7
+	GroupAddMsgType = 8
+	GroupDelMsgType = 9
 )
 
 type RegisterMsg struct {
@@ -41,20 +45,21 @@ type RegisterMsg struct {
 }
 
 type Msg struct {
-	MsgId      string `json:"msgId"`
-	From       uint64 `json:"from"`
-	To         uint64 `json:"to"`
-	Type       byte   `json:"type"`
-	Time       int64  `json:"time"`
-	Option     int    `json:"option"`
-	SourceType int    `json:"sourceType"`
-	Content    string `json:"content,omitempty"`
-	SmallSrc   string `json:"smallsrc,omitempty"`
-	BigSrc     string `json:"bigsrc,omitempty"`
-	Url        string `json:"url,omitempty"`
-	Lat        string `json:"lat,omitempty"`
-	Long       string `json:"long,omitempty"`
-	Name       string `json:"name,omitempty"`
+	MsgId      string   `json:"msgId"`
+	From       uint64   `json:"from"`
+	To         uint64   `json:"to"`
+	Type       byte     `json:"type"`
+	Time       int64    `json:"time"`
+	Option     int      `json:"option"`
+	SourceType int      `json:"sourceType"`
+	Content    string   `json:"content,omitempty"`
+	SmallSrc   string   `json:"smallsrc,omitempty"`
+	BigSrc     string   `json:"bigsrc,omitempty"`
+	Url        string   `json:"url,omitempty"`
+	Lat        string   `json:"lat,omitempty"`
+	Long       string   `json:"long,omitempty"`
+	Name       string   `json:"name,omitempty"`
+	Members    []uint64 `json:"members,omitempty"`
 }
 
 type RedirectMsg struct {

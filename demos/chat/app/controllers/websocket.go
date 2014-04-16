@@ -198,15 +198,17 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			}
 			return
 		}
-		if msg.Type == 0 {
+
+		switch msg.Type {
+		case PingMsgType:
 			//ping, don't reply
 			continue
-		}
-		if msg.MsgId == "" {
-			ws.Write(ErrorMsgIdJsonFormatJsonBytes)
-			return
-		}
-		if msg.Type != ReadedMsgType {
+		case ReadedMsgType:
+		case TextMsgType, ImageMsgType, FileMsgType, SoundMsgType, StickMsgType, LocationMsgType:
+			if msg.MsgId == "" {
+				ws.Write(ErrorMsgIdJsonFormatJsonBytes)
+				return
+			}
 			msg.From = client.clientId
 			now := time.Now()
 			msg.Time = now.UnixNano() / 1000000
@@ -214,6 +216,14 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			reply := NewReplySuccessMsg(client.clientId, msg.MsgId, msg.Time)
 			msg.MsgId = reply.NewMsgId
 			client.SendMsg(reply)
+		case GroupDelMsgType, GroupAddMsgType:
+			msg.From = client.clientId
+			now := time.Now()
+			msg.Time = now.UnixNano() / 1000000
+		default:
+			ERROR.Println("unknown message type, close client")
+			ws.Write(UnknownMsgTypeJsonBytes)
+			return
 		}
 
 		bs, err := json.Marshal(&msg)
