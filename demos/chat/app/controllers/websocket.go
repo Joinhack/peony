@@ -2,8 +2,11 @@ package controllers
 
 import (
 	"code.google.com/p/go.net/websocket"
+	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/garyburd/redigo/redis"
 	"github.com/joinhack/peony"
 	"github.com/joinhack/pmsg"
 	"io"
@@ -12,6 +15,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+)
+
+var (
+	MustbeGroupMsg = errors.New("Message must be group message")
 )
 
 type WebSocket struct {
@@ -37,6 +44,8 @@ HeapAlloc %d, HeapSys %d, HeapInuse %d
 var (
 	hub *pmsg.MsgHub
 
+	redisPool *redis.Pool
+
 	TRACE *log.Logger
 
 	ERROR *log.Logger
@@ -60,9 +69,33 @@ func hookLog() {
 	TRACE = peony.TRACE
 }
 
+func newPool(server, password string) *redis.Pool {
+	return &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial("tcp", server)
+			if err != nil {
+				return nil, err
+			}
+			if _, err := c.Do("AUTH", password); err != nil {
+				c.Close()
+				return nil, err
+			}
+			return c, err
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
+	}
+}
+
 func init() {
 	peony.OnServerInit(func(s *peony.Server) {
 		clusterCfg := s.App.GetStringConfig("cluster", "")
+		redisServer := s.App.GetStringConfig("redis.server", "")
+		redisPasswd := s.App.GetStringConfig("redis.passwd", "")
 		whoami := s.App.GetStringConfig("whoami", "")
 		offlineRange := s.App.GetStringConfig("offlineRange", "")
 		offlineStorePath := s.App.GetStringConfig("offlineStorePath", "")
@@ -73,6 +106,16 @@ func init() {
 		clusters := strings.Split(clusterCfg, ",")
 		//hook log
 		hookLog()
+
+		if redisServer != "" {
+			redisPool = newPool(redisServer, redisPasswd)
+			rconn := redisPool.Get()
+			if _, err := rconn.Do("ping"); err != nil {
+				panic(err)
+			}
+			rconn.Close()
+		}
+
 		cfg := &pmsg.MsgHubConfig{}
 		for _, v := range clusters {
 			kv := strings.Split(v, "->")
@@ -145,6 +188,60 @@ func (c *WebSocket) Chat(ws *websocket.Conn) {
 	c.chat(ws)
 }
 
+func sendMsg(msg *Msg, msgType byte) error {
+	bs, err := json.Marshal(&msg)
+	if err != nil {
+		return err
+	}
+	rmsg := &pmsg.DeliverMsg{To: uint64(msg.To), Carry: bs, MsgType: msgType}
+	hub.Dispatch(rmsg)
+	return nil
+}
+
+func getGroupMembers(gid uint64) []uint64 {
+	members := make([]uint64, 0, 3)
+	if redisPool != nil {
+		var err error
+		var reply []interface{}
+		conn := redisPool.Get()
+		defer conn.Close()
+		if reply, err = redis.Values(conn.Do("sdump", fmt.Sprintf("%dFT", gid))); err != nil {
+			ERROR.Println(err)
+			return members
+		}
+		if len(reply) == 0 {
+			return members
+		}
+		var l int
+		var bs []byte
+		if _, err = redis.Scan(reply, &l, &bs); err != nil {
+			ERROR.Println(err)
+			return members
+		}
+		for i := 0; i < len(bs); i += l {
+			var val uint64
+			val = uint64(binary.LittleEndian.Uint16(bs[i:]))
+			members = append(members, val)
+		}
+	}
+	return members
+}
+
+func sendGroupMsg(msg *Msg, msgType byte) error {
+	if msg.SourceType != 3 && msg.Gid == 0 {
+		return MustbeGroupMsg
+	}
+	members := getGroupMembers(msg.Gid)
+	for _, member := range members {
+		if member == msg.From {
+			continue
+		}
+		msg.To = member
+		sendMsg(msg, msgType)
+	}
+	return nil
+}
+
 func (c *WebSocket) chat(ws *websocket.Conn) {
 	//ws.SetReadDeadline(time.Now().Add(3 * time.Second))
 	var register RegisterMsg
@@ -188,6 +285,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 	}()
 
 	var msg Msg
+	var msgType byte = pmsg.RouteMsgType
 	for {
 		ws.SetReadDeadline(time.Now().Add(90 * time.Second))
 		if err := websocket.JSON.Receive(ws, &msg); err != nil {
@@ -226,13 +324,17 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			return
 		}
 
-		bs, err := json.Marshal(&msg)
-		if err != nil {
-			ERROR.Println(err)
-			ws.Write(ErrorJsonFormatJsonBytes)
-			return
+		if msg.SourceType == 3 {
+			//clone msg
+			if err = sendGroupMsg(&msg, msgType); err != nil {
+				ERROR.Println(err)
+				ws.Write(ErrorJsonFormatJsonBytes)
+			}
+		} else {
+			if err = sendMsg(&msg, msgType); err != nil {
+				ERROR.Println(err)
+				ws.Write(ErrorJsonFormatJsonBytes)
+			}
 		}
-		rmsg := &pmsg.DeliverMsg{To: uint64(msg.To), Carry: bs, MsgType: pmsg.RouteMsgType}
-		hub.Dispatch(rmsg)
 	}
 }

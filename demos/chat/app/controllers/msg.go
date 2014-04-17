@@ -47,11 +47,12 @@ type RegisterMsg struct {
 type Msg struct {
 	MsgId      string   `json:"msgId"`
 	From       uint64   `json:"from"`
-	To         uint64   `json:"to"`
 	Type       byte     `json:"type"`
 	Time       int64    `json:"time"`
 	Option     int      `json:"option"`
 	SourceType int      `json:"sourceType"`
+	To         uint64   `json:"to,omitempty"`
+	Gid        uint64   `json:"gid,omitempty"`
 	Content    string   `json:"content,omitempty"`
 	SmallSrc   string   `json:"smallsrc,omitempty"`
 	BigSrc     string   `json:"bigsrc,omitempty"`
