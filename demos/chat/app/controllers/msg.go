@@ -51,6 +51,7 @@ type Msg struct {
 	Time       int64    `json:"time"`
 	Option     int      `json:"option"`
 	SourceType int      `json:"sourceType"`
+	Timer      byte     `json:"timer,omitempty"`
 	To         uint64   `json:"to,omitempty"`
 	Gid        uint64   `json:"gid,omitempty"`
 	Content    string   `json:"content,omitempty"`
