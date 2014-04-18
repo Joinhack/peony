@@ -196,7 +196,7 @@ func sendMsg(msg *Msg, msgType byte) error {
 	if err != nil {
 		return err
 	}
-	rmsg := &pmsg.DeliverMsg{To: uint64(msg.To), Carry: bs, MsgType: msgType}
+	rmsg := &pmsg.DeliverMsg{To: uint64(*msg.To), Carry: bs, MsgType: msgType}
 	hub.Dispatch(rmsg)
 	return nil
 }
@@ -231,15 +231,15 @@ func getGroupMembers(gid uint64) []uint64 {
 }
 
 func sendGroupMsg(msg *Msg, msgType byte) error {
-	if msg.SourceType != 3 && msg.Gid == 0 {
+	if msg.SourceType != 3 && *msg.Gid == 0 {
 		return MustbeGroupMsg
 	}
-	members := getGroupMembers(msg.Gid)
+	members := getGroupMembers(*msg.Gid)
 	for _, member := range members {
 		if member == msg.From {
 			continue
 		}
-		msg.To = member
+		*msg.To = member
 		sendMsg(msg, msgType)
 	}
 	return nil
@@ -248,43 +248,36 @@ func sendGroupMsg(msg *Msg, msgType byte) error {
 func validateMsg(msg *Msg) error {
 	switch msg.Type {
 	case TextMsgType, StickMsgType:
-		if msg.Content == nil || len(*msg.Content) == "" {
+		if msg.Content == nil || len(*msg.Content) == 0 {
 			return UnknowJsonFormat
 		}
 	case ImageMsgType:
-		if msg.BigSrc == nil || len(*msg.BigSrc) == "" {
+		if msg.BigSrc == nil || len(*msg.BigSrc) == 0 {
 			return UnknowJsonFormat
 		}
-		if msg.SmallSrc == nil || len(*msg.SmallSrc) == "" {
-			return UnknowJsonFormat
-		}
-	case FileMsgType:
-		if msg.Url == nil || len(*msg.Url) == "" {
-			return UnknowJsonFormat
-		}
-		if msg.Name == nil || len(*msg.Name) == "" {
+		if msg.SmallSrc == nil || len(*msg.SmallSrc) == 0 {
 			return UnknowJsonFormat
 		}
 	case FileMsgType:
-		if msg.Url == nil || len(*msg.Url) == "" {
+		if msg.Url == nil || len(*msg.Url) == 0 {
 			return UnknowJsonFormat
 		}
-		if msg.Name == nil || len(*msg.Name) == "" {
+		if msg.Name == nil || len(*msg.Name) == 0 {
 			return UnknowJsonFormat
 		}
 	case SoundMsgType:
-		if msg.Url == nil || len(*msg.Url) == "" {
+		if msg.Url == nil || len(*msg.Url) == 0 {
 			return UnknowJsonFormat
 		}
 	case LocationMsgType:
-		if msg.Lat == nil || len(*msg.Lat) == "" {
+		if msg.Lat == nil || len(*msg.Lat) == 0 {
 			return UnknowJsonFormat
 		}
-		if msg.Long == nil || len(*msg.Long) == "" {
+		if msg.Long == nil || len(*msg.Long) == 0 {
 			return UnknowJsonFormat
 		}
 	case GroupAddMsgType:
-		if msg.Members == nil || len(*msg.Members) == "" {
+		if msg.Members == nil || len(*msg.Members) == 0 {
 			return UnknowJsonFormat
 		}
 	}
