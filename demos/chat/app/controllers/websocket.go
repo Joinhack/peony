@@ -326,9 +326,9 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 		hub.RemoveClient(client)
 	}()
 
-	var msg Msg
 	var msgType byte = pmsg.RouteMsgType
 	for {
+		var msg Msg
 		ws.SetReadDeadline(time.Now().Add(6 * time.Minute))
 		if err := websocket.JSON.Receive(ws, &msg); err != nil {
 			if err == io.EOF {
