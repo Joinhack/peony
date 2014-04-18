@@ -18,7 +18,8 @@ import (
 )
 
 var (
-	MustbeGroupMsg = errors.New("Message must be group message")
+	MustbeGroupMsg   = errors.New("Message must be group message")
+	UnknowJsonFormat = errors.New("unknow json format")
 )
 
 type WebSocket struct {
@@ -244,6 +245,52 @@ func sendGroupMsg(msg *Msg, msgType byte) error {
 	return nil
 }
 
+func validateMsg(msg *Msg) error {
+	switch msg.Type {
+	case TextMsgType, StickMsgType:
+		if msg.Content == nil || len(*msg.Content) == "" {
+			return UnknowJsonFormat
+		}
+	case ImageMsgType:
+		if msg.BigSrc == nil || len(*msg.BigSrc) == "" {
+			return UnknowJsonFormat
+		}
+		if msg.SmallSrc == nil || len(*msg.SmallSrc) == "" {
+			return UnknowJsonFormat
+		}
+	case FileMsgType:
+		if msg.Url == nil || len(*msg.Url) == "" {
+			return UnknowJsonFormat
+		}
+		if msg.Name == nil || len(*msg.Name) == "" {
+			return UnknowJsonFormat
+		}
+	case FileMsgType:
+		if msg.Url == nil || len(*msg.Url) == "" {
+			return UnknowJsonFormat
+		}
+		if msg.Name == nil || len(*msg.Name) == "" {
+			return UnknowJsonFormat
+		}
+	case SoundMsgType:
+		if msg.Url == nil || len(*msg.Url) == "" {
+			return UnknowJsonFormat
+		}
+	case LocationMsgType:
+		if msg.Lat == nil || len(*msg.Lat) == "" {
+			return UnknowJsonFormat
+		}
+		if msg.Long == nil || len(*msg.Long) == "" {
+			return UnknowJsonFormat
+		}
+	case GroupAddMsgType:
+		if msg.Members == nil || len(*msg.Members) == "" {
+			return UnknowJsonFormat
+		}
+	}
+	return nil
+}
+
 func (c *WebSocket) chat(ws *websocket.Conn) {
 	//ws.SetReadDeadline(time.Now().Add(3 * time.Second))
 	var register RegisterMsg
@@ -325,7 +372,11 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			ws.Write(UnknownMsgTypeJsonBytes)
 			return
 		}
-
+		if err = validateMsg(&msg); err != nil {
+			ERROR.Println(err)
+			ws.Write(JsonFormatErrorJsonBytes)
+			return
+		}
 		if msg.SourceType == 3 {
 			//clone msg
 			if err = sendGroupMsg(&msg, msgType); err != nil {
