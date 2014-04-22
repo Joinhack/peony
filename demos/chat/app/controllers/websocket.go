@@ -239,7 +239,7 @@ func sendGroupMsg(msg *Msg, msgType byte) error {
 		if member == msg.From {
 			continue
 		}
-		*msg.To = member
+		msg.To = &member
 		sendMsg(msg, msgType)
 	}
 	return nil
