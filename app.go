@@ -1,6 +1,7 @@
 package peony
 
 import (
+	. "github.com/joinhack/goconf"
 	"go/build"
 	"io"
 	"log"
