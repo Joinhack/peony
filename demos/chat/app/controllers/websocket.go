@@ -25,17 +25,20 @@ var (
 type WebSocket struct {
 }
 
+var statusFmt = `goroutine number %d
+Alloc %d, Sys %d, Frees %d
+HeapAlloc %d, HeapSys %d, HeapInuse %d
+`
+
 func init() {
 	go func() {
 		for {
 			var memstats runtime.MemStats
 			runtime.ReadMemStats(&memstats)
-			fmt.Printf(`goroutine number %d
-Alloc %d, Sys %d, Frees %d
-HeapAlloc %d, HeapSys %d, HeapInuse %d`,
-				runtime.NumGoroutine(),
-				memstats.Alloc, memstats.Sys, memstats.TotalAlloc,
-				memstats.HeapAlloc, memstats.HeapSys, memstats.HeapInuse)
+			fmt.Printf(statusFmt,
+					runtime.NumGoroutine(),
+					memstats.Alloc, memstats.Sys, memstats.TotalAlloc,
+					memstats.HeapAlloc, memstats.HeapSys, memstats.HeapInuse)
 			time.Sleep(30 * time.Second)
 		}
 	}()
@@ -324,7 +327,7 @@ func unregisterToken(id uint64, dev byte, token string) error {
 			return err
 		}
 	}
-	if _, err = conn.Do("sel", key, strings.Join(p, "\n")); err != nil {
+	if _, err = conn.Do("set", key, strings.Join(p, "\n")); err != nil {
 		return err
 	}
 	return nil
