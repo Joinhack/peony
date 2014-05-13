@@ -21,20 +21,22 @@ var (
 )
 
 const (
-	SysReplyMsgType = 255
-	LoginMsgType    = 254
-	RedirectMsgType = 253
-	ReplyMsgType    = 252
-	PingMsgType     = 0
-	TextMsgType     = 1
-	ImageMsgType    = 2
-	FileMsgType     = 3
-	SoundMsgType    = 4
-	StickMsgType    = 5
-	ReadedMsgType   = 6
-	LocationMsgType = 7
-	GroupAddMsgType = 8
-	GroupDelMsgType = 9
+	SysReplyMsgType        = 255
+	LoginMsgType           = 254
+	RedirectMsgType        = 253
+	ReplyMsgType           = 252
+	TokenRegisterMsgType   = 251
+	TokenUnregisterMsgType = 250
+	PingMsgType            = 0
+	TextMsgType            = 1
+	ImageMsgType           = 2
+	FileMsgType            = 3
+	SoundMsgType           = 4
+	StickMsgType           = 5
+	ReadedMsgType          = 6
+	LocationMsgType        = 7
+	GroupAddMsgType        = 8
+	GroupDelMsgType        = 9
 )
 
 type RegisterMsg struct {
@@ -61,7 +63,9 @@ type Msg struct {
 	Lat        *string   `json:"lat,omitempty"`
 	Long       *string   `json:"long,omitempty"`
 	Name       *string   `json:"name,omitempty"`
+	Token      *string   `json:"token,omitempty"`
 	Members    *[]uint64 `json:"members,omitempty"`
+	Dev        byte      `json:"dev"`
 }
 
 type RedirectMsg struct {

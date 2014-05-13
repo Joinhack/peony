@@ -30,11 +30,10 @@ func init() {
 		for {
 			var memstats runtime.MemStats
 			runtime.ReadMemStats(&memstats)
-			fmt.Printf(
-				`goroutine number %d
+			fmt.Printf(`goroutine number %d
 Alloc %d, Sys %d, Frees %d
-HeapAlloc %d, HeapSys %d, HeapInuse %d
-`, runtime.NumGoroutine(),
+HeapAlloc %d, HeapSys %d, HeapInuse %d`,
+				runtime.NumGoroutine(),
 				memstats.Alloc, memstats.Sys, memstats.TotalAlloc,
 				memstats.HeapAlloc, memstats.HeapSys, memstats.HeapInuse)
 			time.Sleep(30 * time.Second)
@@ -45,7 +44,11 @@ HeapAlloc %d, HeapSys %d, HeapInuse %d
 var (
 	hub *pmsg.MsgHub
 
-	redisPool *redis.Pool
+	pusher *Pusher
+
+	groupRedisPool *redis.Pool
+
+	tokenRedisPool *redis.Pool
 
 	TRACE *log.Logger
 
@@ -97,8 +100,13 @@ func newPool(server, password string) *redis.Pool {
 func init() {
 	peony.OnServerInit(func(s *peony.Server) {
 		clusterCfg := s.App.GetStringConfig("cluster", "")
-		redisServer := s.App.GetStringConfig("redis.server", "")
-		redisPasswd := s.App.GetStringConfig("redis.passwd", "")
+		pushsvr := s.App.GetStringConfig("push.url", "")
+		pushnum := s.App.GetStringConfig("push.num", "")
+		groupServer := s.App.GetStringConfig("group.server", "")
+		groupPasswd := s.App.GetStringConfig("group.passwd", "")
+
+		tokenServer := s.App.GetStringConfig("token.server", "")
+		tokenPasswd := s.App.GetStringConfig("token.passwd", "")
 		whoami := s.App.GetStringConfig("whoami", "")
 		offlineRange := s.App.GetStringConfig("offlineRange", "")
 		offlineStorePath := s.App.GetStringConfig("offlineStorePath", "")
@@ -110,9 +118,18 @@ func init() {
 		//hook log
 		hookLog()
 
-		if redisServer != "" {
-			redisPool = newPool(redisServer, redisPasswd)
-			rconn := redisPool.Get()
+		if groupServer != "" {
+			groupRedisPool = newPool(groupServer, groupPasswd)
+			rconn := groupRedisPool.Get()
+			if _, err := rconn.Do("ping"); err != nil {
+				panic(err)
+			}
+			rconn.Close()
+		}
+
+		if tokenServer != "" {
+			tokenRedisPool = newPool(tokenServer, tokenPasswd)
+			rconn := tokenRedisPool.Get()
 			if _, err := rconn.Do("ping"); err != nil {
 				panic(err)
 			}
@@ -132,7 +149,6 @@ func init() {
 					cfg.Id = i
 					cfg.MaxRange = 1024 * 1024
 					cfg.ServAddr = kv[1]
-
 				}
 
 			} else {
@@ -144,6 +160,16 @@ func init() {
 			panic(err)
 		} else {
 			cfg.OfflineRangeStart = uint64(i)
+		}
+
+		if pushsvr != "" && pushnum != "" {
+			var num int
+			if i, err := strconv.Atoi(pushnum); err != nil {
+				panic(err)
+			} else {
+				num = i
+			}
+			pusher = NewPusher(num, pushsvr)
 		}
 
 		if i, err := strconv.Atoi(rangeStr[1]); err != nil {
@@ -162,9 +188,42 @@ func init() {
 			hub.AddOutgoing(i, v)
 			hubAddrs[i] = v
 		}
+		hub.AddOfflineMsgFilter(sendNotify)
 		go hub.ListenAndServe()
-		//
 	})
+}
+
+func sendNotify(rmsg pmsg.RouteMsg) bool {
+	if pusher != nil {
+		var msg Msg
+		err := json.Unmarshal(rmsg.Body(), &msg)
+		if err != nil {
+			ERROR.Println(err)
+			return false
+		}
+		if msg.To == nil || msg.Content == nil {
+			return true
+		}
+		token := gettokens(*msg.To)
+		for _, tk := range token {
+			if tk == "" {
+				continue
+			}
+			tks := strings.Split(tk, ":")
+			if len(tks) != 2 {
+				ERROR.Println("unkonwn token", tk)
+				continue
+			}
+			var dev int
+			var err error
+			if dev, err = strconv.Atoi(tks[0]); err != nil {
+				ERROR.Println("unkonwn token", tk)
+				continue
+			}
+			pusher.Push(byte(dev), tks[1], *msg.Content)
+		}
+	}
+	return true
 }
 
 //@Mapper("/echo", method="WS")
@@ -203,10 +262,10 @@ func sendMsg(msg *Msg, msgType byte) error {
 
 func getGroupMembers(gid uint64) []uint64 {
 	members := make([]uint64, 0, 3)
-	if redisPool != nil {
+	if groupRedisPool != nil {
 		var err error
 		var reply []interface{}
-		conn := redisPool.Get()
+		conn := groupRedisPool.Get()
 		defer conn.Close()
 		if reply, err = redis.Values(conn.Do("sdump", fmt.Sprintf("%dFT", gid))); err != nil {
 			ERROR.Println(err)
@@ -228,6 +287,63 @@ func getGroupMembers(gid uint64) []uint64 {
 		}
 	}
 	return members
+}
+
+func registerToken(id uint64, dev byte, token string) error {
+	conn := tokenRedisPool.Get()
+	var err error
+	defer conn.Close()
+	if _, err = conn.Do("set", fmt.Sprintf("tk%d", id), fmt.Sprintf("%d:%s\n", dev, token)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func unregisterToken(id uint64, dev byte, token string) error {
+	conn := tokenRedisPool.Get()
+	var val string
+	var err error
+	defer conn.Close()
+	key := fmt.Sprintf("tk%d", id)
+	if val, err = redis.String(conn.Do("get", key)); err != nil {
+		return err
+	}
+	if val == "" {
+		return nil
+	}
+	vals := strings.Split(val, "\n")
+	var p = make([]string, 0, len(vals))
+	item := fmt.Sprintf("%d:%s\n", dev, token)
+	for _, value := range vals {
+		if value != item {
+			p = append(p, value)
+		}
+	}
+	if len(p) == 0 {
+		if _, err = conn.Do("del", key); err != nil {
+			return err
+		}
+	}
+	if _, err = conn.Do("sel", key, strings.Join(p, "\n")); err != nil {
+		return err
+	}
+	return nil
+}
+
+func gettokens(id uint64) []string {
+	conn := tokenRedisPool.Get()
+	var val string
+	var err error
+	defer conn.Close()
+	key := fmt.Sprintf("tk%d", id)
+	if val, err = redis.String(conn.Do("get", key)); err != nil {
+		return []string{}
+	}
+	if val == "" {
+		return []string{}
+	}
+	vals := strings.Split(val, "\n")
+	return vals
 }
 
 func sendGroupMsg(msg *Msg, msgType byte) error {
@@ -338,11 +454,47 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			}
 			return
 		}
-
+		now := time.Now()
 		switch msg.Type {
 		case PingMsgType:
 			//ping, don't reply
 			continue
+		case TokenRegisterMsgType:
+			if msg.MsgId == "" || msg.Token == nil {
+				ws.Write(ErrorMsgIdJsonFormatJsonBytes)
+				return
+			}
+			reply := &ReplyMsg{
+				Type:  ReplyMsgType,
+				Time:  now.UnixNano() / 1000000,
+				MsgId: msg.MsgId,
+				Code:  0,
+			}
+			if err = registerToken(client.clientId, msg.Dev, *msg.Token); err != nil {
+				reply.Code = -1
+				reply.Msg = err.Error()
+				ws.Write(reply.Bytes())
+				return
+			}
+			client.SendMsg(reply)
+		case TokenUnregisterMsgType:
+			if msg.MsgId == "" || msg.Token == nil {
+				ws.Write(ErrorMsgIdJsonFormatJsonBytes)
+				return
+			}
+			reply := &ReplyMsg{
+				Type:  ReplyMsgType,
+				Time:  now.UnixNano() / 1000000,
+				MsgId: msg.MsgId,
+				Code:  0,
+			}
+			if err = unregisterToken(client.clientId, msg.Dev, *msg.Token); err != nil {
+				reply.Code = -1
+				reply.Msg = err.Error()
+				ws.Write(reply.Bytes())
+				return
+			}
+			client.SendMsg(reply)
 		case ReadedMsgType:
 		case TextMsgType, ImageMsgType, FileMsgType, SoundMsgType, StickMsgType, LocationMsgType:
 			if msg.MsgId == "" {
@@ -350,7 +502,6 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 				return
 			}
 			msg.From = client.clientId
-			now := time.Now()
 			msg.Time = now.UnixNano() / 1000000
 
 			reply := NewReplySuccessMsg(client.clientId, msg.MsgId, msg.Time)

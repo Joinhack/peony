@@ -17,8 +17,12 @@ whoami = 2
 offlineRange = 1-50000
 offlineStorePath = /tmp
 
-redis.server = 192.168.1.23:6111
+group.server = 192.168.1.23:6111
 #redis.passwd =
+token.server = 192.168.1.23:6111
+#token.passwd =
+push.url = http://127.0.0.1:9001/push
+push.num = 10
 
 [dev]
 log.trace.output = off
