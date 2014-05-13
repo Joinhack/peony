@@ -480,6 +480,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 				return
 			}
 			client.SendMsg(reply)
+			continue
 		case TokenUnregisterMsgType:
 			if msg.MsgId == "" || msg.Token == nil {
 				ws.Write(ErrorMsgIdJsonFormatJsonBytes)
@@ -498,6 +499,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 				return
 			}
 			client.SendMsg(reply)
+			continue
 		case ReadedMsgType:
 		case TextMsgType, ImageMsgType, FileMsgType, SoundMsgType, StickMsgType, LocationMsgType:
 			if msg.MsgId == "" {
