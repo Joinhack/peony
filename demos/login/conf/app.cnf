@@ -1,0 +1,22 @@
+app.name=login
+app.secret=ABCDEFGHIJK_LMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-
+
+log.trace.prefix = "TRACE "
+log.info.prefix  = "INFO  "
+log.warn.prefix  = "WARN  "
+log.error.prefix = "ERROR "
+
+static.uri  =  /static
+static.path =  static
+
+[dev]
+log.trace.output = off
+log.info.output  = stderr
+log.warn.output  = stderr
+log.error.output = stderr
+
+[prod]
+log.trace.output = off
+log.info.output  = $(app.name).log
+log.warn.output  = $(app.name).log
+log.error.output = $(app.name).log

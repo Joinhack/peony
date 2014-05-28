@@ -64,19 +64,18 @@ func (p *Pusher) task(channel <-chan *pushParam) {
 			}
 		}
 	SEND:
-		println(fmt.Sprintf("%s?%s", p.url, param.toUrlParam()))
 		req, _ = http.NewRequest("GET", fmt.Sprintf("%s?%s", p.url, param.toUrlParam()), nil)
 		req.Close = false
 		resp, err = client.Do(req)
 		if err != nil {
 			ERROR.Println(err)
-			time.Sleep(20 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			goto SEND
 		}
 		if resp.StatusCode != 200 {
 			resp.Body.Close()
 			ERROR.Println("The respose code is", resp.StatusCode)
-			time.Sleep(20 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			goto SEND
 		}
 		if sli, err = ioutil.ReadAll(resp.Body); err != nil {

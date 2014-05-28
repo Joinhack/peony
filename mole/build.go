@@ -201,18 +201,21 @@ import (
 
 var (
 	_ = reflect.Ptr
-	bindAddr   *string = flag.String("bindAddr", ":8080", "By default, read from app.conf")
-	importPath *string = flag.String("importPath", "", "Go ImportPath for the app.")
-	srcPath    *string = flag.String("srcPath", "", "Path to the source root.")
-	devMode    *bool    = flag.Bool("devMode", false, "Run mode")
+	bindAddr   *string = flag.String("bindAddr", "", "By default, read from app.conf")
+	importPath *string = flag.String("importPath", ".", "Go ImportPath for the app.")
+	srcPath    *string = flag.String("srcPath", ".", "Path to the source root.")
+	devMode    *bool   = flag.Bool("devMode", false, "Run mode")
 )
 
 func main() {
 	flag.Parse()
 	app := peony.NewApp(*srcPath, *importPath)
-	app.BindAddr = *bindAddr
+	if *bindAddr != "" {
+		app.BindAddr = *bindAddr
+	}
 	if devMode != nil {
 		app.DevMode = *devMode
+		app.LoadConfig()
 	}
 	svr := app.NewServer()
 	svr.Init()
@@ -221,7 +224,7 @@ func main() {
 	svr.Router.Refresh()
 
 	go func(){
-		time.Sleep(1*time.Second)
+		time.Sleep(1 * time.Second)
 		fmt.Println("Server is running, listening on", app.BindAddr)
 	}()
 	if err := <- svr.Run(); err != nil {

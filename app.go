@@ -80,12 +80,6 @@ func NewApp(sourcePath, importPath string) *App {
 	app.AppPath = filepath.Join(app.BasePath, "app")
 	app.CodePaths = []string{app.AppPath}
 	app.ViewPath = filepath.Join(app.AppPath, "views")
-	if app.DevMode {
-		app.section = "dev"
-	} else {
-		app.section = "prod"
-	}
-	app.LoadConfig()
 	return app
 }
 
@@ -130,15 +124,20 @@ func (a *App) GetIntConfig(key string, f int64) int64 {
 
 func (a *App) LoadConfig() {
 	var ok = false
+	if a.DevMode {
+		a.section = "dev"
+	} else {
+		a.section = "prod"
+	}
 	a.Config = Config{}
 	a.Config.ReadFile(filepath.Join(a.BasePath, "conf", "app.cnf"))
 
-	TRACE = a.getLogger("warn", "nil")
-	WARN = a.getLogger("warn", "stdout")
-	INFO = a.getLogger("info", "stdout")
-	ERROR = a.getLogger("error", "stderr")
+	TRACE = a.getLogger("warn",a.GetStringConfig("log.trace.output", "nil"))
+	WARN = a.getLogger("warn", a.GetStringConfig("log.warn.output", "stdout"))
+	INFO = a.getLogger("info", a.GetStringConfig("log.info.output", "stdout"))
+	ERROR = a.getLogger("error", a.GetStringConfig("log.error.output", "stderr"))
 	a.Security = a.GetStringConfig("app.secret", defaultSecKey)
-	a.BindAddr = a.GetStringConfig("app.addr", ":8080")
+	a.BindAddr = a.GetStringConfig("app.addr", ":8000")
 	a.Trunk = a.GetBoolConfig("http.trunk", true)
 	staticInfo := &StaticInfo{}
 	ok = false

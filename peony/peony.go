@@ -31,6 +31,7 @@ func init() {
 	registCommand(runcmd)
 	registCommand(newcmd)
 	registCommand(buildcmd)
+	registCommand(packcmd)
 }
 
 func eprintf(f string, opts ...interface{}) {

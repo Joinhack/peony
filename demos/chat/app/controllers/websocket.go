@@ -102,7 +102,7 @@ func newPool(server, password string) *redis.Pool {
 
 func init() {
 	peony.OnServerInit(func(s *peony.Server) {
-		clusterCfg := s.App.GetStringConfig("cluster", "")
+		
 		pushsvr := s.App.GetStringConfig("push.url", "")
 		pushnum := s.App.GetStringConfig("push.num", "")
 		groupServer := s.App.GetStringConfig("group.server", "")
@@ -113,9 +113,8 @@ func init() {
 		whoami := s.App.GetStringConfig("whoami", "")
 		offlineRange := s.App.GetStringConfig("offlineRange", "")
 		offlineStorePath := s.App.GetStringConfig("offlineStorePath", "")
-		if clusterCfg == "" || whoami == "" || offlineRange == "" {
-			panic("please set cluster")
-		}
+		
+		clusterCfg := s.App.GetStringConfig("cluster", "")
 		clusterMap := map[string]string{}
 		clusters := strings.Split(clusterCfg, ",")
 		//hook log
