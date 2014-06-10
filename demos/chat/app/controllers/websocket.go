@@ -36,9 +36,9 @@ func init() {
 			var memstats runtime.MemStats
 			runtime.ReadMemStats(&memstats)
 			fmt.Printf(statusFmt,
-					runtime.NumGoroutine(),
-					memstats.Alloc, memstats.Sys, memstats.TotalAlloc,
-					memstats.HeapAlloc, memstats.HeapSys, memstats.HeapInuse)
+				runtime.NumGoroutine(),
+				memstats.Alloc, memstats.Sys, memstats.TotalAlloc,
+				memstats.HeapAlloc, memstats.HeapSys, memstats.HeapInuse)
 			time.Sleep(30 * time.Second)
 		}
 	}()
@@ -102,7 +102,7 @@ func newPool(server, password string) *redis.Pool {
 
 func init() {
 	peony.OnServerInit(func(s *peony.Server) {
-		
+
 		pushsvr := s.App.GetStringConfig("push.url", "")
 		pushnum := s.App.GetStringConfig("push.num", "")
 		groupServer := s.App.GetStringConfig("group.server", "")
@@ -113,7 +113,7 @@ func init() {
 		whoami := s.App.GetStringConfig("whoami", "")
 		offlineRange := s.App.GetStringConfig("offlineRange", "")
 		offlineStorePath := s.App.GetStringConfig("offlineStorePath", "")
-		
+
 		clusterCfg := s.App.GetStringConfig("cluster", "")
 		clusterMap := map[string]string{}
 		clusters := strings.Split(clusterCfg, ",")
@@ -226,6 +226,17 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 		}
 	}
 	return true
+}
+
+//@Mapper("/notify", method="post")
+func (c *WebSocket) Notify(to uint64, msg string) peony.Renderer {
+	if (msg == "") {
+		return peony.RenderJson(map[string]interface{}{"code":-1, "msg":"invalid message parameter."})
+	}
+	now := time.Now()
+	msg := &Msg{From: 0, MsgId: "nil", Type: NotifyMsgType, Content: msg, Time:now.UnixNano() / 1000000};
+	sendMsg(msg)
+	return peony.RenderJson(map[string]interface{}{"code":0})
 }
 
 //@Mapper("/echo", method="WS")

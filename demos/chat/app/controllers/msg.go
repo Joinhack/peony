@@ -27,6 +27,7 @@ const (
 	ReplyMsgType           = 252
 	TokenRegisterMsgType   = 251
 	TokenUnregisterMsgType = 250
+	NotifyMsgType          = 249
 	PingMsgType            = 0
 	TextMsgType            = 1
 	ImageMsgType           = 2
