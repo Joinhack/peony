@@ -230,13 +230,13 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 
 //@Mapper("/notify", method="POST")
 func (c *WebSocket) Notify(to uint64, msg string) peony.Renderer {
-	if (msg == "") {
-		return peony.RenderJson(map[string]interface{}{"code":-1, "msg":"invalid message parameter."})
+	if msg == "" {
+		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "invalid message parameter."})
 	}
 	now := time.Now()
-	msg := &Msg{From: 0, MsgId: "nil", Type: NotifyMsgType, Content: msg, Time:now.UnixNano() / 1000000};
-	sendMsg(msg)
-	return peony.RenderJson(map[string]interface{}{"code":0})
+	message := &Msg{From: 0, MsgId: "nil", Type: NotifyMsgType, Content: msg, Time: now.UnixNano() / 1000000}
+	sendMsg(message)
+	return peony.RenderJson(map[string]interface{}{"code": 0})
 }
 
 //@Mapper("/echo", method="WS")
