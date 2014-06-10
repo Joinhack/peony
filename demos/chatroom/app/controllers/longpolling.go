@@ -2,7 +2,7 @@ package controllers
 
 import (
 	. "github.com/joinhack/peony"
-	"github.com/joinhack/peony/demos/chat/app/chatroom"
+	"github.com/joinhack/peony/demos/chatroom/app/chatroom"
 )
 
 //@Mapper("/longpolling/")

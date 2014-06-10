@@ -210,13 +210,13 @@ var (
 func main() {
 	flag.Parse()
 	app := peony.NewApp(*srcPath, *importPath)
-	if *bindAddr != "" {
-		app.BindAddr = *bindAddr
-	}
 	if devMode != nil {
 		app.DevMode = *devMode
 	}
 	app.LoadConfig()
+	if *bindAddr != "" {
+		app.BindAddr = *bindAddr
+	}
 	svr := app.NewServer()
 	svr.Init()
 {{range $idx, $codeGen := $.codeGens }}{{$codeGen.Generate "app" "svr" $.importPaths}}{{end}}

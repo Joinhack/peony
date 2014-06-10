@@ -3,7 +3,7 @@ package controllers
 import (
 	"code.google.com/p/go.net/websocket"
 	. "github.com/joinhack/peony"
-	"github.com/joinhack/peony/demos/chat/app/chatroom"
+	"github.com/joinhack/peony/demos/chatroom/app/chatroom"
 )
 
 type WebSocket struct {

@@ -22,10 +22,10 @@ func NewAppCmd(app *peony.App, binPath, addr string) *AppCmd {
 	if app.DevMode {
 		devMode = "true"
 	}
-	appCmd.Cmd = exec.Command(appCmd.BinPath, "--bindAddr="+addr,
-		"--importPath="+app.ImportPath,
-		"--srcPath="+app.SourcePath,
-		"--devMode="+devMode)
+	appCmd.Cmd = exec.Command(appCmd.BinPath, "-bindAddr="+addr,
+		"-importPath="+app.ImportPath,
+		"-srcPath="+app.SourcePath,
+		"-devMode="+devMode)
 	return appCmd
 }
 
