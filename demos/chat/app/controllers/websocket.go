@@ -230,8 +230,8 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 
 //@Mapper("/notify", method="POST")
 func (c *WebSocket) Notify(to uint64, msg string) peony.Renderer {
-	if msg == "" {
-		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "invalid message parameter."})
+	if msg == "" || to == 0 {
+		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "invalid parameters."})
 	}
 	now := time.Now()
 	message := &Msg{From: 0, MsgId: "nil", Type: NotifyMsgType, Content: &msg, Time: now.UnixNano() / 1000000, To: &to}
