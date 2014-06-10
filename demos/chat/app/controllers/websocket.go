@@ -228,7 +228,7 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 	return true
 }
 
-//@Mapper("/notify", method="post")
+//@Mapper("/notify", method="POST")
 func (c *WebSocket) Notify(to uint64, msg string) peony.Renderer {
 	if (msg == "") {
 		return peony.RenderJson(map[string]interface{}{"code":-1, "msg":"invalid message parameter."})
