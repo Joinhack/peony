@@ -215,8 +215,8 @@ func main() {
 	}
 	if devMode != nil {
 		app.DevMode = *devMode
-		app.LoadConfig()
 	}
+	app.LoadConfig()
 	svr := app.NewServer()
 	svr.Init()
 {{range $idx, $codeGen := $.codeGens }}{{$codeGen.Generate "app" "svr" $.importPaths}}{{end}}
