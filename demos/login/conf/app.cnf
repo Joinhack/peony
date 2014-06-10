@@ -10,13 +10,13 @@ static.uri  =  /static
 static.path =  static
 
 [dev]
-log.trace.output = off
+log.trace.output = nil
 log.info.output  = stderr
 log.warn.output  = stderr
 log.error.output = stderr
 
 [prod]
-log.trace.output = off
+log.trace.output = nil
 log.info.output  = $(app.name).log
 log.warn.output  = $(app.name).log
 log.error.output = $(app.name).log

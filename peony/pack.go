@@ -72,7 +72,7 @@ func targz(app *peony.App) {
 		defer srcFile.Close()
 
 		header := &tar.Header{
-			Name:    strings.TrimLeft(srcPath[len(srcDir):], string(os.PathSeparator)),
+			Name:    filepath.Join(app.AppName, strings.TrimLeft(srcPath[len(srcDir):], string(os.PathSeparator))),
 			Size:    info.Size(),
 			Mode:    int64(info.Mode()),
 			ModTime: info.ModTime(),
@@ -96,7 +96,7 @@ func targz(app *peony.App) {
 	panicOnError(err, "stat error")
 
 	tarh = &tar.Header{
-		Name:    filepath.Join("bin", binName),
+		Name:    filepath.Join(app.AppName, "bin", binName),
 		Size:    info.Size(),
 		Mode:    int64(info.Mode()),
 		ModTime: info.ModTime(),
@@ -106,7 +106,7 @@ func targz(app *peony.App) {
 	var targzWriteScript = func(s, n string) {
 		val := peony.ExecuteTemplate(template.Must(template.New("").Parse(s)), args)
 		tarh := &tar.Header{
-			Name:    filepath.Join("bin", n),
+			Name:    filepath.Join(app.AppName, "bin", n),
 			Size:    int64(len(val)),
 			Mode:    int64(0766),
 			ModTime: now,

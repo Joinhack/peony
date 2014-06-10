@@ -42,6 +42,7 @@ type App struct {
 	ViewPath   string
 	AppPath    string
 	BasePath   string
+	AppName       string
 	BindAddr   string
 	Security   string
 	DevMode    bool
@@ -77,6 +78,7 @@ var (
 func NewApp(sourcePath, importPath string) *App {
 	app := &App{SourcePath: sourcePath, ImportPath: importPath}
 	app.BasePath = filepath.Join(sourcePath, importPath)
+	_, app.AppName = filepath.Split(app.BasePath)
 	app.AppPath = filepath.Join(app.BasePath, "app")
 	app.CodePaths = []string{app.AppPath}
 	app.ViewPath = filepath.Join(app.AppPath, "views")
@@ -131,8 +133,9 @@ func (a *App) LoadConfig() {
 	}
 	a.Config = Config{}
 	a.Config.ReadFile(filepath.Join(a.BasePath, "conf", "app.cnf"))
+	a.AppName = a.GetStringConfig("app.name", a.AppName)
 
-	TRACE = a.getLogger("warn",a.GetStringConfig("log.trace.output", "nil"))
+	TRACE = a.getLogger("trace", a.GetStringConfig("log.trace.output", "nil"))
 	WARN = a.getLogger("warn", a.GetStringConfig("log.warn.output", "stdout"))
 	INFO = a.getLogger("info", a.GetStringConfig("log.info.output", "stdout"))
 	ERROR = a.getLogger("error", a.GetStringConfig("log.error.output", "stderr"))
