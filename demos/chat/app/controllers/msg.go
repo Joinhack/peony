@@ -66,6 +66,7 @@ type Msg struct {
 	Name       *string   `json:"name,omitempty"`
 	Token      *string   `json:"token,omitempty"`
 	Members    *[]uint64 `json:"members,omitempty"`
+	Raw        *[]byte   `json:"raw,omitempty"`
 	Dev        byte      `json:"dev"`
 }
 
