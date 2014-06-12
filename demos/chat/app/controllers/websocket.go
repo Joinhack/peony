@@ -234,7 +234,8 @@ func (c *WebSocket) Notify(to uint64, msg string) peony.Renderer {
 		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "invalid parameters."})
 	}
 	now := time.Now()
-	message := &Msg{From: 0, MsgId: "nil", Type: NotifyMsgType, Raw: &[]byte(msg), Time: now.UnixNano() / 1000000, To: &to}
+	msgSli := []byte(msg)
+	message := &Msg{From: 0, MsgId: "nil", Type: NotifyMsgType, Raw: &msgSli, Time: now.UnixNano() / 1000000, To: &to}
 	sendMsg(message, pmsg.RouteMsgType)
 	return peony.RenderJson(map[string]interface{}{"code": 0})
 }
