@@ -228,14 +228,18 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 	return true
 }
 
-//@Mapper("/notify", method="POST")
+//@Mapper("/notify", methods=["POST", "GET"])
 func (c *WebSocket) Notify(to uint64, msg string) peony.Renderer {
-	if msg == "" || to == 0 {
+	if len(msg) == 0 || to == 0 {
 		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "invalid parameters."})
 	}
 	now := time.Now()
-	msgSli := []byte(msg)
-	message := &Msg{From: 0, MsgId: "nil", Type: NotifyMsgType, Raw: &msgSli, Time: now.UnixNano() / 1000000, To: &to}
+	raw := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(msg), &raw); err != nil {
+		ERROR.Println(err)
+		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "message must be json"})
+	}
+	message := &Msg{From: 0, MsgId: "nil", Type: NotifyMsgType, Raw: raw, Time: now.UnixNano() / 1000000, To: &to}
 	sendMsg(message, pmsg.RouteMsgType)
 	return peony.RenderJson(map[string]interface{}{"code": 0})
 }

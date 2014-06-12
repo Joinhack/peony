@@ -48,26 +48,26 @@ type RegisterMsg struct {
 }
 
 type Msg struct {
-	MsgId      string    `json:"msgId"`
-	From       uint64    `json:"from"`
-	Type       byte      `json:"type"`
-	Time       int64     `json:"time"`
-	Option     int       `json:"option"`
-	SourceType int       `json:"sourceType"`
-	Timer      *byte     `json:"timer,omitempty"`
-	To         *uint64   `json:"to,omitempty"`
-	Gid        *uint64   `json:"gid,omitempty"`
-	Content    *string   `json:"content,omitempty"`
-	SmallSrc   *string   `json:"smallsrc,omitempty"`
-	BigSrc     *string   `json:"bigsrc,omitempty"`
-	Url        *string   `json:"url,omitempty"`
-	Lat        *string   `json:"lat,omitempty"`
-	Long       *string   `json:"long,omitempty"`
-	Name       *string   `json:"name,omitempty"`
-	Token      *string   `json:"token,omitempty"`
-	Members    *[]uint64 `json:"members,omitempty"`
-	Raw        *[]byte   `json:"raw,omitempty"`
-	Dev        byte      `json:"dev"`
+	MsgId      string      `json:"msgId"`
+	From       uint64      `json:"from"`
+	Type       byte        `json:"type"`
+	Time       int64       `json:"time"`
+	Option     int         `json:"option"`
+	SourceType int         `json:"sourceType"`
+	Timer      *byte       `json:"timer,omitempty"`
+	To         *uint64     `json:"to,omitempty"`
+	Gid        *uint64     `json:"gid,omitempty"`
+	Content    *string     `json:"content,omitempty"`
+	SmallSrc   *string     `json:"smallsrc,omitempty"`
+	BigSrc     *string     `json:"bigsrc,omitempty"`
+	Url        *string     `json:"url,omitempty"`
+	Lat        *string     `json:"lat,omitempty"`
+	Long       *string     `json:"long,omitempty"`
+	Name       *string     `json:"name,omitempty"`
+	Token      *string     `json:"token,omitempty"`
+	Members    *[]uint64   `json:"members,omitempty"`
+	Raw        interface{} `json:"raw,omitempty"`
+	Dev        byte        `json:"dev"`
 }
 
 type RedirectMsg struct {
