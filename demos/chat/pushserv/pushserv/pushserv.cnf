@@ -1,6 +1,6 @@
 fileLimit=1024*1024*20
 queueFile=/tmp/pushsvr.data
-apnsCert=/Volumes/joinhack/Downloads/cert.pem
-apnsKey=/Volumes/joinhack/Downloads/key.pem
+apnsCert=./cert.pem
+apnsKey=./key.pem
 clientNum=1
 apnsGateWay=gateway.sandbox.push.apple.com:2195
