@@ -137,7 +137,7 @@ func (cli *APNSClient) SendRequest(req *Request) error {
 
 func (cli *APNSClient) Close() error {
 	if cli.Conn != nil {
-		return cli.Close()
+		return cli.Conn.Close()
 	}
 	return nil
 }
