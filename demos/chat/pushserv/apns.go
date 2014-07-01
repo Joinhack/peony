@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
+	"log"
 	"time"
 )
 
@@ -58,6 +61,7 @@ type APNSClient struct {
 	*tls.Conn
 	cert       tls.Certificate
 	gateway    string
+	sendCount  int
 	notifyChan chan Notification
 }
 
@@ -96,6 +100,7 @@ func (cli *APNSClient) sendTask() {
 					goto SEND
 				}
 			}
+			cli.sendCount++
 		}
 		notify = nil
 	}
@@ -147,10 +152,34 @@ func (cli *APNSClient) Send(n Notification) (err error) {
 	return
 }
 
+//read for check the connection
+func (cli *APNSClient) readLoop() {
+	defer func() {
+		cli.Close()
+	}()
+	buf := make([]byte, 64)
+	var err error
+	var n int
+	for {
+		if n, err = cli.Read(buf); err != nil {
+			if err != io.EOF {
+				log.Println(err.Error())
+			}
+			return
+		}
+		log.Println(hex.Dump(buf[:n]))
+	}
+}
+
 func (cli *APNSClient) dial() (err error) {
 	conf := tls.Config{
 		Certificates: []tls.Certificate{cli.cert},
 	}
 	cli.Conn, err = tls.Dial("tcp", cli.gateway, &conf)
+	log.Println("connection sent:", cli.sendCount)
+	cli.sendCount = 0
+	if err == nil {
+		go cli.readLoop()
+	}
 	return
 }

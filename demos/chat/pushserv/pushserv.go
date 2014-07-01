@@ -128,10 +128,10 @@ func (p *PushServer) sendReply(w http.ResponseWriter, reply *Reply) {
 }
 
 type Request struct {
-	dev      byte
-	time     uint32
-	token    []byte
-	contents string
+	dev       byte
+	time      uint32
+	token     []byte
+	contents  string
 }
 
 func (r *Request) unmarshal(p []byte) error {
