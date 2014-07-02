@@ -233,8 +233,9 @@ func (r *ErrorRenderer) Apply(c *Controller) {
 			Description: r.Error.Error(),
 		}
 	}
-	if err := tpl.Execute(c.Resp, err); err != nil {
-		ERROR.Println(err)
+	if e := tpl.Execute(c.Resp, err); e != nil {
+		ERROR.Println("template execute error:", e)
+		ERROR.Println("origin error:", r.Error);
 	}
 }
 

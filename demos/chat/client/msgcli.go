@@ -106,7 +106,7 @@ func main() {
 					return
 				}
 				TotalSend++
-				time.Sleep(time.Duration(100*delayN) * time.Microsecond)
+				time.Sleep(time.Duration(200*delayN) * time.Microsecond)
 			}
 		}(i)
 	}

@@ -107,7 +107,7 @@ func init() {
 		pushnum := s.App.GetStringConfig("push.num", "")
 		groupServer := s.App.GetStringConfig("group.server", "")
 		groupPasswd := s.App.GetStringConfig("group.passwd", "")
-
+		rangeVal := s.App.GetIntConfig("range", 1024*1024)
 		tokenServer := s.App.GetStringConfig("token.server", "")
 		tokenPasswd := s.App.GetStringConfig("token.passwd", "")
 		whoami := s.App.GetStringConfig("whoami", "")
@@ -139,6 +139,7 @@ func init() {
 		}
 
 		cfg := &pmsg.MsgHubFileStoreOfflineCenterConfig{}
+		cfg.MaxRange = uint64(rangeVal)
 		for _, v := range clusters {
 			kv := strings.Split(v, "->")
 			if len(kv) != 2 {
@@ -149,10 +150,8 @@ func init() {
 					panic(err)
 				} else {
 					cfg.Id = i
-					cfg.MaxRange = 1024 * 1024
 					cfg.ServAddr = kv[1]
 				}
-
 			} else {
 				clusterMap[kv[0]] = kv[1]
 			}
