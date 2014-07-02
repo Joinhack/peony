@@ -138,7 +138,7 @@ func init() {
 			rconn.Close()
 		}
 
-		cfg := &pmsg.MsgHubConfig{}
+		cfg := &pmsg.MsgHubFileStoreOfflineCenterConfig{}
 		for _, v := range clusters {
 			kv := strings.Split(v, "->")
 			if len(kv) != 2 {
@@ -180,7 +180,7 @@ func init() {
 			cfg.OfflineRangeEnd = uint64(i)
 		}
 		cfg.OfflinePath = offlineStorePath
-		hub = pmsg.NewMsgHub(cfg)
+		hub = pmsg.NewMsgHubWithFileStoreOfflineCenter(cfg)
 		for k, v := range clusterMap {
 			var i int
 			var err error
