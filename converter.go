@@ -169,6 +169,7 @@ func GetSliceConvert(c *Convertors) func(*Params, string, reflect.Type) reflect.
 			if !strings.HasPrefix(key, name+"[") {
 				return
 			}
+
 			lIdx, rIdx := len(name), strings.IndexByte(key[len(name):], ']')+len(name)
 			if rIdx == -1 {
 				//not have ] char in key
@@ -190,6 +191,7 @@ func GetSliceConvert(c *Convertors) func(*Params, string, reflect.Type) reflect.
 		END:
 			value := c.Convert(p, key[:rIdx+1], typ.Elem())
 			values = append(values, &item{idx, value})
+
 		}
 		for k, vals := range p.Values {
 			processItem(k, vals)

@@ -239,7 +239,42 @@ func (c *WebSocket) Notify(to uint64, msg string) peony.Renderer {
 		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "message must be json"})
 	}
 	message := &Msg{From: 0, MsgId: "nil", Type: NotifyMsgType, Raw: raw, Time: now.UnixNano() / 1000000, To: &to}
-	sendMsg(message, pmsg.RouteMsgType)
+	if err := sendMsg(message, pmsg.RouteMsgType); err != nil {
+		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": err.Error()})
+	}
+	return peony.RenderJson(map[string]interface{}{"code": 0})
+}
+
+//@Mapper("/group/event", methods=["POST", "GET"])
+func (c *WebSocket) GroupEvent(from, gid uint64, members string, event int) peony.Renderer {
+	if from == 0 || gid == 0 || len(members) == 0 {
+		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "invalid parameters."})
+	}
+	mSli := strings.Split(members, ",")
+	memberSli := make([]uint64, len(mSli))
+	for _, m := range mSli {
+		if i, err := strconv.ParseUint(m, 10, 0); err != nil {
+			return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "invalid members."})
+		} else {
+			memberSli = append(memberSli, i)
+		}
+	}
+	now := time.Now()
+	var msgType byte = GroupAddMsgType
+	if event == 1 {
+		msgType = GroupDelMsgType
+	}
+	message := &Msg{From: from,
+		MsgId:      "nil",
+		Type:       msgType,
+		Time:       now.UnixNano() / 1000000,
+		Gid:        &gid,
+		SourceType: 3,
+		Members:    &memberSli,
+	}
+	if err := sendGroupMsg(message, pmsg.RouteMsgType); err != nil {
+		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": err.Error()})
+	}
 	return peony.RenderJson(map[string]interface{}{"code": 0})
 }
 

@@ -148,7 +148,7 @@ func (cli *APNSClient) Close() error {
 }
 
 func (cli *APNSClient) Send(n Notification) (err error) {
-	_, err = cli.Write(n.Bytes())
+	_, err = cli.Conn.Write(n.Bytes())
 	return
 }
 

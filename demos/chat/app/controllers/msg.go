@@ -62,12 +62,13 @@ type Msg struct {
 	BigSrc     *string     `json:"bigsrc,omitempty"`
 	Url        *string     `json:"url,omitempty"`
 	Lat        *string     `json:"lat,omitempty"`
-	Long       *string     `json:"long,omitempty"`
+	Long       *string     `json:"lng,omitempty"`
 	Name       *string     `json:"name,omitempty"`
 	Token      *string     `json:"token,omitempty"`
 	Members    *[]uint64   `json:"members,omitempty"`
 	Raw        interface{} `json:"raw,omitempty"`
 	Dev        byte        `json:"dev"`
+	Size       int32       `json:"filesize,omitempty"`
 }
 
 type RedirectMsg struct {
