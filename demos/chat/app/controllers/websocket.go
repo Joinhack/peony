@@ -294,7 +294,7 @@ func (c *WebSocket) GroupEvent(from, gid, to uint64, members, name string, event
 
 	var err error
 
-	if msgType == GroupMemberDelMsgType && to == 0 {
+	if msgType == GroupMemberDelMsgType && to != 0 {
 		message.To = &to
 		err = sendMsg(message, pmsg.RouteMsgType)
 	} else {
