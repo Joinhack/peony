@@ -252,23 +252,22 @@ func (c *WebSocket) GroupEvent(from, gid uint64, members, name string, event int
 	if from == 0 || gid == 0 {
 		return peony.RenderJson(invalidParam)
 	}
-	now := time.Now()
 	var msgType byte = GroupAddMsgType
 	if event == 1 {
-		msgType = GroupDelMsgType
-
+		msgType = GroupMemberDelMsgType
 	} else if event == 2 {
 		msgType = GroupRenameMsgType
+	} else if event == 3 {
+		msgType = GroupRemoveMsgType
 	}
 	message := &Msg{
 		From:       from,
 		MsgId:      "nil",
 		Type:       msgType,
-		Time:       now.UnixNano() / 1000000,
 		Gid:        &gid,
 		SourceType: 3,
 	}
-	if msgType == GroupAddMsgType || msgType == GroupDelMsgType {
+	if msgType == GroupAddMsgType || msgType == GroupMemberDelMsgType || msgType == GroupRemoveMsgType {
 		if len(members) == 0 {
 			return peony.RenderJson(invalidParam)
 		}
@@ -578,7 +577,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			reply := NewReplySuccessMsg(client.clientId, msg.MsgId, msg.Time)
 			msg.MsgId = reply.NewMsgId
 			client.SendMsg(reply)
-		case GroupDelMsgType, GroupAddMsgType:
+		case GroupMemberDelMsgType, GroupRemoveMsgType, GroupAddMsgType:
 			msg.From = client.clientId
 			now := time.Now()
 			msg.Time = now.UnixNano() / 1000000

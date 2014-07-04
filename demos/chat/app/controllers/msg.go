@@ -37,8 +37,9 @@ const (
 	ReadedMsgType          = 6
 	LocationMsgType        = 7
 	GroupAddMsgType        = 8
-	GroupDelMsgType        = 9
+	GroupMemberDelMsgType  = 9
 	GroupRenameMsgType     = 10
+	GroupRemoveMsgType     = 11
 )
 
 type RegisterMsg struct {
