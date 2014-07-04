@@ -38,6 +38,7 @@ const (
 	LocationMsgType        = 7
 	GroupAddMsgType        = 8
 	GroupDelMsgType        = 9
+	GroupRenameMsgType     = 10
 )
 
 type RegisterMsg struct {

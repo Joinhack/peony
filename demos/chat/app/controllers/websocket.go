@@ -245,33 +245,50 @@ func (c *WebSocket) Notify(to uint64, msg string) peony.Renderer {
 	return peony.RenderJson(map[string]interface{}{"code": 0})
 }
 
+var invalidParam = map[string]interface{}{"code": -1, "msg": "invalid parameters."}
+
 //@Mapper("/group/event", methods=["POST", "GET"])
-func (c *WebSocket) GroupEvent(from, gid uint64, members string, event int) peony.Renderer {
-	if from == 0 || gid == 0 || len(members) == 0 {
-		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "invalid parameters."})
-	}
-	mSli := strings.Split(members, ",")
-	memberSli := make([]uint64, len(mSli))
-	for _, m := range mSli {
-		if i, err := strconv.ParseUint(m, 10, 0); err != nil {
-			return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "invalid members."})
-		} else {
-			memberSli = append(memberSli, i)
-		}
+func (c *WebSocket) GroupEvent(from, gid uint64, members, name string, event int) peony.Renderer {
+	if from == 0 || gid == 0 {
+		return peony.RenderJson(invalidParam)
 	}
 	now := time.Now()
 	var msgType byte = GroupAddMsgType
 	if event == 1 {
 		msgType = GroupDelMsgType
+
+	} else if event == 2 {
+		msgType = GroupRenameMsgType
 	}
-	message := &Msg{From: from,
+	message := &Msg{
+		From:       from,
 		MsgId:      "nil",
 		Type:       msgType,
 		Time:       now.UnixNano() / 1000000,
 		Gid:        &gid,
 		SourceType: 3,
-		Members:    &memberSli,
 	}
+	if msgType == GroupAddMsgType || msgType == GroupDelMsgType {
+		if len(members) == 0 {
+			return peony.RenderJson(invalidParam)
+		}
+		mSli := strings.Split(members, ",")
+		memberSli := make([]uint64, len(mSli))
+		for _, m := range mSli {
+			if i, err := strconv.ParseUint(m, 10, 0); err != nil {
+				return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "invalid members."})
+			} else {
+				memberSli = append(memberSli, i)
+			}
+		}
+		message.Members = &memberSli
+	} else {
+		if len(name) == 0 {
+			return peony.RenderJson(invalidParam)
+		}
+		message.Name = &name
+	}
+
 	if err := sendGroupMsg(message, pmsg.RouteMsgType); err != nil {
 		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": err.Error()})
 	}
