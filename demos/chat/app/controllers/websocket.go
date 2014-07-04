@@ -271,8 +271,12 @@ func (c *WebSocket) GroupEvent(from, gid uint64, members, name string, event int
 		if len(members) == 0 {
 			return peony.RenderJson(invalidParam)
 		}
+		if msgType == GroupAddMsgType && len(name) != 0 {
+			message.Name = &name
+		}
 		mSli := strings.Split(members, ",")
-		memberSli := make([]uint64, len(mSli))
+
+		memberSli := make([]uint64, 0, len(mSli))
 		for _, m := range mSli {
 			if i, err := strconv.ParseUint(m, 10, 0); err != nil {
 				return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "invalid members."})
