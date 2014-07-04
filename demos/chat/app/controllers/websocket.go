@@ -248,7 +248,7 @@ func (c *WebSocket) Notify(to uint64, msg string) peony.Renderer {
 var invalidParam = map[string]interface{}{"code": -1, "msg": "invalid parameters."}
 
 //@Mapper("/group/event", methods=["POST", "GET"])
-func (c *WebSocket) GroupEvent(from, gid uint64, members, name string, event int) peony.Renderer {
+func (c *WebSocket) GroupEvent(from, gid, to uint64, members, name string, event int) peony.Renderer {
 	if from == 0 || gid == 0 {
 		return peony.RenderJson(invalidParam)
 	}
@@ -292,7 +292,15 @@ func (c *WebSocket) GroupEvent(from, gid uint64, members, name string, event int
 		message.Name = &name
 	}
 
-	if err := sendGroupMsg(message, pmsg.RouteMsgType); err != nil {
+	var err error
+
+	if msgType == GroupMemberDelMsgType && to == 0 {
+		message.To = &to
+		err = sendMsg(message, pmsg.RouteMsgType)
+	} else {
+		err = sendGroupMsg(message, pmsg.RouteMsgType)
+	}
+	if err != nil {
 		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": err.Error()})
 	}
 	return peony.RenderJson(map[string]interface{}{"code": 0})
