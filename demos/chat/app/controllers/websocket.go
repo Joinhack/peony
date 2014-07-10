@@ -179,6 +179,7 @@ func init() {
 			cfg.OfflineRangeEnd = uint64(i)
 		}
 		cfg.OfflinePath = offlineStorePath
+		pmsg.OneConnectionForPeer = true
 		hub = pmsg.NewMsgHubWithFileStoreOfflineCenter(cfg)
 		for k, v := range clusterMap {
 			var i int
@@ -186,7 +187,7 @@ func init() {
 			if i, err = strconv.Atoi(k); err != nil {
 				panic(err)
 			}
-			hub.AddOutgoing(i, v)
+			hub.AddOtherHub(i, v)
 			hubAddrs[i] = v
 		}
 		hub.AddOfflineMsgFilter(sendNotify)

@@ -12,9 +12,9 @@ static.uri  =  /public
 #it's a relative path in app
 static.path =  public
 
-cluster = 1->127.0.0.1:9997
+cluster = 1->127.0.0.1:9997,2->127.0.0.1:9998
 range = 1048576
-whoami = 1
+whoami = 2
 offlineRange = 1-50000
 offlineStorePath = /tmp
 
