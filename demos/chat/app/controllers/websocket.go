@@ -179,7 +179,6 @@ func init() {
 			cfg.OfflineRangeEnd = uint64(i)
 		}
 		cfg.OfflinePath = offlineStorePath
-		pmsg.OneConnectionForPeer = true
 		hub = pmsg.NewMsgHubWithFileStoreOfflineCenter(cfg)
 		for k, v := range clusterMap {
 			var i int
