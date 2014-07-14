@@ -10,12 +10,12 @@ import (
 type ChatClient struct {
 	net.Conn
 	isKickoff  bool
-	clientId   uint64
+	clientId   uint32
 	clientType byte
 	wchan      chan pmsg.Msg
 }
 
-func NewChatClient(conn net.Conn, clientId uint64, clientType byte) *ChatClient {
+func NewChatClient(conn net.Conn, clientId uint32, clientType byte) *ChatClient {
 	return &ChatClient{
 		Conn:       conn,
 		isKickoff:  false,
@@ -46,7 +46,7 @@ func (conn *ChatClient) Kickoff() {
 	conn.Conn.Close()
 }
 
-func (conn *ChatClient) Id() uint64 {
+func (conn *ChatClient) Id() uint32 {
 	return conn.clientId
 }
 

@@ -139,7 +139,7 @@ func init() {
 		}
 
 		cfg := &pmsg.MsgHubFileStoreOfflineCenterConfig{}
-		cfg.MaxRange = uint64(rangeVal)
+		cfg.MaxRange = uint32(rangeVal)
 		for _, v := range clusters {
 			kv := strings.Split(v, "->")
 			if len(kv) != 2 {
@@ -228,7 +228,7 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 }
 
 //@Mapper("/notify", methods=["POST", "GET"])
-func (c *WebSocket) Notify(to uint64, msg string) peony.Renderer {
+func (c *WebSocket) Notify(to uint32, msg string) peony.Renderer {
 	if len(msg) == 0 || to == 0 {
 		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "invalid parameters."})
 	}
@@ -248,7 +248,7 @@ func (c *WebSocket) Notify(to uint64, msg string) peony.Renderer {
 var invalidParam = map[string]interface{}{"code": -1, "msg": "invalid parameters."}
 
 //@Mapper("/group/event", methods=["POST", "GET"])
-func (c *WebSocket) GroupEvent(from, gid, to uint64, members, name string, event int) peony.Renderer {
+func (c *WebSocket) GroupEvent(from, to uint32, gid uint64, members, name string, event int) peony.Renderer {
 	if from == 0 || gid == 0 {
 		return peony.RenderJson(invalidParam)
 	}
@@ -276,12 +276,12 @@ func (c *WebSocket) GroupEvent(from, gid, to uint64, members, name string, event
 		}
 		mSli := strings.Split(members, ",")
 
-		memberSli := make([]uint64, 0, len(mSli))
+		memberSli := make([]uint32, 0, len(mSli))
 		for _, m := range mSli {
 			if i, err := strconv.ParseUint(m, 10, 0); err != nil {
 				return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "invalid members."})
 			} else {
-				memberSli = append(memberSli, i)
+				memberSli = append(memberSli, uint32(i))
 			}
 		}
 		message.Members = &memberSli
@@ -334,7 +334,7 @@ func sendMsg(msg *Msg, msgType byte) error {
 	if err != nil {
 		return err
 	}
-	rmsg := &pmsg.DeliverMsg{To: uint64(*msg.To), Carry: bs, MsgType: msgType}
+	rmsg := pmsg.NewDeliverMsg(msgType, uint32(*msg.To), bs)
 	hub.Dispatch(rmsg)
 	return nil
 }
@@ -368,7 +368,7 @@ func getGroupMembers(gid uint64) []uint64 {
 	return members
 }
 
-func registerToken(id uint64, dev byte, token string) error {
+func registerToken(id uint32, dev byte, token string) error {
 	conn := tokenRedisPool.Get()
 	var err error
 	defer conn.Close()
@@ -378,7 +378,7 @@ func registerToken(id uint64, dev byte, token string) error {
 	return nil
 }
 
-func unregisterToken(id uint64, dev byte, token string) error {
+func unregisterToken(id uint32, dev byte, token string) error {
 	conn := tokenRedisPool.Get()
 	var val string
 	var err error
@@ -409,7 +409,7 @@ func unregisterToken(id uint64, dev byte, token string) error {
 	return nil
 }
 
-func gettokens(id uint64) []string {
+func gettokens(id uint32) []string {
 	conn := tokenRedisPool.Get()
 	var val string
 	var err error
@@ -431,10 +431,11 @@ func sendGroupMsg(msg *Msg, msgType byte) error {
 	}
 	members := getGroupMembers(*msg.Gid)
 	for _, member := range members {
-		if member == msg.From {
+		if member == uint64(msg.From) {
 			continue
 		}
-		msg.To = &member
+		m := uint32(member)
+		msg.To = &m
 		sendMsg(msg, msgType)
 	}
 	return nil

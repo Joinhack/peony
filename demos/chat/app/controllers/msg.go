@@ -43,7 +43,7 @@ const (
 )
 
 type RegisterMsg struct {
-	Id      uint64 `json:"id"`
+	Id      uint32 `json:"id"`
 	DevType byte   `json:"devType"`
 	Type    byte   `json:"type"`
 	Time    int64  `json:"time"`
@@ -51,13 +51,13 @@ type RegisterMsg struct {
 
 type Msg struct {
 	MsgId      string      `json:"msgId"`
-	From       uint64      `json:"from"`
+	From       uint32      `json:"from"`
 	Type       byte        `json:"type"`
 	Time       int64       `json:"time"`
 	Option     int         `json:"option"`
 	SourceType int         `json:"sourceType"`
 	Timer      *byte       `json:"timer,omitempty"`
-	To         *uint64     `json:"to,omitempty"`
+	To         *uint32     `json:"to,omitempty"`
 	Gid        *uint64     `json:"gid,omitempty"`
 	Content    *string     `json:"content,omitempty"`
 	SmallSrc   *string     `json:"smallsrc,omitempty"`
@@ -67,7 +67,7 @@ type Msg struct {
 	Long       *string     `json:"lng,omitempty"`
 	Name       *string     `json:"name,omitempty"`
 	Token      *string     `json:"token,omitempty"`
-	Members    *[]uint64   `json:"members,omitempty"`
+	Members    *[]uint32   `json:"members,omitempty"`
 	Raw        interface{} `json:"raw,omitempty"`
 	Dev        byte        `json:"dev"`
 	Size       int32       `json:"filesize,omitempty"`
@@ -117,7 +117,7 @@ func (msg *ReplyMsg) Bytes() []byte {
 	return msg.Body()
 }
 
-func NewReplySuccessMsg(id uint64, msgid string, t int64) *ReplyMsg {
+func NewReplySuccessMsg(id uint32, msgid string, t int64) *ReplyMsg {
 	return &ReplyMsg{
 		Type:     ReplyMsgType,
 		NewMsgId: NewMsgId(id, t),
@@ -126,7 +126,7 @@ func NewReplySuccessMsg(id uint64, msgid string, t int64) *ReplyMsg {
 	}
 }
 
-func NewReplyFailMsg(id uint64, msgid string, msg string) *ReplyMsg {
+func NewReplyFailMsg(id uint32, msgid string, msg string) *ReplyMsg {
 	return &ReplyMsg{
 		Type:  ReplyMsgType,
 		Code:  -1,
@@ -135,6 +135,6 @@ func NewReplyFailMsg(id uint64, msgid string, msg string) *ReplyMsg {
 	}
 }
 
-func NewMsgId(id uint64, t int64) string {
+func NewMsgId(id uint32, t int64) string {
 	return fmt.Sprintf("%d:%d", t, id)
 }
