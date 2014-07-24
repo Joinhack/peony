@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	InvalidLength = errors.New("invalid slice length")
+	InvaildLength = errors.New("invalid slice length")
 	UnkonwnDevice = errors.New("unkown device")
 )
 
@@ -137,7 +137,7 @@ type Request struct {
 func (r *Request) unmarshal(p []byte) error {
 	var l uint16
 	if len(p) <= 5 {
-		return InvalidLength
+		return InvaildLength
 	}
 
 	r.dev = p[0]
@@ -156,7 +156,7 @@ func (r *Request) unmarshal(p []byte) error {
 	r.contents = string(p)
 	p = p[l:]
 	if len(p) != 0 {
-		return InvalidLength
+		return InvaildLength
 	}
 	return nil
 }
@@ -266,7 +266,7 @@ func NewPushServer(addr string, cfgpath string) (pushServer *PushServer, err err
 	ps := &PushServer{ignores: map[string]uint32{}}
 
 	ps.conf = conf
-	fqueue.FileLimit = int(conf.IntDefault(mode, "fileLimit", 1024*1024*100))
+	fqueue.QueueLimit = int(conf.IntDefault(mode, "fileLimit", 1024*1024*100))
 	clientNum := int(conf.IntDefault(mode, "clientNum", 10))
 	apnsGW := conf.StringDefault(mode, "apnsGateWay", "gateway.sandbox.push.apple.com:2195")
 	apnsCert := conf.StringDefault(mode, "apnsCert", "")
