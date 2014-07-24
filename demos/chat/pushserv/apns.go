@@ -157,7 +157,6 @@ func (cli *APNSClient) Send(n Notification) (err error) {
 	if cli.Conn == nil {
 		return BrokenConnection
 	}
-	println(n)
 	_, err = cli.Conn.Write(n.Bytes())
 	return
 }
