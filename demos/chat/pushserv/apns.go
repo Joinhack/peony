@@ -13,9 +13,9 @@ import (
 )
 
 var (
-	SendTimeout        = errors.New("send timeout")
+	SendTimeout             = errors.New("send timeout")
 	BrokenConnection        = errors.New("Broken Connection")
-	seq         uint32 = 0
+	seq              uint32 = 0
 )
 
 type Payload struct {
@@ -90,7 +90,7 @@ func (cli *APNSClient) sendTask() {
 			if !ok {
 				return
 			}
-		case <-time.After(30*time.Second):
+		case <-time.After(30 * time.Second):
 			cli.Close()
 			continue
 		}
