@@ -14,6 +14,7 @@ import (
 
 var (
 	SendTimeout        = errors.New("send timeout")
+	BrokenConnection        = errors.New("Broken Connection")
 	seq         uint32 = 0
 )
 
@@ -89,6 +90,9 @@ func (cli *APNSClient) sendTask() {
 			if !ok {
 				return
 			}
+		case <-time.After(30*time.Second):
+			cli.Close()
+			continue
 		}
 	SEND:
 		if notify != nil {
@@ -142,12 +146,16 @@ func (cli *APNSClient) SendRequest(req *Request) error {
 
 func (cli *APNSClient) Close() error {
 	if cli.Conn != nil {
-		return cli.Conn.Close()
+		cli.Conn.Close()
 	}
+	cli.Conn = nil
 	return nil
 }
 
 func (cli *APNSClient) Send(n Notification) (err error) {
+	if cli.Conn == nil {
+		return BrokenConnection
+	}
 	_, err = cli.Conn.Write(n.Bytes())
 	return
 }
