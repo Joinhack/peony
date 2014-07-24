@@ -525,7 +525,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 	var msgType byte = pmsg.RouteMsgType
 	for {
 		var msg Msg
-		ws.SetReadDeadline(time.Now().Add(6 * time.Minute))
+		ws.SetReadDeadline(time.Now().Add(1 * time.Minute))
 		if err := websocket.JSON.Receive(ws, &msg); err != nil {
 			if err == io.EOF {
 				INFO.Println(ws.Request().RemoteAddr, "closed")
