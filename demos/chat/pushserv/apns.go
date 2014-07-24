@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"net"
 	"io"
 	"log"
 	"time"
@@ -99,10 +100,10 @@ func (cli *APNSClient) sendTask() {
 			if err = cli.Send(notify); err != nil {
 				cli.Close()
 				if err = cli.dial(); err != nil {
-					time.Sleep(20 * time.Millisecond)
-					//send again
-					goto SEND
+					time.Sleep(1000 * time.Second)
 				}
+				//send again
+				goto SEND
 			}
 			cli.sendCount++
 		}
@@ -156,20 +157,21 @@ func (cli *APNSClient) Send(n Notification) (err error) {
 	if cli.Conn == nil {
 		return BrokenConnection
 	}
+	println(n)
 	_, err = cli.Conn.Write(n.Bytes())
 	return
 }
 
 //read for check the connection
-func (cli *APNSClient) readLoop() {
+func (cli *APNSClient) readLoop(c net.Conn) {
 	defer func() {
-		cli.Close()
+		c.Close()
 	}()
 	buf := make([]byte, 64)
 	var err error
 	var n int
 	for {
-		if n, err = cli.Read(buf); err != nil {
+		if n, err = c.Read(buf); err != nil {
 			if err != io.EOF {
 				log.Println(err.Error())
 			}
@@ -187,7 +189,7 @@ func (cli *APNSClient) dial() (err error) {
 	log.Println("connection sent:", cli.sendCount)
 	cli.sendCount = 0
 	if err == nil {
-		go cli.readLoop()
+		go cli.readLoop(cli.Conn)
 	}
 	return
 }
