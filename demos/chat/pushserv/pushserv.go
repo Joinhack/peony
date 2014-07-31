@@ -74,16 +74,15 @@ func (p *PushServer) customer() {
 	}
 }
 
-func (p *PushServer) Close() error {
+func (p *PushServer) Close() {
 	for _, client := range p.clients {
 		if client != nil {
 			client.Close()
 		}
 	}
 	if p.queue != nil {
-		return p.queue.Close()
+		p.queue.Close()
 	}
-	return nil
 }
 
 func mergeValues(req *http.Request) url.Values {
@@ -266,14 +265,15 @@ func NewPushServer(addr string, cfgpath string) (pushServer *PushServer, err err
 	ps := &PushServer{ignores: map[string]uint32{}}
 
 	ps.conf = conf
-	fqueue.QueueLimit = int(conf.IntDefault(mode, "fileLimit", 1024*1024*100))
+	fqueue.JournalFileLimit = int(conf.IntDefault(mode, "journalFileLimit", 1024*1024*100))
+	fqueue.MaxJournalFiles = int(conf.IntDefault(mode, "maxJournalFiles", 10))
 	clientNum := int(conf.IntDefault(mode, "clientNum", 10))
 	apnsGW := conf.StringDefault(mode, "apnsGateWay", "gateway.sandbox.push.apple.com:2195")
 	apnsCert := conf.StringDefault(mode, "apnsCert", "")
 	apnsKey := conf.StringDefault(mode, "apnsKey", "")
 
-	queueFile := conf.StringDefault(mode, "queueFile", "/tmp/pushsvr.data")
-	if ps.queue, err = fqueue.NewFQueue(queueFile); err != nil {
+	queueFile := conf.StringDefault(mode, "journalsDir", "/tmp/pushsvrjournals")
+	if ps.queue, err = fqueue.NewJournalQueue(queueFile); err != nil {
 		ps.Close()
 		return
 	}

@@ -1,5 +1,6 @@
-fileLimit=1024*1024*10
-queueFile=/tmp/pushsvr.data
+journalFileLimit=1024*1024*10
+maxJournalFiles=10
+journalsDir=/tmp/pushsvrjournals/
 apnsCert=./cert.pem
 apnsKey=./key.pem
 clientNum=1

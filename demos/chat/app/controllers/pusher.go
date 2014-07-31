@@ -91,7 +91,6 @@ func (p *Pusher) task(channel <-chan *pushParam) {
 		}
 		if reply.Code != 0 {
 			ERROR.Println(reply.Msg)
-			goto SEND
 		}
 	}
 }
