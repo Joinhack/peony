@@ -17,7 +17,7 @@ var (
 	JsonFormatErrorJsonBytes, _      = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "format json error"})
 	ErrorMsgIdJsonFormatJsonBytes, _ = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "error msg id"})
 
-	KickoffJsonBytes, _ = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "You are kick off."})
+	KickoffJsonBytes, _ = json.Marshal(map[string]interface{}{"type": OffineMsgType, "code": -1, "msg": "You are kick to offline."})
 )
 
 const (
@@ -28,6 +28,7 @@ const (
 	TokenRegisterMsgType   = 251
 	TokenUnregisterMsgType = 250
 	NotifyMsgType          = 249
+	OffineMsgType          = 248
 	PingMsgType            = 0
 	TextMsgType            = 1
 	ImageMsgType           = 2

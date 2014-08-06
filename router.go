@@ -352,7 +352,7 @@ func GetRouterFilter(svr *Server) Filter {
 		urlpath := controller.Req.URL.Path
 		actionName, routerParams := router.Match(controller.Req.Method, urlpath)
 		if actionName == "" {
-			controller.NotFound("No match rule found")
+			controller.NotFound("No matched rule found")
 			return
 		}
 		controller.actionName = actionName
