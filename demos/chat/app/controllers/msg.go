@@ -122,7 +122,7 @@ func NewReplySuccessMsg(id uint32, msgid string, t int64) *ReplyMsg {
 	return &ReplyMsg{
 		Type:     ReplyMsgType,
 		NewMsgId: NewMsgId(id, t),
-		Time:     t,
+		Time:     t/1000000,
 		MsgId:    msgid,
 	}
 }
@@ -137,5 +137,5 @@ func NewReplyFailMsg(id uint32, msgid string, msg string) *ReplyMsg {
 }
 
 func NewMsgId(id uint32, t int64) string {
-	return fmt.Sprintf("%d:%d", t, id)
+	return fmt.Sprintf("%d:%d", t/1000, id)
 }

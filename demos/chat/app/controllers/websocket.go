@@ -586,7 +586,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			msg.From = client.clientId
 			msg.Time = now.UnixNano() / 1000000
 
-			reply := NewReplySuccessMsg(client.clientId, msg.MsgId, msg.Time)
+			reply := NewReplySuccessMsg(client.clientId, msg.MsgId, now.UnixNano())
 			msg.MsgId = reply.NewMsgId
 			client.SendMsg(reply)
 		case GroupMemberDelMsgType, GroupRemoveMsgType, GroupAddMsgType:
