@@ -534,6 +534,14 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			}
 			return
 		}
+		if msg.SourceType == 1 && msg.To == nil {
+			ws.Write(InvaildParameters)
+			return
+		}
+		if msg.SourceType == 3 && msg.Gid == nil {
+			ws.Write(InvaildParameters)
+			return
+		}
 		now := time.Now()
 		switch msg.Type {
 		case PingMsgType:
@@ -578,6 +586,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			client.SendMsg(reply)
 			continue
 		case ReadedMsgType:
+			msg.From = client.clientId
 		case TextMsgType, ImageMsgType, FileMsgType, SoundMsgType, StickMsgType, LocationMsgType:
 			if msg.MsgId == "" {
 				ws.Write(ErrorMsgIdJsonFormatJsonBytes)

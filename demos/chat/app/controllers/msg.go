@@ -12,6 +12,8 @@ var (
 
 	UnknownMsgTypeJsonBytes, _ = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "unknown message type"})
 
+	InvaildParameters, _ = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "invaild parameters, please check."})
+
 	ErrorJsonFormatJsonBytes, _ = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "json format error"})
 
 	JsonFormatErrorJsonBytes, _      = json.Marshal(map[string]interface{}{"type": SysReplyMsgType, "code": -1, "msg": "format json error"})
