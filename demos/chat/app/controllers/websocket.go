@@ -534,6 +534,10 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			}
 			return
 		}
+		if msg.SourceType != 1 && msg.SourceType != 3 {
+			ws.Write(InvaildParameters)
+			return
+		}
 		if msg.SourceType == 1 && msg.To == nil {
 			ws.Write(InvaildParameters)
 			return
