@@ -534,11 +534,11 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			}
 			return
 		}
-		if msg.SourceType == 1 && msg.To == nil {
+		if msg.SourceType == 1 && (msg.To == nil || *msg.To == 0) {
 			ws.Write(InvaildParameters)
 			return
 		}
-		if msg.SourceType == 3 && msg.Gid == nil {
+		if msg.SourceType == 3 && (msg.Gid == nil || *msg.Gid == 0) {
 			ws.Write(InvaildParameters)
 			return
 		}
