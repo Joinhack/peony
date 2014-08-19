@@ -228,20 +228,26 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 			} else {
 				sender = *msg.Sender
 			}
-			switch msg.Type {
-			case TextMsgType:
-				if msg.Content == nil {
+			if msg.Option == 1 {
+				pushContent = fmt.Sprintf("%s sent you a whisper message.", sender)
+			} else {
+				switch msg.Type {
+				case TextMsgType:
+					if msg.Content == nil {
+						return false
+					}
+					pushContent = fmt.Sprintf("%s:%s", sender, *msg.Content)
+				case ImageMsgType:
+					pushContent = fmt.Sprintf("%s sent you a photo.", sender)
+				case SoundMsgType:
+					pushContent = fmt.Sprintf("%s sent you a voice message.", sender)
+				case LocationMsgType:
+					pushContent = fmt.Sprintf("%s sent you a location.", sender)
+				case StickMsgType:
+					pushContent = fmt.Sprintf("%s:[stick]", sender)
+				default:
 					return false
 				}
-				pushContent = fmt.Sprintf("%s:%s", sender, *msg.Content)
-			case ImageMsgType:
-				pushContent = fmt.Sprintf("%s sent you a photo.", sender)
-			case SoundMsgType:
-				pushContent = fmt.Sprintf("%s sent you a voice message.", sender)
-			case LocationMsgType:
-				pushContent = fmt.Sprintf("%s sent you a location.", sender)
-			default:
-				return false
 			}
 			pusher.Push(byte(dev), tks[1], pushContent)
 		}
