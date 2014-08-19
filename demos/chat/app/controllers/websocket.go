@@ -224,7 +224,7 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 			var pushContent string
 			var sender string
 			if msg.Sender == nil {
-				sender = "nobody"	
+				sender = "nobody"
 			} else {
 				sender = *msg.Sender
 			}
@@ -232,7 +232,7 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 			switch msg.Type {
 			case TextMsgType:
 				if msg.Content == nil {
-					return false;
+					return false
 				}
 				pushContent = fmt.Sprintf("%s:%s", sender, *msg.Content)
 			case ImageMsgType:
@@ -241,7 +241,7 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 				pushContent = fmt.Sprintf("%s sent you a voice message.", sender)
 			case LocationMsgType:
 				pushContent = fmt.Sprintf("%s sent you a location.", sender)
-			default: 
+			default:
 				return false
 			}
 			pusher.Push(byte(dev), tks[1], pushContent)
@@ -616,7 +616,9 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 				return
 			}
 			msg.From = client.clientId
-			msg.Sender = &register.Name
+			if len(register.Name) > 0 {
+				msg.Sender = &register.Name
+			}
 			msg.Time = now.UnixNano() / 1000000
 
 			reply := NewReplySuccessMsg(client.clientId, msg.MsgId, now.UnixNano())
@@ -624,7 +626,9 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			client.SendMsg(reply)
 		case GroupMemberDelMsgType, GroupRemoveMsgType, GroupAddMsgType:
 			msg.From = client.clientId
-			msg.Sender = &register.Name
+			if len(register.Name) > 0 {
+				msg.Sender = &register.Name
+			}
 			now := time.Now()
 			msg.Time = now.UnixNano() / 1000000
 		default:
