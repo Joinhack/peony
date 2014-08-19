@@ -202,7 +202,7 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 			ERROR.Println(err)
 			return false
 		}
-		if msg.To == nil || msg.Content == nil {
+		if msg.To == nil {
 			return true
 		}
 		token := gettokens(*msg.To)
@@ -228,7 +228,13 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 			} else {
 				sender = *msg.Sender
 			}
+			msg.Content == nil
 			switch msg.Type {
+			case TextMsgType:
+				if msg.Content == nil {
+					return false;
+				}
+				pushContent = fmt.Sprintf("%s:%s", sender, *msg.Content)
 			case ImageMsgType:
 				pushContent = fmt.Sprintf("%s sent you a photo.", sender)
 			case SoundMsgType:
@@ -236,7 +242,7 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 			case LocationMsgType:
 				pushContent = fmt.Sprintf("%s sent you a location.", sender)
 			default: 
-				pushContent = fmt.Sprintf("%s:%s", sender, *msg.Content)
+				return false
 			}
 			pusher.Push(byte(dev), tks[1], pushContent)
 		}
