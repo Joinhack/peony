@@ -244,7 +244,7 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 				case LocationMsgType:
 					pushContent = fmt.Sprintf("%s sent you a location.", sender)
 				case StickMsgType:
-					pushContent = fmt.Sprintf("%s:[stick]", sender)
+					pushContent = fmt.Sprintf("%s:[sticker]", sender)
 				default:
 					return false
 				}
