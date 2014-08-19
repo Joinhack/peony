@@ -228,7 +228,6 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 			} else {
 				sender = *msg.Sender
 			}
-			msg.Content == nil
 			switch msg.Type {
 			case TextMsgType:
 				if msg.Content == nil {
