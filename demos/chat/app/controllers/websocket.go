@@ -236,7 +236,7 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 					if msg.Content == nil {
 						return false
 					}
-					pushContent = fmt.Sprintf("%s:%s", sender, *msg.Content)
+					pushContent = fmt.Sprintf("%s: %s", sender, *msg.Content)
 				case ImageMsgType:
 					pushContent = fmt.Sprintf("%s sent you a photo.", sender)
 				case SoundMsgType:
@@ -244,7 +244,7 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 				case LocationMsgType:
 					pushContent = fmt.Sprintf("%s sent you a location.", sender)
 				case StickMsgType:
-					pushContent = fmt.Sprintf("%s:[sticker]", sender)
+					pushContent = fmt.Sprintf("%s: [sticker]", sender)
 				default:
 					return false
 				}
