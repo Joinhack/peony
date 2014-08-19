@@ -221,7 +221,24 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 				ERROR.Println("unkonwn token", tk)
 				continue
 			}
-			pusher.Push(byte(dev), tks[1], *msg.Content)
+			var pushContent string
+			var sender string
+			if msg.Sender == nil {
+				sender = "nobody"	
+			} else {
+				sender = *msg.Sender
+			}
+			switch msg.Type {
+			case ImageMsgType:
+				pushContent = fmt.Sprintf("%s sent you a photo.", sender)
+			case SoundMsgType:
+				pushContent = fmt.Sprintf("%s sent you a voice message.", sender)
+			case LocationMsgType:
+				pushContent = fmt.Sprintf("%s sent you a location.", sender)
+			default: 
+				pushContent = fmt.Sprintf("%s:%s", sender, *msg.Content)
+			}
+			pusher.Push(byte(dev), tks[1], pushContent)
 		}
 	}
 	return true
@@ -593,6 +610,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 				return
 			}
 			msg.From = client.clientId
+			msg.Sender = &register.Name
 			msg.Time = now.UnixNano() / 1000000
 
 			reply := NewReplySuccessMsg(client.clientId, msg.MsgId, now.UnixNano())
@@ -600,6 +618,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			client.SendMsg(reply)
 		case GroupMemberDelMsgType, GroupRemoveMsgType, GroupAddMsgType:
 			msg.From = client.clientId
+			msg.Sender = &register.Name
 			now := time.Now()
 			msg.Time = now.UnixNano() / 1000000
 		default:

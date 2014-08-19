@@ -50,6 +50,7 @@ type RegisterMsg struct {
 	DevType byte   `json:"devType"`
 	Type    byte   `json:"type"`
 	Time    int64  `json:"time"`
+	Name    string `json:"name"`
 }
 
 type Msg struct {
@@ -69,6 +70,7 @@ type Msg struct {
 	Lat        *string     `json:"lat,omitempty"`
 	Long       *string     `json:"lng,omitempty"`
 	Name       *string     `json:"name,omitempty"`
+	Sender     *string     `json:"sender,omitempty"`
 	Token      *string     `json:"token,omitempty"`
 	Members    *[]uint32   `json:"members,omitempty"`
 	Raw        interface{} `json:"raw,omitempty"`
@@ -124,7 +126,7 @@ func NewReplySuccessMsg(id uint32, msgid string, t int64) *ReplyMsg {
 	return &ReplyMsg{
 		Type:     ReplyMsgType,
 		NewMsgId: NewMsgId(id, t),
-		Time:     t/1000000,
+		Time:     t / 1000000,
 		MsgId:    msgid,
 	}
 }
