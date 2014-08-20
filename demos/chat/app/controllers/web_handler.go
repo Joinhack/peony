@@ -21,6 +21,41 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 		if msg.To == nil {
 			return true
 		}
+
+		var pushContent string
+		var sender string
+		if msg.Sender == nil {
+			sender = "nobody"
+		} else {
+			sender = *msg.Sender
+		}
+		if msg.Option == 1 {
+			pushContent = fmt.Sprintf("%s sent you a whisper message.", sender)
+		} else {
+			switch msg.Type {
+			case TextMsgType:
+				if msg.Content == nil {
+					return false
+				}
+				pushContent = fmt.Sprintf("%s: %s", sender, *msg.Content)
+			case ImageMsgType:
+				pushContent = fmt.Sprintf("%s sent you a photo.", sender)
+			case SoundMsgType:
+				pushContent = fmt.Sprintf("%s sent you a voice message.", sender)
+			case LocationMsgType:
+				pushContent = fmt.Sprintf("%s sent you a location.", sender)
+			case StickMsgType:
+				pushContent = fmt.Sprintf("%s: [sticker]", sender)
+			case NotifyMsgType:
+				if msg.Content == nil || len(*msg.Content) == 0 {
+					return false
+				}
+				pushContent = *msg.Content
+			default:
+				return false
+			}
+		}
+
 		token := gettokens(*msg.To)
 		for _, tk := range token {
 			if tk == "" {
@@ -37,39 +72,7 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 				ERROR.Println("unkonwn token", tk)
 				continue
 			}
-			var pushContent string
-			var sender string
-			if msg.Sender == nil {
-				sender = "nobody"
-			} else {
-				sender = *msg.Sender
-			}
-			if msg.Option == 1 {
-				pushContent = fmt.Sprintf("%s sent you a whisper message.", sender)
-			} else {
-				switch msg.Type {
-				case TextMsgType:
-					if msg.Content == nil {
-						return false
-					}
-					pushContent = fmt.Sprintf("%s: %s", sender, *msg.Content)
-				case ImageMsgType:
-					pushContent = fmt.Sprintf("%s sent you a photo.", sender)
-				case SoundMsgType:
-					pushContent = fmt.Sprintf("%s sent you a voice message.", sender)
-				case LocationMsgType:
-					pushContent = fmt.Sprintf("%s sent you a location.", sender)
-				case StickMsgType:
-					pushContent = fmt.Sprintf("%s: [sticker]", sender)
-				case NotifyMsgType:
-					if msg.Content == nil || len(*msg.Content) == 0 {
-						return false
-					}
-					pushContent = *msg.Content
-				default:
-					return false
-				}
-			}
+
 			pusher.Push(byte(dev), tks[1], pushContent)
 		}
 	}
