@@ -90,7 +90,10 @@ func (h *WebHandler) Notify(to uint32, msg string, pushContent string) peony.Ren
 		ERROR.Println(err)
 		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": "message must be json"})
 	}
-	message := &Msg{From: 0, MsgId: "nil", Type: NotifyMsgType, Raw: raw, Time: now.UnixNano() / 1000000, To: &to, Content: &pushContent}
+	message := &Msg{From: 0, MsgId: "nil", Type: NotifyMsgType, Raw: raw, Time: now.UnixNano() / 1000000, To: &to}
+	if len(pushContent) > 0 {
+		message.Content = &pushContent
+	}
 	if err := sendMsg(message, pmsg.RouteMsgType); err != nil {
 		return peony.RenderJson(map[string]interface{}{"code": -1, "msg": err.Error()})
 	}
