@@ -164,35 +164,44 @@ func validateMsg(msg *Msg) error {
 	switch msg.Type {
 	case TextMsgType, StickMsgType:
 		if msg.Content == nil || len(*msg.Content) == 0 {
+			ERROR.Println("content is empty")
 			return UnknowJsonFormat
 		}
 	case ImageMsgType:
 		if msg.BigSrc == nil || len(*msg.BigSrc) == 0 {
+			ERROR.Println("BigSrc is empty")
 			return UnknowJsonFormat
 		}
 		if msg.SmallSrc == nil || len(*msg.SmallSrc) == 0 {
+			ERROR.Println("SmallSrc is empty")
 			return UnknowJsonFormat
 		}
 	case FileMsgType:
 		if msg.Url == nil || len(*msg.Url) == 0 {
+			ERROR.Println("Url is empty")
 			return UnknowJsonFormat
 		}
 		if msg.Name == nil || len(*msg.Name) == 0 {
+			ERROR.Println("Name is empty")
 			return UnknowJsonFormat
 		}
 	case SoundMsgType:
 		if msg.Url == nil || len(*msg.Url) == 0 {
+			ERROR.Println("Url (sound) is empty")
 			return UnknowJsonFormat
 		}
 	case LocationMsgType:
 		if msg.Lat == nil || len(*msg.Lat) == 0 {
+			ERROR.Println("Lat is empty")
 			return UnknowJsonFormat
 		}
 		if msg.Long == nil || len(*msg.Long) == 0 {
+			ERROR.Println("Lng is empty")
 			return UnknowJsonFormat
 		}
 	case GroupAddMsgType:
 		if msg.Members == nil || len(*msg.Members) == 0 {
+			ERROR.Println("Members is empty")
 			return UnknowJsonFormat
 		}
 	}
@@ -259,6 +268,11 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 		}
 		if msg.SourceType == 3 && (msg.Gid == nil || *msg.Gid == 0) {
 			ws.Write(InvaildParameters)
+			return
+		}
+		if err = validateMsg(&msg); err != nil {
+			ERROR.Println(err)
+			ws.Write(JsonFormatErrorJsonBytes)
 			return
 		}
 		now := time.Now()
@@ -332,11 +346,7 @@ func (c *WebSocket) chat(ws *websocket.Conn) {
 			ws.Write(UnknownMsgTypeJsonBytes)
 			return
 		}
-		if err = validateMsg(&msg); err != nil {
-			ERROR.Println(err)
-			ws.Write(JsonFormatErrorJsonBytes)
-			return
-		}
+		
 		if msg.SourceType == 3 {
 			//clone msg
 			if err = sendGroupMsg(&msg, msgType); err != nil {

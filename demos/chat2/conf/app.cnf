@@ -1,0 +1,38 @@
+app.name=chat
+app.secret=hEH8PGKsfzqQjWYAvTJtayo0_CLgw3mb4USiRd9Fcn5DNM1pOrBkelxVI6X7Z-u2
+app.addr=:9000
+
+log.trace.prefix = "TRACE "
+log.info.prefix  = "INFO  "
+log.warn.prefix  = "WARN  "
+log.error.prefix = "ERROR "
+
+#all static path uri prefix
+static.uri  =  /public
+#it's a relative path in app
+static.path =  public
+
+cluster = 1->127.0.0.1:9997
+range = 1048576
+whoami = 1
+offlineRange = 1-50000
+offlineStorePath = /tmp
+
+user.server = 127.0.0.1:6111
+#redis.passwd =
+offline.server = 127.0.0.1:6111
+#offline.passwd =
+token.server = 127.0.0.1:6111
+#token.passwd =
+push.url = http://127.0.0.1:9001/push
+push.num = 10
+
+[dev]
+log.info.output  = stderr
+log.warn.output  = stderr
+log.error.output = stderr
+
+[prod]
+log.info.output  = $(app.name).log
+log.warn.output  = $(app.name).log
+log.error.output = $(app.name).log

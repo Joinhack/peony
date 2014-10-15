@@ -30,7 +30,7 @@ func sendNotify(rmsg pmsg.RouteMsg) bool {
 			sender = *msg.Sender
 		}
 		if msg.Option == 1 {
-			pushContent = fmt.Sprintf("%s sent you a whisper message.", sender)
+			pushContent = fmt.Sprintf("%s sent you a Flash Message.", sender)
 		} else {
 			switch msg.Type {
 			case TextMsgType:

@@ -28,6 +28,7 @@ type Renderer interface {
 type TextRenderer struct {
 	Renderer
 	ContentType string
+	TextSlice   []byte
 	Text        string
 }
 
@@ -235,7 +236,7 @@ func (r *ErrorRenderer) Apply(c *Controller) {
 	}
 	if e := tpl.Execute(c.Resp, err); e != nil {
 		ERROR.Println("template execute error:", e)
-		ERROR.Println("origin error:", r.Error);
+		ERROR.Println("origin error:", r.Error)
 	}
 }
 
@@ -268,7 +269,11 @@ func (r *TextRenderer) Apply(c *Controller) {
 		contentType = "text/pain"
 	}
 	resp.WriteContentTypeCode(http.StatusOK, r.ContentType)
-	resp.Write([]byte(r.Text))
+	if r.Text != "" {
+		resp.Write([]byte(r.Text))
+	} else {
+		resp.Write(r.TextSlice)
+	}
 }
 
 func (t *TemplateRenderer) Apply(c *Controller) {
