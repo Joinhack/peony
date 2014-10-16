@@ -105,6 +105,10 @@ func main() {
 				}
 
 				if msgType != 1 {
+					if msgType == 252 {
+						//mean sent success
+						TotalSend++
+					}
 					continue
 				}
 				var rs *c.Msg
@@ -151,7 +155,6 @@ func main() {
 					fmt.Println(err)
 					return
 				}
-				TotalSend++
 				time.Sleep(time.Duration(200*delayN) * time.Microsecond)
 			}
 		}(i)
@@ -160,7 +163,7 @@ func main() {
 	signal.Notify(signalChan)
 	<-signalChan
 	running = false
-	time.Sleep(10 * time.Second)
+	time.Sleep(15 * time.Second)
 	var con *websocket.Conn
 	for _, con = range peers {
 		con.Close()
