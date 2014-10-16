@@ -9,7 +9,6 @@ func init() {
 	chat.Init()
 	
 	peony.OnServerInit(func(s *peony.Server) {
-		println(chat.GetOfflineRedisPool())
 		SetOfflineRedisPool(chat.GetOfflineRedisPool())
 	})
 }
