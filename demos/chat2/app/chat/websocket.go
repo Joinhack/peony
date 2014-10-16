@@ -136,11 +136,16 @@ func ConvertMsg(m map[string]json.RawMessage) (msg *Msg, err error) {
 	if bodies, err = convertBodies(bodiesMessage); err != nil {
 		return
 	}
-	extSli := []byte(ext)
-	msg = &Msg{
-		Bodies: &bodies,
+	
+	msg = &Msg {
 		To:     to,
-		Ext:    &extSli,
+	}
+	if len(bodiesMessage) > 0 {
+		msg.Bodies = &bodies
+	}
+	if len(ext) > 0 {
+		extSli := []byte(ext)
+		msg.Ext = &extSli
 	}
 	err = nil
 	return

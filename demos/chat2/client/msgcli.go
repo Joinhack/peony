@@ -155,7 +155,7 @@ func main() {
 					fmt.Println(err)
 					return
 				}
-				time.Sleep(time.Duration(200*delayN) * time.Microsecond)
+				time.Sleep(time.Duration(delayN) * time.Second)
 			}
 		}(i)
 	}
