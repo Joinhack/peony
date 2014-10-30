@@ -62,19 +62,24 @@ func convertBodies(bs json.RawMessage) (bodies []MsgBody, err error) {
 				Content: content,
 			})
 		case ImageMsgBodyType:
-			var bigsrc, smallsrc string
-			if err = ParseField(body, "bigSrc", &bigsrc); err != nil {
-				ERROR.Println("parse bigSrc error.")
+			var url, surl, name string
+			if err = ParseField(body, "url", &url); err != nil {
+				ERROR.Println("parse url error.")
 				return
 			}
-			if err = ParseField(body, "smallSrc", &smallsrc); err != nil {
-				ERROR.Println("parse smallSrc error.")
+			if err = ParseField(body, "surl", &surl); err != nil {
+				ERROR.Println("parse surl error.")
+				return
+			}
+			if err = ParseField(body, "name", &name); err != nil {
+				ERROR.Println("parse name error.")
 				return
 			}
 			bodies = append(bodies, &ImageMsgBody{
-				Type:     bodyType,
-				SmallSrc: smallsrc,
-				BigSrc:   bigsrc,
+				Type:      bodyType,
+				ScaledUrl: surl,
+				Url:       url,
+				Name:      name,
 			})
 		case FileMsgBodyType:
 			var url, name string
@@ -136,9 +141,9 @@ func ConvertMsg(m map[string]json.RawMessage) (msg *Msg, err error) {
 	if bodies, err = convertBodies(bodiesMessage); err != nil {
 		return
 	}
-	
-	msg = &Msg {
-		To:     to,
+
+	msg = &Msg{
+		To: to,
 	}
 	if len(bodiesMessage) > 0 {
 		msg.Bodies = &bodies
@@ -237,7 +242,7 @@ func Chat(ws *websocket.Conn) {
 			ERROR.Println("parse type error.", err)
 			return
 		}
-		if err = ParseField(message, "msgId", &msgId); err != nil {
+		if err = ParseField(message, "id", &msgId); err != nil {
 			ws.Write(UnknownDevicesJsonBytes)
 			ERROR.Println("parse msgId error.", err)
 			return
@@ -269,7 +274,7 @@ func Chat(ws *websocket.Conn) {
 		msg.Type = msgType
 
 		reply := NewReplySuccessMsg(client.clientId, msgId, now.UnixNano())
-		msg.MsgId = reply.NewMsgId
+		msg.Id = reply.NId
 		client.SendMsg(reply)
 
 		if msg.Type == 2 {

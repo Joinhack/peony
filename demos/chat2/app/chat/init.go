@@ -38,6 +38,10 @@ func GetOfflineRedisPool() *redis.Pool {
 	return offlineRedisPool
 }
 
+func GetUserRedisPool() *redis.Pool {
+	return userRedisPool
+}
+
 func hookLog() {
 	pmsg.ERROR = peony.ERROR
 	pmsg.WARN = peony.WARN

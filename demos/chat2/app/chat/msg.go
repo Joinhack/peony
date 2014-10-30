@@ -2,6 +2,7 @@ package chat
 
 import (
 	"encoding/json"
+	
 	"fmt"
 )
 
@@ -65,7 +66,7 @@ type UserInfo struct {
 }
 
 type Msg struct {
-	MsgId  string     `json:"msgId"`
+	Id     string     `json:"id"`
 	Sender *string    `json:"sender,omitempty"`
 	From   uint32     `json:"from,,omitempty"`
 	To     uint32     `json:"to,omitempty"`
@@ -89,9 +90,10 @@ func (body *ContentMsgBody) GetType() byte {
 }
 
 type ImageMsgBody struct {
-	Type     byte   `json:"type"`
-	SmallSrc string `json:"smallsrc,omitempty"`
-	BigSrc   string `json:"bigsrc,omitempty"`
+	Type      byte   `json:"type"`
+	ScaledUrl string `json:"surl,omitempty"`
+	Url       string `json:"url,omitempty"`
+	Name      string `json:"name,omitempty"`
 }
 
 func (body *ImageMsgBody) GetType() byte {
@@ -152,12 +154,12 @@ func (msg *RedirectMsg) Bytes() []byte {
 }
 
 type ReplyMsg struct {
-	Type     byte   `json:"type"`
-	NewMsgId string `json:"newMsgId,omitempty"`
-	Time     int64  `json:"time,omitempty"`
-	Code     int    `json:"code"`
-	Msg      string `json:"msg, omitempty"`
-	MsgId    string `json:"msgId"`
+	Type byte   `json:"type"`
+	NId  string `json:"nid,omitempty"`
+	Time int64  `json:"time,omitempty"`
+	Code int    `json:"code"`
+	Msg  string `json:"msg, omitempty"`
+	Id   string `json:"id"`
 }
 
 func (msg *ReplyMsg) Body() []byte {
@@ -175,19 +177,19 @@ func (msg *ReplyMsg) Bytes() []byte {
 
 func NewReplySuccessMsg(id uint32, msgid string, t int64) *ReplyMsg {
 	return &ReplyMsg{
-		Type:     ReplyMsgType,
-		NewMsgId: NewMsgId(id, t),
-		Time:     t / 1000000,
-		MsgId:    msgid,
+		Type: ReplyMsgType,
+		NId:  NewMsgId(id, t),
+		Time: t / 1000000,
+		Id:   msgid,
 	}
 }
 
 func NewReplyFailMsg(id uint32, msgid string, msg string) *ReplyMsg {
 	return &ReplyMsg{
-		Type:  ReplyMsgType,
-		Code:  -1,
-		MsgId: msgid,
-		Msg:   msg,
+		Type: ReplyMsgType,
+		Code: -1,
+		Id:   msgid,
+		Msg:  msg,
 	}
 }
 

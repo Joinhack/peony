@@ -42,29 +42,58 @@ func getGroupMembers(gid uint32) []uint64 {
 	}
 	return members
 }
-func GetUserById(id uint32) (user *UserInfo, err error) {
-	return &UserInfo{Id: id, Password:"111111", Name:fmt.Sprintf("name%d", id)}, nil
-}
-// func GetUserById(id uint32) (user *UserInfo, err error) {
-// 	conn := userRedisPool.Get()
-// 	defer conn.Close()
-// 	key := fmt.Sprintf("u%d", id)
-// 	var val []byte
-// 	if val, err = redis.Bytes(conn.Do("get", key)); err != nil {
-// 		if err == redis.ErrNil {
-// 			err = UserNotExist
-// 			return
-// 		}
-// 		return
-// 	}
+
+func GetUserByName(name string) (user *UserInfo, err error) {
+	conn := userRedisPool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("n_%s", name)
+	var val []byte
+	if val, err = redis.Bytes(conn.Do("get", key)); err != nil {
+		if err == redis.ErrNil {
+			err = UserNotExist
+			return
+		}
+		return
+	}
+
+	uid := binary.LittleEndian.Uint32(val)
+	idkey := fmt.Sprintf("u%d", uid)
+	if val, err = redis.Bytes(conn.Do("get", idkey)); err != nil {
+		if err == redis.ErrNil {
+			err = UserNotExist
+			return
+		}
+		return
+	}
 	
-// 	var u UserInfo
-// 	if err = json.Unmarshal(val, &u); err != nil {
-// 		return
-// 	}
-// 	user = &u
-// 	return
-// }
+	var u UserInfo
+	if err = json.Unmarshal(val, &u); err != nil {
+		return
+	}
+	user = &u
+	return
+}
+
+func GetUserById(id uint32) (user *UserInfo, err error) {
+	conn := userRedisPool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("u%d", id)
+	var val []byte
+	if val, err = redis.Bytes(conn.Do("get", key)); err != nil {
+		if err == redis.ErrNil {
+			err = UserNotExist
+			return
+		}
+		return
+	}
+	
+	var u UserInfo
+	if err = json.Unmarshal(val, &u); err != nil {
+		return
+	}
+	user = &u
+	return
+}
 
 func AddUser(user *UserInfo) (rs uint32, err error) {
 	conn := userRedisPool.Get()
@@ -88,6 +117,7 @@ func AddUser(user *UserInfo) (rs uint32, err error) {
 		return
 	}
 	rs = uint32(seq)
+	user.Id = rs
 	key := fmt.Sprintf("u%d", rs)
 	var val []byte
 	if val, err = json.Marshal(user); err != nil {
@@ -96,6 +126,5 @@ func AddUser(user *UserInfo) (rs uint32, err error) {
 	if _, err = redis.String(conn.Do("set", key, val)); err != nil {
 		return
 	}
-	user.Id = rs
 	return
 }
