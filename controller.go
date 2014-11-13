@@ -4,6 +4,7 @@ import (
 	"code.google.com/p/go.net/websocket"
 	"errors"
 	"fmt"
+	"net/http"
 	"reflect"
 )
 
@@ -14,6 +15,7 @@ var (
 	SessionType       = reflect.TypeOf((*Session)(nil))
 	ControllerType    = reflect.TypeOf((*Controller)(nil))
 	AppType           = reflect.TypeOf((*App)(nil))
+	FlashType           = reflect.TypeOf((*Flash)(nil))
 	NotFunc           = errors.New("action should be a func")
 	NotMethod         = errors.New("action should be a method")
 	ValueMustbePtr    = errors.New("value must be should be ptr")
@@ -28,6 +30,7 @@ type Controller struct {
 	action         *Action
 	Params         *Params
 	render         Renderer
+	flash          Flash
 	templateLoader *TemplateLoader
 }
 
@@ -41,6 +44,10 @@ type Action struct {
 	targetType reflect.Type  //if is method action, targetType is recv type. e.g. (*X).DO *X is  the targetType
 	targetPtr  reflect.Value // the ptr value for targetType, always is a ptr value
 	Args       []*ArgType
+}
+
+func (c *Controller) SetCookie(cookie *http.Cookie) {
+	http.SetCookie(c.Resp, cookie)
 }
 
 //Get Param Value
@@ -92,7 +99,7 @@ type ArgType struct {
 }
 
 type ActionContainer struct {
-	Actions     map[string]*Action       //e.g. key is Controller.Call or Function
+	Actions     map[string]*Action //e.g. key is Controller.Call or Function
 	FuncActions map[string]*Action //e.g. key is the type
 }
 
@@ -170,6 +177,8 @@ func GetActionInvokeFilter(server *Server) Filter {
 				argValue = reflect.ValueOf(controller.Session)
 			case AppType:
 				argValue = reflect.ValueOf(controller.Server.App)
+			case FlashType:
+				argValue = reflect.ValueOf(&controller.flash)
 			default:
 				argValue = convertors.Convert(controller.Params, arg.Name, arg.Type)
 			}

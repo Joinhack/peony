@@ -116,7 +116,6 @@ func ByteSliceConvert(p *Params, n string, typ reflect.Type) reflect.Value {
 
 func FileConvert(p *Params, n string, typ reflect.Type) reflect.Value {
 	file := getMultipartFile(p, n)
-	fmt.Println("--------")
 	if file == nil {
 		return reflect.Zero(typ)
 	}

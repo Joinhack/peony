@@ -106,7 +106,7 @@ func (r *RedirectRenderer) getRedirctUrl(svr *Server) (string, error) {
 	}
 	locType := reflect.TypeOf(r.action)
 	actionName := ""
-	if locType.Kind() == reflect.Func {
+	if locType.Kind() != reflect.Func {
 		if locType.NumIn() > 0 {
 			recvType := locType.In(0)
 			//support Controller.Method as redirect argument.
@@ -357,7 +357,8 @@ func Redirect(r interface{}, param ...interface{}) Renderer {
 			goto ERR
 		}
 	}
-	return &RedirectRenderer{action: r, param: param}
+
+	return &RedirectRenderer{action: r, param: p}
 ERR:
 	_, f, l, _ := runtime.Caller(1)
 	lines, _ := ReadLines(f)
