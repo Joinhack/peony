@@ -3,6 +3,7 @@ package peony
 import (
 	"code.google.com/p/go.net/websocket"
 	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -92,13 +93,13 @@ type ArgType struct {
 
 type ActionContainer struct {
 	Actions     map[string]*Action       //e.g. key is Controller.Call or Function
-	TypeActions map[reflect.Type]*Action //e.g. key is the type
+	FuncActions map[string]*Action //e.g. key is the type
 }
 
 func NewActionContainer() *ActionContainer {
 	actions := &ActionContainer{
 		Actions:     make(map[string]*Action),
-		TypeActions: make(map[reflect.Type]*Action),
+		FuncActions: make(map[string]*Action),
 	}
 	return actions
 }
@@ -117,12 +118,17 @@ func (a *ActionContainer) RegisterFuncAction(function interface{}, action *Actio
 	action.function = function
 	action.call = funcVal
 	a.Actions[action.Name] = action
-	a.TypeActions[funcType] = action
+	a.FuncActions[fmt.Sprintf("%p", function)] = action
 	return nil
 }
 
-func (a *ActionContainer) FindActionByType(t reflect.Type) *Action {
-	return a.TypeActions[t]
+func (a *ActionContainer) FindActionByFunc(i interface{}) *Action {
+	funcType := reflect.TypeOf(i)
+	if funcType.Kind() != reflect.Func {
+		ERROR.Println("registor func action error:", NotFunc)
+		panic(NotFunc)
+	}
+	return a.FuncActions[fmt.Sprintf("%p", i)]
 }
 
 func (a *ActionContainer) RegisterMethodAction(method interface{}, action *Action) error {
@@ -138,7 +144,6 @@ func (a *ActionContainer) RegisterMethodAction(method interface{}, action *Actio
 	action.call = methodVal
 	action.targetType = targetType
 	a.Actions[action.Name] = action
-	a.TypeActions[methodType] = action
 	return nil
 }
 
