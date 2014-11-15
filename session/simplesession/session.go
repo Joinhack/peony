@@ -12,6 +12,9 @@ import (
 
 var (
 	encoding *base64.Encoding
+	CookieHttpOnly bool
+	CookieSecure bool
+	SessionTimeout int
 )
 
 func init() {
@@ -21,6 +24,9 @@ func init() {
 		sec := s.App.Security
 		encoding = base64.NewEncoding(sec)
 		s.RegisterSessionManager(&SimpleSessionManager{})
+		CookieHttpOnly = s.App.GetBoolConfig("CookieHttpOnly", false)
+		CookieSecure = s.App.GetBoolConfig("CookieSecure", false)
+		SessionTimeout = s.App.GetIntConfig("SessionTimeout", 30)
 	})
 }
 
@@ -47,11 +53,11 @@ func (cm *SimpleSessionManager) Store(c *peony.Controller, s *peony.Session) {
 	val := encoding.EncodeToString(buf.Bytes())
 	cookie := &http.Cookie{
 		Name:     "PEONY_SESSION",
-		HttpOnly: false,
-		Secure:   false,
+		HttpOnly: CookieHttpOnly,
+		Secure:   CookieSecure,
 		Value:    val,
 		Path:     "/",
-		Expires:  time.Now().Add(30 * time.Second).UTC(),
+		Expires:  time.Now().Add(time.Duration(SessionTimeout) * time.Second).UTC(),
 	}
 	http.SetCookie(c.Resp, cookie)
 }

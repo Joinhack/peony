@@ -45,27 +45,32 @@ func (f Flash) Success(msg string, args ...interface{}) {
 	}
 }
 
-func FlashFilter(c *Controller, fc []Filter) {
-	c.flash = restoreFlash(c.Req.Request)
+func GetFlashFilter(s *Server) Filter {
+	CookieHttpOnly = s.App.GetBoolConfig("CookieHttpOnly", false)
+	CookieSecure = s.App.GetBoolConfig("CookieSecure", false)
+	CookiePrefix = s.App.GetStringConfig("CookiePrefix", "PEONY")
+	return func (c *Controller, fc []Filter) {
+		c.Flash = restoreFlash(c.Req.Request)
 
-	fc[0](c, fc[1:])
+		fc[0](c, fc[1:])
 
-	// Store the flash.
-	var flashValue string
-	for key, value := range c.flash.Out {
-		flashValue += "\x00" + key + ":" + value + "\x00"
+		// Store the flash.
+		var flashValue string
+		for key, value := range c.Flash.Out {
+			flashValue += "\x00" + key + ":" + value + "\x00"
+		}
+		c.SetCookie(&http.Cookie{
+			Name:     CookiePrefix + "_FLASH",
+			Value:    url.QueryEscape(flashValue),
+			HttpOnly: CookieHttpOnly,
+			Secure:   CookieSecure,
+			Path:     "/",
+		})
 	}
-	c.SetCookie(&http.Cookie{
-		Name:     CookiePrefix + "_FLASH",
-		Value:    url.QueryEscape(flashValue),
-		HttpOnly: CookieHttpOnly,
-		Secure:   CookieSecure,
-		Path:     "/",
-	})
 }
 
-func restoreFlash(req *http.Request) Flash {
-	flash := Flash{
+func restoreFlash(req *http.Request) *Flash {
+	flash := &Flash{
 		In: make(map[string]string),
 		Out:  make(map[string]string),
 	}

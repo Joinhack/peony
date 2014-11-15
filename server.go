@@ -215,7 +215,7 @@ func (s *Server) BindDefaultFilters() {
 		GetStaticFilter(s),
 		GetRouterFilter(s),
 		GetSessionFilter(s),
-		FlashFilter,
+		GetFlashFilter(s),
 		ParamsFilter,
 		GetInterceptorFilter(s),
 		GetActionInvokeFilter(s),

@@ -15,7 +15,7 @@ var (
 	SessionType       = reflect.TypeOf((*Session)(nil))
 	ControllerType    = reflect.TypeOf((*Controller)(nil))
 	AppType           = reflect.TypeOf((*App)(nil))
-	FlashType           = reflect.TypeOf((*Flash)(nil))
+	FlashType         = reflect.TypeOf((*Flash)(nil))
 	NotFunc           = errors.New("action should be a func")
 	NotMethod         = errors.New("action should be a method")
 	ValueMustbePtr    = errors.New("value must be should be ptr")
@@ -26,11 +26,11 @@ type Controller struct {
 	Req            *Request
 	Session        *Session
 	Server         *Server
+	Flash          *Flash
+	Params         *Params
 	actionName     string
 	action         *Action
-	Params         *Params
 	render         Renderer
-	flash          Flash
 	templateLoader *TemplateLoader
 }
 
@@ -167,6 +167,8 @@ func GetActionInvokeFilter(server *Server) Filter {
 		for _, arg := range args {
 			var argValue reflect.Value
 			switch arg.Type {
+			case ControllerType:
+				argValue = reflect.ValueOf(controller)
 			case WebSocketConnType:
 				argValue = reflect.ValueOf(controller.Req.WSConn)
 			case RequestType:
@@ -178,7 +180,7 @@ func GetActionInvokeFilter(server *Server) Filter {
 			case AppType:
 				argValue = reflect.ValueOf(controller.Server.App)
 			case FlashType:
-				argValue = reflect.ValueOf(&controller.flash)
+				argValue = reflect.ValueOf(controller.Flash)
 			default:
 				argValue = convertors.Convert(controller.Params, arg.Name, arg.Type)
 			}
