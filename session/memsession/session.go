@@ -58,13 +58,13 @@ func (sm *MemSessionManager) GenerateId() string {
 func (sm *MemSessionManager) clearTask() {
 	for {
 		select {
-		case <-time.After(1 * time.Minute):
+		case <-time.After(60 * time.Second):
 		}
 		now := time.Now().Unix()
 		sm.mtx.Lock()
 		for e := sm.list.Front(); e != nil; {
 			wrap := e.Value.(*sessionWrap)
-			if (now - wrap.lastAccess) >= 30 {
+			if (now - wrap.lastAccess) >= SessionTimeout*60 {
 				rm := e
 				e = e.Next()
 				sm.list.Remove(rm)
@@ -115,7 +115,9 @@ func (sm *MemSessionManager) getSession(id string) *peony.Session {
 	var session *peony.Session
 	if len(id) != 0 {
 		it := sm.sessions[id]
-		session = it.wrap.Session
+		if it != nil {
+			session = it.wrap.Session	
+		}
 	}
 	if session == nil {
 		session = &peony.Session{
