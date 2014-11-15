@@ -12,7 +12,7 @@ import (
 var (
 	CookieHttpOnly bool
 	CookieSecure   bool
-	SessionTimeout int
+	SessionTimeout int64
 )
 
 type item struct {
@@ -36,7 +36,7 @@ func init() {
 		s.RegisterSessionManager(sm)
 		CookieHttpOnly = s.App.GetBoolConfig("CookieHttpOnly", false)
 		CookieSecure = s.App.GetBoolConfig("CookieSecure", false)
-		SessionTimeout = int(s.App.GetIntConfig("SessionTimeout", 30))
+		SessionTimeout = s.App.GetIntConfig("SessionTimeout", 30)
 	})
 }
 

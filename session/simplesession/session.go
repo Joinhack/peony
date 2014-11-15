@@ -14,7 +14,7 @@ var (
 	encoding *base64.Encoding
 	CookieHttpOnly bool
 	CookieSecure bool
-	SessionTimeout int
+	SessionTimeout int64
 )
 
 func init() {
