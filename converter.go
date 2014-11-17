@@ -73,6 +73,18 @@ func FloatConvert(value string, typ reflect.Type) reflect.Value {
 	return val.Elem()
 }
 
+func BoolConvert(value string, typ reflect.Type) reflect.Value {
+	fValue, err := strconv.ParseBool(value)
+	if err != nil {
+		WARN.Printf("can't convert \"%s\" to bool\n", value)
+		return reflect.Zero(typ)
+	}
+	val := reflect.New(typ)
+	val.Elem().SetBool(fValue)
+	return val.Elem()
+}
+
+
 func nextKey(key string) string {
 	fieldLen := strings.IndexAny(key, ".[")
 	if fieldLen == -1 {
@@ -286,6 +298,10 @@ func FloatReverseConvert(p map[string]string, name string, v interface{}) {
 	p[name] = fmt.Sprintf("%f", v)
 }
 
+func BoolReverseConvert(p map[string]string, name string, v interface{}) {
+	p[name] = fmt.Sprintf("%b", v)
+}
+
 func NewConvertors() *Convertors {
 	c := &Convertors{
 		KindConvertors: map[reflect.Kind]*Convertor{},
@@ -305,6 +321,8 @@ func NewConvertors() *Convertors {
 
 	c.KindConvertors[reflect.Float32] = ValueConvertor(FloatConvert, FloatReverseConvert)
 	c.KindConvertors[reflect.Float64] = ValueConvertor(FloatConvert, FloatReverseConvert)
+
+	c.KindConvertors[reflect.Bool] = ValueConvertor(BoolConvert, BoolReverseConvert)
 
 	c.KindConvertors[reflect.String] = ValueConvertor(StringConvert, StringReverseConvert)
 

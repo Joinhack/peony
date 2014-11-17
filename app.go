@@ -73,6 +73,8 @@ var (
 	WARN  *log.Logger = log.New(os.Stdout, "WARN ", log.Ldate|log.Ltime|log.Lshortfile)
 	INFO  *log.Logger = log.New(os.Stdout, "INFO ", log.Ldate|log.Ltime|log.Lshortfile)
 	ERROR *log.Logger = log.New(os.Stderr, "ERROR ", log.Ldate|log.Ltime|log.Lshortfile)
+	//export writer for panic
+	ERRORWriter io.Writer = os.Stderr
 )
 
 func NewApp(sourcePath, importPath string) *App {
@@ -104,6 +106,9 @@ func (a *App) getLogger(name, defaultout string) *log.Logger {
 		if err != nil {
 			log.Fatalf("open log file %s error, %s", out, err)
 		}
+	}
+	if name == "error" {
+		ERRORWriter = writer
 	}
 	return log.New(writer, prefix, log.Ldate|log.Ltime|log.Lshortfile)
 }

@@ -16,6 +16,12 @@ func (s *Session) Set(key string, value interface{}) {
 	s.Attribute[key] = value
 }
 
+//Set attribute
+func (s *Session) Del(key string) {
+	delete(s.Attribute, key)
+}
+
+
 //Get attribute
 func (s *Session) Get(key string) (val interface{}, ok bool) {
 	val, ok = s.Attribute[key]

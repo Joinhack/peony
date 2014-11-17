@@ -106,16 +106,18 @@ func (r *RedirectRenderer) getRedirctUrl(svr *Server) (string, error) {
 	}
 	locType := reflect.TypeOf(r.action)
 	actionName := ""
-	if locType.Kind() != reflect.Func {
-		if locType.NumIn() > 0 {
-			recvType := locType.In(0)
-			//support Controller.Method as redirect argument.
-			if recvType.Kind() != reflect.Ptr {
-				meth := FindMethod(recvType, reflect.ValueOf(r.action))
-				if meth != nil {
-					actionName = recvType.Name() + "." + meth.Name
-				}
+	if locType.NumIn() > 0 {
+		recvType := locType.In(0)
+		//support Controller.Method as redirect argument.
+		meth := FindMethod(recvType, reflect.ValueOf(r.action))
+		if meth != nil {
+			recvName := ""
+			if recvType.Kind() == reflect.Ptr {
+				recvName = recvType.Elem().Name()
+			} else {
+				recvName = recvType.Name()
 			}
+			actionName = fmt.Sprintf("%s.%s", recvName, meth.Name)
 		}
 	}
 	var action *Action
@@ -293,6 +295,21 @@ func (t *TemplateRenderer) Apply(c *Controller) {
 		resp.Write([]byte("can't find template " + tmplName))
 		return
 	}
+
+	var ok bool
+	var p map[string]interface{}
+	if t.RenderParam == nil {
+		p = map[string]interface{}{}
+		t.RenderParam = p
+	} else if p, ok = t.RenderParam.(map[string]interface{}); !ok {
+		p = nil
+	}
+	if p != nil {
+		//merge session and flash
+		p["session"] = c.Session.Attribute
+		p["flash"] = c.Flash.In
+	}
+
 	err := template.Execute(resp, t.RenderParam)
 	if err != nil {
 		//TODO parse error
@@ -314,10 +331,11 @@ func RenderText(s string) Renderer {
 
 func Render(param ...interface{}) Renderer {
 	var renderParam interface{}
-	if len(param) == 1 {
-		renderParam = param[0]
-	} else {
-		renderParam = param
+	l := len(param)
+	if l > 0 {
+		if l == 1 {
+			renderParam = param[0]
+		}
 	}
 	return &autoRenderer{Params: renderParam}
 }

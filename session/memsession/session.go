@@ -87,7 +87,7 @@ func (sm *MemSessionManager) Store(c *peony.Controller, s *peony.Session) {
 		Secure:   CookieHttpOnly,
 		Value:    s.GetId(),
 		Path:     "/",
-		Expires:  time.Now().Add(time.Duration(SessionTimeout) * time.Second).UTC(),
+		Expires:  time.Now().Add(time.Duration(SessionTimeout) * time.Minute).UTC(),
 	}
 	http.SetCookie(c.Resp, cookie)
 }
