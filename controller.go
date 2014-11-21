@@ -11,6 +11,7 @@ import (
 var (
 	WebSocketConnType = reflect.TypeOf((*websocket.Conn)(nil))
 	RequestType       = reflect.TypeOf((*Request)(nil))
+	ErrorType         = reflect.TypeOf((*error)(nil)).Elem()
 	ResponseType      = reflect.TypeOf((*Response)(nil))
 	SessionType       = reflect.TypeOf((*Session)(nil))
 	ControllerType    = reflect.TypeOf((*Controller)(nil))
@@ -188,6 +189,14 @@ func GetActionInvokeFilter(server *Server) Filter {
 		}
 		rsSlice := controller.action.Invoke(callArgs)
 		if len(rsSlice) > 0 {
+			last := rsSlice[len(rsSlice)-1]
+			if last.Type().Implements(ErrorType) {
+				lastInterface := last.Interface()
+				if lastInterface != nil {
+					controller.render = RenderError(lastInterface.(error))
+					return
+				}
+			}
 			rsVal := rsSlice[0]
 			if rsVal.Type().Kind() == reflect.String {
 				controller.render = RenderText(rsVal.String())
